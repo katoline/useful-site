@@ -6,6 +6,7 @@ import { useI18n } from "~/i18n";
 import { cn } from "~/lib/utils";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { LocalizedLink, LocalizedNavLink } from "./LocalizedLink";
+import { LogoMark } from "./LogoMark";
 import { NAV_ITEMS } from "./nav-items";
 import { ThemeMenu, ThemeToggleGroup } from "./ThemeSwitcher";
 
@@ -30,9 +31,10 @@ export function SiteHeader() {
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4">
         <LocalizedLink
           page=""
-          className="mr-2 text-base font-bold tracking-tight"
+          className="mr-2 inline-flex min-h-11 items-center gap-2 text-base font-bold tracking-tight"
           data-testid="logo"
         >
+          <LogoMark size={24} />
           {t("site.name")}
         </LocalizedLink>
 

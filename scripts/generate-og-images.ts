@@ -4,27 +4,30 @@
  *
  * 文字（日本語を含む）を描くため、依存を増やさず、E2E 用に入っている Playwright の Chromium で
  * HTML を描画してスクリーンショットを撮る（ブラウザは Nix の devShell が供給する）。
- * ロゴは scripts/generate-icons.ts の favicon.svg と同じ図形。当面は言語ごとに共通の 1 枚。
+ * ロゴは public/logo.svg と同じ図形（app/lib/logo.ts）。当面は言語ごとに共通の 1 枚。
+ * ロゴを変えたら scripts/generate-icons.ts と合わせて作り直す。
  */
-import { readFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "@playwright/test";
+import { SITE_NAME } from "../app/lib/config.ts";
+import { buildLogoSvg } from "../app/lib/logo.ts";
 
 const PUBLIC_DIR = path.resolve(import.meta.dirname, "../public");
-const LOGO_SVG = readFileSync(path.join(PUBLIC_DIR, "favicon.svg"), "utf8");
+// 白い背景に黒いタイル（ロゴ自身が面を持つ）。読み上げは h1 のサイト名で足りるので title は付けない
+const LOGO_SVG = buildLogoSvg({ tile: "#0a0a0a", glyph: "#ffffff" });
 
-/** 画像に入れる文言（サイト名は app/lib/config.ts の SITE_NAME と同じ） */
+/** 画像に入れる文言 */
 const TEXT = {
   ja: {
     lang: "ja",
-    title: "Image Adjust",
+    title: SITE_NAME,
     lead: "画像の変換・圧縮・アイコン生成を、<br>ブラウザだけで。",
     note: "PNG / JPEG / WebP / GIF / SVG ・ 画像はサーバーに送信しません",
   },
   en: {
     lang: "en",
-    title: "Image Adjust",
+    title: SITE_NAME,
     lead: "Convert, compress and make favicons — right in your browser.",
     note: "PNG / JPEG / WebP / GIF / SVG · Your images never leave your device",
   },
