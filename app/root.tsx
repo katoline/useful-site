@@ -14,6 +14,7 @@ import {
 } from "react-router";
 import { AdSlot } from "~/components/ads/AdSlot";
 import { CloudflareAnalytics } from "~/components/analytics/CloudflareAnalytics";
+import { BottomNoticesProvider } from "~/components/layout/BottomNotices";
 import { LangSuggestion } from "~/components/layout/LangSuggestion";
 import { PageHeader } from "~/components/layout/PageHeader";
 import { SiteFooter } from "~/components/layout/SiteFooter";
@@ -69,17 +70,21 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <I18nProvider lang={lang}>
       <TooltipProvider delayDuration={300}>
-        <LangSuggestion />
-        <SiteHeader />
-        {/* ヘッダー直下の横長バナー（PC のみ。§7.2） */}
-        <div className="mx-auto hidden max-w-6xl px-4 md:block">
-          <AdSlot format="banner" />
-        </div>
-        <main id="main" className="mx-auto w-full max-w-6xl px-4 py-8">
-          {children}
-        </main>
-        <SiteFooter />
-        <PwaRoot />
+        {/* 画面下の通知（言語の案内・PWA の通知）を 1 つの固定コンテナに縦に積む */}
+        <BottomNoticesProvider>
+          <SiteHeader />
+          {/* ヘッダー直下の横長バナー（PC のみ。§7.2） */}
+          <div className="mx-auto hidden max-w-6xl px-4 md:block">
+            <AdSlot format="banner" />
+          </div>
+          <main id="main" className="mx-auto w-full max-w-6xl px-4 py-8">
+            {children}
+          </main>
+          <SiteFooter />
+          {/* 画面下に重ねて出す（流れに入れるとハイドレーション後にヘッダーが押し下げられる） */}
+          <LangSuggestion />
+          <PwaRoot />
+        </BottomNoticesProvider>
       </TooltipProvider>
     </I18nProvider>
   );

@@ -96,6 +96,29 @@ test("言語切り替えは同じページの他言語版へクライアント�
   expect(await page.evaluate(() => localStorage.getItem("image-adjust:lang"))).toBe("en");
 });
 
+test("ヘッダーのロゴのマークは読み上げず、テーマで白黒が反転する", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/image-adjust/");
+  const logo = page.getByTestId("logo");
+  // リンク名はサイト名だけ（マークは読み上げない）
+  await expect(logo).toHaveAccessibleName("Image Adjust");
+  const mark = logo.getByTestId("logo-mark");
+  await expect(mark).toHaveAttribute("aria-hidden", "true");
+  const box = await mark.boundingBox();
+  expect(box?.width).toBe(24);
+  expect(box?.height).toBe(24);
+
+  const colors = () =>
+    mark.evaluate((svg) => ({
+      tile: getComputedStyle(svg.querySelector("rect") as Element).fill,
+      glyph: getComputedStyle(svg.querySelector("path") as Element).fill,
+    }));
+  expect(await colors()).toEqual({ tile: "rgb(10, 10, 10)", glyph: "rgb(255, 255, 255)" });
+  await chooseTheme(page, "dark");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect.poll(colors).toEqual({ tile: "rgb(250, 250, 250)", glyph: "rgb(10, 10, 10)" });
+});
+
 test("ヘッダーのリンクとフッターのリンクがある", async ({ page }) => {
   await page.goto("/image-adjust/en/");
   if (isMobile(page)) {
@@ -136,4 +159,124 @@ test("ハイドレーションでコンソールエラーが出ない", async ({
     await page.waitForLoadState("networkidle");
   }
   expect(errors).toEqual([]);
+});
+
+/** コンソールエラーと例外を集める。404 の文書そのものの読み込み失敗（Failed to load resource）は除く */
+function collectErrors(page: Page) {
+  const errors: string[] = [];
+  page.on("console", (msg) => {
+    if (msg.type() !== "error") return;
+    const isDocument404 = msg.text().includes("status of 404") && msg.location().url === page.url();
+    if (!isDocument404) errors.push(msg.text());
+  });
+  page.on("pageerror", (err) => errors.push(err.message));
+  return errors;
+}
+
+test("動的な値が不正な URL は 404 で、ハイドレーションでエラーが出ない", async ({ page }) => {
+  const errors = collectErrors(page);
+  for (const [path, heading] of [
+    ["/image-adjust/convert/bogus/", "ページが見つかりません"],
+    ["/image-adjust/en/guide/bogus/", "Page not found"],
+  ] as const) {
+    const res = await page.goto(path);
+    expect(res?.status()).toBe(404);
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(heading);
+  }
+  expect(errors).toEqual([]);
+});
+
+test("変換の入口ページが表示され、ハイドレーションでエラーが出ない", async ({ page }) => {
+  const errors = collectErrors(page);
+  const res = await page.goto("/image-adjust/convert/png-to-webp/");
+  expect(res?.status()).toBe(200);
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("PNG を WebP に変換");
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    /\/image-adjust\/convert\/png-to-webp\/$/,
+  );
+  // 言語切り替えも同じ変換方向の英語版に行く
+  if (isMobile(page)) await page.getByTestId("mobile-menu-button").click();
+  await page.getByTestId("lang-en").filter({ visible: true }).click();
+  await expect(page).toHaveURL(/\/image-adjust\/en\/convert\/png-to-webp\/$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Convert PNG to WebP");
+  expect(errors).toEqual([]);
+});
+
+test.describe("英語ロケールで日本語ページを開く", () => {
+  test.use({ locale: "en-US" });
+
+  test("言語の案内は出てもヘッダーの位置が変わらず、操作バーと重ならない", async ({ page }) => {
+    const headerTop = () =>
+      page.getByRole("banner").evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
+
+    await page.goto("/image-adjust/");
+    const suggestion = page.getByTestId("lang-suggestion");
+    await expect(suggestion).toBeVisible();
+    expect(await headerTop()).toBe(0);
+    // 案内は画面下に重ねて出す（ページの流れに入らない）
+    const viewport = page.viewportSize();
+    const box = await suggestion.boundingBox();
+    expect(box && viewport && box.y > viewport.height / 2).toBe(true);
+    expect(box && viewport && box.y + box.height <= viewport.height).toBe(true);
+
+    // ツール画面（スマホは下固定の操作バーがある）でも、案内はその上に出る
+    await page.goto("/image-adjust/convert/png-to-webp/");
+    await expect(suggestion).toBeVisible();
+    expect(await headerTop()).toBe(0);
+    if (isMobile(page)) {
+      const bar = await page.locator("[data-mobile-action-bar]").boundingBox();
+      const s = await suggestion.boundingBox();
+      expect(bar && s && s.y + s.height <= bar.y).toBe(true);
+    }
+  });
+
+  test("言語の案内と PWA の通知は縦に積まれ、両方のボタンが押せる", async ({ page }) => {
+    // 「このアプリで開く」（launchQueue）を偽装して、受け取り件数の通知を出す
+    await page.addInitScript(() => {
+      const file = new File([new Uint8Array([0])], "launched.png", { type: "image/png" });
+      type Consumer = (params: { files: { getFile(): Promise<File> }[] }) => void;
+      // Chromium には読み取り専用の launchQueue があるので、代入ではなく定義し直す
+      Object.defineProperty(window, "launchQueue", {
+        configurable: true,
+        value: {
+          setConsumer(consumer: Consumer) {
+            setTimeout(() => consumer({ files: [{ getFile: async () => file }] }), 0);
+          },
+        },
+      });
+    });
+    await page.goto("/image-adjust/convert/png-to-webp/");
+    const suggestion = page.getByTestId("lang-suggestion");
+    const received = page.getByTestId("pwa-received");
+    await expect(suggestion).toBeVisible();
+    await expect(received).toBeVisible();
+
+    // 重ならない（縦に積まれる）
+    const a = await suggestion.boundingBox();
+    const b = await received.boundingBox();
+    expect(a && b && (a.y + a.height <= b.y || b.y + b.height <= a.y)).toBe(true);
+    // スマホでは下固定の操作バーより上に出る
+    if (isMobile(page)) {
+      const bar = await page.locator("[data-mobile-action-bar]").boundingBox();
+      const notices = await page.getByTestId("bottom-notices").boundingBox();
+      expect(bar && notices && notices.y + notices.height <= bar.y).toBe(true);
+    }
+    // 出ている間は、通知の実際の高さ以上の余白が body の下に付く
+    const padding = () =>
+      page.evaluate(() => Number.parseFloat(getComputedStyle(document.body).paddingBottom));
+    const noticesHeight = (await page.getByTestId("bottom-notices").boundingBox())?.height ?? 0;
+    expect(await padding()).toBeGreaterThanOrEqual(noticesHeight);
+
+    // 両方のボタンが押せる（他の要素に遮られていればクリックが失敗する）
+    await received.getByTestId("pwa-received-dismiss").click();
+    await expect(received).toHaveCount(0);
+    await suggestion.getByRole("link").click({ trial: true });
+    await suggestion.getByRole("button").click();
+    await expect(suggestion).toHaveCount(0);
+    // 何も出ていなければ余白も無くなる
+    await expect.poll(padding).toBe(0);
+  });
 });

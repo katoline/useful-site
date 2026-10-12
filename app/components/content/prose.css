@@ -21,7 +21,8 @@
   font-weight: 700;
   line-height: 1.4;
   letter-spacing: -0.01em;
-  scroll-margin-top: 5rem;
+  /* html の scroll-padding-top（ヘッダーの高さ）に足される余白。合計で以前の 5rem 相当 */
+  scroll-margin-top: 1.5rem;
 }
 
 .prose-content h3 {
@@ -29,7 +30,7 @@
   font-size: 1.125rem;
   font-weight: 700;
   line-height: 1.5;
-  scroll-margin-top: 5rem;
+  scroll-margin-top: 1.5rem;
 }
 
 .prose-content h2 + *,

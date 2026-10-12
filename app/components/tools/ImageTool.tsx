@@ -123,7 +123,10 @@ export function ImageTool({ settingsKey, initialSettings, intro, faq }: ImageToo
       </aside>
 
       {/* スマホ：画面下の操作バー（親指の届く位置）＋ 設定シート */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+      <div
+        data-mobile-action-bar
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden"
+      >
         <div className="mx-auto flex max-w-6xl gap-2">
           <Button
             variant="outline"
