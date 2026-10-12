@@ -6,14 +6,31 @@
 /** サブパスの接頭辞（末尾スラッシュなし）。他の場所に直書きしない */
 export const BASE_PATH = "/image-adjust";
 
-/** canonical・OGP・hreflang に使うオリジン。ビルド時に VITE_SITE_ORIGIN で上書きできる */
-export const DEFAULT_SITE_ORIGIN = "https://image-adjust.example.workers.dev";
+/**
+ * canonical・OGP・hreflang・sitemap に使う公開オリジン（暫定ドメイン。plan.md §4）。
+ * ビルド時に VITE_SITE_ORIGIN で上書きできる。ドメインを変えるときは、ここと wrangler.jsonc の routes を変える
+ */
+export const DEFAULT_SITE_ORIGIN = "https://t0n03k1.com";
+
+/**
+ * VITE_SITE_ORIGIN の値をオリジンに正規化する（大文字のホスト・既定のポート・国際化ドメイン →
+ * URL#origin。canonical 等にそのまま入れない）。sitemap を作る Vite プラグインも使う。
+ * URL として読めない値は、間違いに気づけるようそのまま使う（公開前は scripts/check-deploy-env.ts が止める）
+ */
+export function normalizeSiteOrigin(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+  try {
+    return new URL(trimmed).origin;
+  } catch {
+    return trimmed.replace(/\/+$/, "");
+  }
+}
 
 function readEnvOrigin(): string | undefined {
   // Node（vite.config 読み込み時）では import.meta.env が無いので任意参照にする
   const env = (import.meta as { env?: Record<string, string | undefined> }).env;
-  const value = env?.VITE_SITE_ORIGIN;
-  return value ? value.replace(/\/+$/, "") : undefined;
+  return normalizeSiteOrigin(env?.VITE_SITE_ORIGIN);
 }
 
 export const SITE_ORIGIN: string = readEnvOrigin() ?? DEFAULT_SITE_ORIGIN;
@@ -24,7 +41,7 @@ export const STORAGE_PREFIX = "image-adjust:";
 /** Hono の API の基点 */
 export const API_BASE_PATH = `${BASE_PATH}/api`;
 
-/** サイト名（ロゴ文字）。未決事項なので仮 */
+/** サイト名（ロゴ文字。日英共通の正式名） */
 export const SITE_NAME = "Image Adjust";
 
 /**

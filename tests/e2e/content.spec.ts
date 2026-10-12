@@ -109,7 +109,7 @@ test("全ページに言語別の OGP 画像（1200×630）が付く", async ({ 
       "content",
       "1200",
     );
-    // SITE_ORIGIN は仮のドメインなので、配信はパスで確かめる
+    // SITE_ORIGIN は公開先のドメインでテストの配信元（localhost）とは違うので、配信はパスで確かめる
     const res = await request.get(new URL(image ?? "").pathname);
     expect(res.ok()).toBe(true);
     expect(res.headers()["content-type"]).toContain("image/png");
