@@ -1,0 +1,26 @@
+# 依存の更新 PR を作る。マージは CI（verify）が通ったものを手で行う。
+version: 2
+updates:
+  # ワークフローの action（コミット SHA 固定）を更新する
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # 注意：Dependabot が pnpm 12 の lockfile を更新できるかは未確認。最初の PR で pnpm-lock.yaml も
+  # 更新されているか確かめ、更新されないなら（verify の pnpm install --frozen-lockfile で落ちる）この節を外す
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      # 小さな更新は 1 つの PR にまとめる
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Nix の playwright-driver（flake.lock）と同じ版に固定している。上げるときは flake.lock と揃える
+      - dependency-name: "@playwright/test"
