@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <title>Image Adjust</title>
+  <rect width="100" height="100" rx="22" fill="#0a0a0a"/>
+  <path fill="#fff" fill-rule="evenodd" d="M25 24h50a7 7 0 0 1 7 7v38a7 7 0 0 1-7 7H25a7 7 0 0 1-7-7V31a7 7 0 0 1 7-7zm2 6a3 3 0 0 0-3 3v34a3 3 0 0 0 3 3h46a3 3 0 0 0 3-3V33a3 3 0 0 0-3-3z"/>
+  <circle cx="38" cy="42" r="5.5" fill="#fff"/>
+  <path fill="#fff" d="M27 70l20-24 13 15.6L62 55l14 15z"/>
+</svg>

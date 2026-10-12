@@ -1,0 +1,169 @@
+export const frontmatter = {
+  title: "How to Make Landing Page Images Lighter: Size, Format and Loading",
+  description: "A practical guide to optimizing landing page images: recommended dimensions, formats and quality targets, srcset and picture, lazy loading, LCP and CLS fixes, and how to measure the results.",
+  datePublished: "2026-10-12",
+  dateModified: "2026-10-12",
+};
+
+A landing page is often the first thing a visitor sees after clicking an ad or a link. If it loads slowly, people leave before reading a word, and images are usually the biggest reason a page is slow. This guide covers how to shrink images while keeping them sharp: choosing dimensions, picking a format, loading images the right way, and measuring the outcome.
+
+## Start with the right dimensions
+
+The most effective optimization is simply not shipping an image larger than it needs to be. Uploading a 4000px camera original and shrinking it with CSS makes every visitor download pixels they will never see.
+
+### Recommended dimensions
+
+For a hero image (the large image at the top of the page), a width of around 1920px is a reasonable ceiling. That fills a full HD display edge to edge, and few layouts need more. For images inside the content column, about twice the displayed width is usually plenty.
+
+### Thinking about high-density displays
+
+Phones and some laptops draw each CSS pixel using two or more physical pixels (a device pixel ratio of 2, for example). To look sharp, an image displayed 400 CSS pixels wide needs about 800 pixels of actual width. Going to 3x or 4x adds little visible improvement but a lot of weight, so in practice aim for at most 2x.
+
+Because different screens need different sizes, don't send one huge image to everyone. Provide several sizes and let the browser choose, which is what `srcset` is for (more below).
+
+## Choose the format
+
+The full comparison is in [Choosing an Image Format](/guide/image-formats/). The short version for landing pages:
+
+- Photos: lossy WebP or JPEG. WebP is often smaller and works in all current major browsers (Safari from version 14).
+- Logos and icons: SVG, or PNG or lossless WebP if SVG is not an option.
+- Anything needing transparency: PNG or WebP.
+- Screenshots: PNG or lossless WebP if there is lots of text.
+- Animation: avoid long GIFs; consider video (MP4, WebM) or animated WebP.
+
+You can convert with this site's [PNG to WebP](/convert/png-to-webp/), [JPEG to WebP](/convert/jpeg-to-webp/) and [PNG to JPEG](/convert/png-to-jpeg/) tools, which also handle several images at once.
+
+## Quality settings and target file sizes
+
+For lossy formats (JPEG and WebP), a lower quality value means a smaller file. The scale differs between encoders, but these starting points are a reasonable guide (they are rules of thumb, not guarantees):
+
+| Use | Quality | Target file size |
+| --- | --- | --- |
+| Hero image (full width) | 75 to 85 | 200 to 300KB or less |
+| Photos in the content | 70 to 80 | Around 100KB or less |
+| Thumbnails and card images | 65 to 75 | 30 to 50KB or less |
+| Logos and icons (SVG) | Not applicable | A few KB |
+
+These are not hard limits. The same quality setting produces very different sizes depending on the picture: busy textures cost more than flat areas. Lower the quality step by step and stop just before degradation becomes noticeable.
+
+This site's [compressor](/) lets you set a quality value or a target file size, which is handy for goals like "keep the hero under 300KB". Format-specific pages are available for [JPEG](/compress/jpeg/), [PNG](/compress/png/), [WebP](/compress/webp/) and [GIF](/compress/gif/).
+
+<Ad />
+
+## Serve the right size with srcset and sizes
+
+`srcset` and `sizes` give the browser a menu of candidate images so it can pick the best one for the screen.
+
+```html
+<img
+  src="hero-1200.jpg"
+  srcset="hero-640.jpg 640w, hero-1200.jpg 1200w, hero-1920.jpg 1920w"
+  sizes="100vw"
+  width="1920"
+  height="1080"
+  alt="Someone using the product">
+```
+
+The `640w` values in `srcset` are the actual pixel widths of each file. `sizes` tells the browser how wide the image will be on screen; `100vw` means the full viewport width. From these two hints and the screen density, the browser chooses a candidate. For an image in a fixed-width column you might write `sizes="(min-width: 800px) 720px, 100vw"`.
+
+## Switch formats with the picture element
+
+The `picture` element lets you offer WebP and fall back to JPEG for browsers that lack support.
+
+```html
+<picture>
+  <source type="image/webp"
+          srcset="hero-640.webp 640w, hero-1200.webp 1200w, hero-1920.webp 1920w"
+          sizes="100vw">
+  <img src="hero-1200.jpg"
+       srcset="hero-640.jpg 640w, hero-1200.jpg 1200w, hero-1920.jpg 1920w"
+       sizes="100vw"
+       width="1920" height="1080"
+       alt="Someone using the product">
+</picture>
+```
+
+Since all current major browsers support WebP, serving WebP alone is often fine. Check your analytics to decide whether you still need the fallback.
+
+## Prevent layout shift with width and height
+
+When an image loads and pushes the content around, that is measured as Cumulative Layout Shift (CLS), and it feels bad to users. The fix is simple: add `width` and `height` attributes to every `img`.
+
+```html
+<img src="photo.webp" width="800" height="450" alt="Description">
+```
+
+Use the image's intrinsic pixel dimensions, so the browser can work out the aspect ratio and reserve space before the file arrives. If the image should scale fluidly, add this CSS and the ratio is preserved:
+
+```css
+img {
+  max-width: 100%;
+  height: auto;
+}
+```
+
+## Lazy-load only what is off-screen
+
+Adding `loading="lazy"` defers an image until the user scrolls near it, which reduces the initial download.
+
+```html
+<img src="case-study.webp" width="600" height="400" alt="Case study" loading="lazy" decoding="async">
+```
+
+The key rule: never put it on images in the first view (the area visible without scrolling). Lazy-loading the hero image delays its request and makes LCP worse. On a landing page it belongs on case studies, testimonials and images near the footer.
+
+`decoding="async"` lets the browser decode the image alongside other work so it blocks rendering less. It is a safe addition for below-the-fold images.
+
+## Give the LCP image fetchpriority="high"
+
+Largest Contentful Paint (LCP) measures how long the main content takes to appear, and on many landing pages the hero image is that element. Add `fetchpriority="high"` to raise its download priority.
+
+```html
+<img src="hero-1200.webp" width="1920" height="1080" alt="..."
+     fetchpriority="high">
+```
+
+If the hero is a CSS background, the browser discovers it late. Use an `img` element where possible, or preload it with `link rel="preload"`. Reserve `high` for the one image that really matters; marking several defeats the purpose.
+
+## Remove EXIF and other metadata
+
+Photos from cameras and phones can include capture time, device model, orientation and even GPS coordinates. For published images, remove metadata you don't need, both for privacy and to save bytes.
+
+This site's tools strip EXIF and similar metadata by default, and everything runs in your browser, so your images are never uploaded to a server. After converting, check that photos still face the right way, since removing the orientation flag can turn some sideways.
+
+## Background images and SVG
+
+### CSS background images
+
+Images set with `background-image` can't use `srcset`. To vary them by screen, use `image-set()` or media queries. They are also invisible to the browser until the CSS is parsed, so consider preloading an important first-view background. For meaningful images, such as the product shot in a hero, an `img` element is better for both accessibility (it takes `alt`) and speed.
+
+### Optimizing SVG
+
+SVGs exported from design tools often carry editor metadata and unused definitions. Removing them shrinks the file without changing how it looks. You can do this with the [SVG compressor](/compress/svg/).
+
+## How to measure the results
+
+Always verify with real measurements:
+
+- Lighthouse, built into Chrome DevTools, reports LCP, CLS and image-specific suggestions.
+- [PageSpeed Insights](https://pagespeed.web.dev/) shows lab results and, when available, field data from real users for your URL.
+- The Network panel in DevTools shows the transfer size of each image and the order in which they load.
+
+For the definitions and thresholds, [web.dev's Core Web Vitals guide](https://web.dev/articles/vitals) is the primary source. A "good" LCP is 2.5 seconds or less, and a good CLS is 0.1 or less.
+
+## Checklist
+
+- No image is much more than about twice its displayed width
+- The hero is around 1920px wide at most and compressed toward 200 to 300KB or less
+- Photos are WebP or JPEG; logos are SVG
+- Every `img` has `width` and `height`
+- Below-the-fold images use `loading="lazy"`; first-view images do not
+- The LCP image has `fetchpriority="high"`
+- `srcset`, `sizes` and `picture` are used where they help
+- EXIF and other metadata are removed
+- SVGs are optimized
+- LCP and CLS were checked in Lighthouse or PageSpeed Insights
+
+## Summary
+
+Work in this order: cut oversized dimensions first, then choose a light format and quality, then tune how the images load. Resizing and format conversion are easy to batch with the [image converter and compressor](/). If you are also sorting out your site icons, see [How to Set Up a Favicon](/guide/favicon-setup/).

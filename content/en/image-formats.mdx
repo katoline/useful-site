@@ -1,0 +1,145 @@
+export const frontmatter = {
+  title: "Choosing an Image Format: JPEG, PNG, WebP, SVG and GIF Compared",
+  description: "How JPEG, PNG, WebP, SVG and GIF differ in compression, transparency, animation and browser support, plus a quick guide to the right format for photos, logos and screenshots.",
+  datePublished: "2026-10-12",
+  dateModified: "2026-10-12",
+};
+
+When you put an image on a website, the first decision is which format to save it in. Pick the wrong one and a photo ends up far too heavy, a logo gets fuzzy edges, or a cut-out keeps a stubborn white background. This guide walks through JPEG, PNG, WebP, SVG and GIF, touches on AVIF, and ends with a practical way to choose.
+
+The short version: use JPEG or WebP for photos; PNG or WebP for illustrations and text-heavy screenshots; SVG for logos and icons that must stay sharp at any size; and for animation, consider video or animated WebP before reaching for GIF.
+
+## Three ideas that explain most of the differences
+
+### Lossy vs. lossless compression
+
+Lossy compression throws away detail that people are unlikely to notice, which makes files much smaller. JPEG and WebP in lossy mode work this way. The lower the quality setting, the smaller the file, but repeated re-saving piles up damage.
+
+Lossless compression keeps every pixel exactly as it was and just packs the data more efficiently, much like a zip file. PNG, GIF and WebP in lossless mode work this way. Quality never changes, but photographs with subtle color variation tend to produce large files.
+
+### Raster vs. vector
+
+JPEG, PNG, WebP and GIF are raster formats: a grid of pixels that gets blurry when enlarged. SVG is a vector format that describes shapes with coordinates and math, so it stays crisp at any size. It is a poor fit for photographs, though.
+
+### Transparency and animation
+
+Formats also differ in whether they can have a transparent background (an alpha channel) and whether they can animate. JPEG supports neither. PNG supports transparency, and GIF and WebP support animation as well.
+
+## What each format is good at
+
+### JPEG
+
+JPEG is the long-standing standard for photos and uses lossy compression. It handles smooth gradients well, and a quality setting of roughly 70 to 85 often cuts file size dramatically with little visible loss (as a rule of thumb).
+
+Its weaknesses are text, thin lines and sharp color boundaries, where you may see blotchy artifacts around edges. It also cannot store transparency.
+
+### PNG
+
+PNG is lossless and supports transparency, including partial transparency. It suits logos, illustrations, diagrams and screenshots with text, where crisp edges matter. Photos saved as PNG are usually very large, so avoid it for them.
+
+PNG can also be reduced to a limited palette of 256 colors or fewer. For simple graphics with few colors, that can shrink the file considerably with almost no visible change.
+
+### WebP
+
+WebP was developed by Google. A single format covers lossy and lossless compression, transparency and animation. At a comparable visual quality it is often smaller than JPEG or PNG, although the gain varies by image, so there is no fixed percentage you can count on.
+
+Browser support is no longer a concern for most sites: WebP works in all current major browsers, with Safari supporting it from version 14. You can check the details in the [MDN image type guide](https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Image_types).
+
+### SVG
+
+SVG is an XML-based vector format and the best choice for logos, icons and simple illustrations. It scales without losing quality, looks sharp on high-density displays, and is usually small. You can recolor it with CSS and even switch colors with `prefers-color-scheme`.
+
+Converting a photograph to SVG will not make it lighter or better looking. Also keep in mind that SVG files can contain scripts, so do not inline files from untrusted sources. Loading them through an `img` element is the safer route.
+
+### GIF
+
+GIF uses a palette of at most 256 colors with lossless compression and supports simple animation. Its transparency is all or nothing, with no partial transparency. The limited palette makes it poor for photos, and animated GIFs get large quickly.
+
+For anything long or photographic, an MP4 or WebM video, or an animated WebP, is often dramatically smaller.
+
+### AVIF (for reference)
+
+AVIF is a newer format that supports lossy and lossless compression, transparency and animation, and often produces smaller files than JPEG or WebP at similar quality. Browser support keeps improving, but encoding can be slow and not every tool supports it yet. Note that this site's [image converter and compressor](/) does not output AVIF, so you would need another tool for that format.
+
+## Comparison table
+
+| | JPEG | PNG | WebP | SVG | GIF |
+| --- | --- | --- | --- | --- | --- |
+| Compression | Lossy | Lossless | Lossy or lossless | Vector (text) | Lossless |
+| Transparency | No | Yes (partial too) | Yes (partial too) | Yes | Yes (on/off only) |
+| Animation | No | No (APNG is a separate extension) | Yes | Yes (SMIL, CSS) | Yes |
+| Colors | About 16.7 million | About 16.7 million | About 16.7 million | Unlimited | 256 max |
+| Best for | Photos | Logos, diagrams, screenshots | Photos to diagrams | Logos, icons | Simple animation |
+| When enlarged | Gets blurry | Gets blurry | Gets blurry | Stays sharp | Gets blurry |
+
+<Ad />
+
+## Quick recommendations by use case
+
+| Use case | Recommended | Why |
+| --- | --- | --- |
+| Photos (landscapes, people, products) | Lossy WebP or JPEG | Smooth tones suit lossy compression |
+| Cut-out photos with transparency | WebP or PNG | JPEG cannot be transparent; WebP is often lighter |
+| Logos and icons | SVG (otherwise PNG or WebP) | Sharp at any size and small |
+| Diagrams and illustrations | PNG, lossless WebP or SVG | Edges stay clean |
+| Screenshots with lots of text | PNG or lossless WebP | JPEG leaves noise around letters |
+| Simple animation | Animated WebP, video or GIF | Video wins for anything long |
+| Social sharing (OG) images | PNG or JPEG | Some platforms still handle WebP poorly |
+| Email attachments, legacy systems | JPEG or PNG | Compatibility comes first |
+
+## Photos, illustrations and screenshots
+
+### Photos
+
+Photographs with continuously varying color respond well to lossy compression. Start with JPEG or WebP at a quality around 75 to 85 and lower it until you can just begin to see degradation. If the image is much larger than it will be displayed, resize it first, because that saves more than any quality tweak. Tools like [JPEG to WebP](/convert/jpeg-to-webp/) and [PNG to JPEG](/convert/png-to-jpeg/) make the conversion quick.
+
+### Illustrations and logos
+
+Flat colors and crisp outlines call for lossless PNG or WebP, or vector SVG. Saving them as JPEG adds noise near edges and can even make the file bigger.
+
+### Screenshots
+
+Screenshots full of text and interface elements usually belong in PNG or lossless WebP. A large screenshot that is mostly photographic content can still come out much smaller as lossy WebP or JPEG. When in doubt, export both and compare size and appearance.
+
+## Browser support and safe fallbacks
+
+JPEG, PNG, GIF and SVG display almost everywhere. WebP works in all current major browsers, with Safari supporting it from version 14. If you still want a fallback for older environments, use the `picture` element:
+
+```html
+<picture>
+  <source srcset="photo.webp" type="image/webp">
+  <img src="photo.jpg" alt="Product photo" width="1200" height="800">
+</picture>
+```
+
+The browser reads the sources from top to bottom and uses the first format it supports. If none match, it falls back to the `src` on the `img`. We cover this pattern in more depth in [How to Make Landing Page Images Lighter](/guide/optimize-lp-images/).
+
+## Watch out for metadata such as EXIF
+
+JPEGs from cameras and phones carry EXIF metadata: capture time, camera model, orientation and sometimes the GPS location where the photo was taken. Publish such a file unchanged and you may leak your location without meaning to.
+
+PNG and WebP can also hold metadata such as text chunks and color profiles. For images you publish, removing metadata you do not need is good practice, and it trims the file size a little.
+
+One caveat: if you strip the EXIF orientation flag, some photos may display sideways. Make sure the orientation is applied to the pixels before you remove the metadata.
+
+This site's [image converter and compressor](/) processes images entirely in your browser and never uploads them to a server. It removes EXIF and similar metadata by default, which makes it handy for preparing images for publication.
+
+## A quick decision flow
+
+1. Is it a logo or icon that must stay sharp at any size? Use SVG.
+2. Is it a photo? Use lossy WebP or JPEG.
+3. Does it need transparency? Use PNG or WebP.
+4. Is it mostly text or thin lines? Use PNG or lossless WebP.
+5. Is it an animation? Use video or animated WebP, or GIF for something simple.
+
+In the end, the surest method is to export a couple of candidates and compare size and appearance. Once you have chosen, squeeze the file further with the [WebP compressor](/compress/webp/), the [JPEG compressor](/compress/jpeg/), the [PNG compressor](/compress/png/) or the [SVG compressor](/compress/svg/).
+
+## Summary
+
+- Photos: JPEG or WebP. Logos and illustrations: SVG, PNG or WebP. Animation: video or WebP first.
+- WebP works in all current major browsers (Safari from version 14), so it is safe to use on the web.
+- If you need transparency, JPEG is out.
+- Strip unneeded metadata such as EXIF before publishing.
+- For favicons, which need a special set of files, see [How to Set Up a Favicon](/guide/favicon-setup/).
+
+The right format depends on what is in the image and where it will be used. Use the tables above as a starting point, then test.

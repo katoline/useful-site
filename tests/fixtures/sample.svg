@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with a vector editor -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="200" height="120" viewBox="0 0 200 120" inkscape:version="1.2">
+  <title>Sample</title>
+  <metadata id="metadata1">
+    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description>sample</rdf:Description></rdf:RDF>
+  </metadata>
+  <!-- background -->
+  <rect x="0.000001" y="0" width="200.00000" height="120.0000" fill="#ffffff" stroke="none"/>
+  <g id="g1" inkscape:label="Layer 1">
+    <circle cx="60.0001" cy="60.00" r="40.000" fill="#ff0000"/>
+    <path d="M 120.0000,20.0000 L 180.0000,20.0000 L 180.0000,100.0000 L 120.0000,100.0000 Z" fill="#0000ff"/>
+  </g>
+</svg>
