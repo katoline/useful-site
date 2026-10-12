@@ -1,0 +1,145 @@
+/*
+ * 記事本文（MDX）の見た目。Tailwind の typography プラグインは入れていないので自前で書く。
+ * 色は tokens.css の CSS 変数だけを使う（ライト・ダークの両方に追従する）。
+ */
+.prose-content {
+  max-width: 48rem;
+  line-height: 1.85;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.prose-content > * + * {
+  margin-top: 1.1em;
+}
+
+.prose-content h2 {
+  margin-top: 2.4em;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid var(--border);
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  scroll-margin-top: 5rem;
+}
+
+.prose-content h3 {
+  margin-top: 1.8em;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.5;
+  scroll-margin-top: 5rem;
+}
+
+.prose-content h2 + *,
+.prose-content h3 + * {
+  margin-top: 0.75em;
+}
+
+.prose-content a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.prose-content a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.prose-content strong {
+  font-weight: 700;
+}
+
+.prose-content ul,
+.prose-content ol {
+  padding-left: 1.5em;
+}
+
+.prose-content ul {
+  list-style: disc;
+}
+
+.prose-content ol {
+  list-style: decimal;
+}
+
+.prose-content li + li {
+  margin-top: 0.35em;
+}
+
+.prose-content li > ul,
+.prose-content li > ol {
+  margin-top: 0.35em;
+}
+
+.prose-content blockquote {
+  padding: 0.25em 0 0.25em 1em;
+  border-left: 3px solid var(--border);
+  color: var(--muted-foreground);
+}
+
+.prose-content hr {
+  margin: 2.5em 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+/* インラインコード */
+.prose-content :not(pre) > code {
+  padding: 0.1em 0.35em;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.875em;
+}
+
+/* コードブロック（横にはみ出す分はスクロール） */
+.prose-content pre {
+  overflow-x: auto;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  overflow-wrap: normal;
+}
+
+.prose-content pre code {
+  white-space: pre;
+}
+
+/* 表（スマホでは横スクロール） */
+.prose-content table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.prose-content th,
+.prose-content td {
+  padding: 0.5em 0.75em;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: normal;
+  min-width: 6em;
+}
+
+.prose-content th {
+  background: var(--surface);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.prose-content img {
+  max-width: 100%;
+  height: auto;
+}

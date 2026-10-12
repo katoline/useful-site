@@ -1,0 +1,154 @@
+export const frontmatter = {
+  title: "How to Set Up a Favicon: Required Files and HTML Tags",
+  description: "Everything you need for a modern favicon: the file set, the head HTML, a web manifest, dark mode SVG, fixing cache problems, and what Google needs to show your icon in search results.",
+  datePublished: "2026-10-12",
+  dateModified: "2026-10-12",
+};
+
+A favicon is the small icon shown in browser tabs, bookmarks, history and search results. It is a minor detail, but setting one up raises questions: is favicon.ico enough, what is an apple-touch-icon, do you need a manifest? This guide covers the smallest set of files that works well on today's browsers and phones, how to reference them in your `head`, and how to troubleshoot when the icon will not update.
+
+## The files you need
+
+Here is a common modern setup. You do not have to create everything; pick what fits your site.
+
+| File | Size | Purpose |
+| --- | --- | --- |
+| favicon.ico | 16, 32 and 48px in one file | Older browsers, automatic root lookup, search engines |
+| favicon.svg | Vector (any size) | Tabs in modern browsers; supports dark mode |
+| apple-touch-icon.png | 180x180px | iOS home screen, Safari favorites |
+| icon-192.png | 192x192px | Android home screen, PWAs |
+| icon-512.png | 512x512px | PWA splash screens, install prompts |
+| icon-maskable-512.png | 512x512px (with safe zone) | Android icons cropped to a circle or rounded shape |
+| site.webmanifest | JSON | Declares icons, app name and colors |
+
+An ICO file can hold several images in one file. Including 16px (tabs), 32px (high-density tabs and taskbars) and 48px (desktop shortcuts) covers nearly every case.
+
+## The HTML for your head
+
+This is the basic snippet:
+
+```html
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+```
+
+What each line does:
+
+- Line 1 points older browsers to the ICO. The `sizes="32x32"` attribute is a widely used trick that helps browsers prefer the SVG when they support it.
+- Line 2 is the SVG favicon. Supporting browsers get a crisp, tiny file that can also adapt to dark mode.
+- Line 3 is the iOS home screen icon. A single 180x180 PNG is enough. iOS rounds the corners itself, so supply a square image filled edge to edge.
+- Line 4 links the web app manifest, used when someone adds your site to an Android home screen or installs it as a PWA.
+
+Use root-relative paths (starting with `/`) so the links work from pages at any depth.
+
+## A web manifest example
+
+`site.webmanifest` is a JSON file. It tells Android and other platforms what name and icons to use when your site is added to the home screen.
+
+```json
+{
+  "name": "My Site",
+  "short_name": "MySite",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "display": "standalone"
+}
+```
+
+An icon marked with `purpose: "maskable"` is cropped by the device into a circle, squircle or other shape. Keep it as its own entry rather than reusing a regular icon.
+
+## Maskable icons and the safe zone
+
+Because different devices crop maskable icons differently, keep everything important inside a centered circle whose diameter is 80% of the image. On a 512px image, that is a circle of about 205px radius around the center. Anything outside it may be clipped.
+
+Fill the whole canvas with your background color, including the margins. If you leave it transparent, some devices will show black or white behind the icon.
+
+<Ad />
+
+## Where to put the files: the site root
+
+Browsers automatically request `/favicon.ico` from the root of your site even if your HTML does not mention it. So favicon.ico should be reachable at `https://example.com/favicon.ico`, which means placing it at the top level of your public directory.
+
+Putting the other files in the root as well keeps paths simple. In most frameworks, anything in the static folder (often `public`) is served from the root.
+
+If your site lives under a sub-path, remember that the automatic `/favicon.ico` lookup applies to the whole domain. To set an icon for just that sub-path, point to it explicitly in the `head`.
+
+## Dark mode with an SVG favicon
+
+An SVG can contain CSS, so it can respond to `prefers-color-scheme`. That fixes the common problem of a dark logo disappearing against a dark browser tab.
+
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .mark { fill: #1a1a1a; }
+    @media (prefers-color-scheme: dark) {
+      .mark { fill: #f5f5f5; }
+    }
+  </style>
+  <circle class="mark" cx="16" cy="16" r="12" />
+</svg>
+```
+
+Two cautions. First, how browsers apply `prefers-color-scheme` inside a favicon varies, so test in the browsers you care about. Second, ICO and PNG icons have fixed colors, so this only works for the SVG. Choosing colors that read well on both light and dark backgrounds is a good safety net.
+
+## When the favicon will not update
+
+Favicons are cached aggressively. If you replaced yours and still see the old one, work through this list:
+
+1. Open the favicon URL directly and confirm the server is returning the new image.
+2. Clear the browser cache or hard-reload (Ctrl+Shift+R, or Cmd+Shift+R on a Mac).
+3. Try a private window.
+4. Change the file name, or add a query string such as `href="/favicon.ico?v=2"`, so the URL is new.
+5. If you use a CDN or reverse proxy, purge its cache too.
+
+Renaming the file is the surest way around caching. Bookmark icons are stored separately and may take a while to refresh.
+
+## Favicons in Google Search results
+
+Google shows your favicon next to your site in search results. The main requirements are below; see the [Google Search Central documentation](https://developers.google.com/search/docs/appearance/favicon-in-search) for the full details.
+
+- Put a `<link rel="icon">` tag on your home page (the root of the domain or subdomain).
+- Use a square image. A multiple of 48px (48, 96, 144 and so on) is recommended, with a minimum of 8x8px. SVG is supported too.
+- Make sure both the favicon file and the home page are crawlable, with no robots.txt block.
+- Use an icon that represents your site and is appropriate.
+
+Google decides what to display, and changes can take from several days to a few weeks to show up. Requesting a re-crawl of your home page in Search Console may speed things up.
+
+## Common mistakes and how to check
+
+- The source image is not square, so the icon is stretched or padded. Crop to a square before exporting.
+- An ICO was made by renaming a PNG. Some browsers tolerate it, but a proper multi-size ICO is more reliable.
+- A relative `href` returns 404 on nested pages. Use root-relative paths starting with `/`.
+- The icon works locally but 404s in production. Check that the files are included in your deployment.
+- A transparent apple-touch-icon appears with a black background on iOS. Use an opaque, fully filled image.
+- The icon turns to mush at 16px. Avoid thin lines and small text; keep the shape simple.
+
+To verify, open each file URL directly and confirm it loads (status 200). Then check your browser's developer tools: the Network tab for 404s, and the Manifest section of the Application panel to see whether your icons load. Lighthouse also flags manifest problems.
+
+## Generate the whole set at once
+
+Exporting all these files by hand is tedious. This site's [favicon and icon generator](/icons/) takes one source image and produces favicon.ico (with 16, 32 and 48px), favicon.svg (when the source is an SVG), favicon-16x16.png, favicon-32x32.png, apple-touch-icon.png (180px), icon-192.png, icon-512.png, icon-maskable-512.png, site.webmanifest and og-image.png (1200x630), all bundled in a ZIP. It also lets you copy the matching `head` snippet. Images are processed in your browser and are never uploaded.
+
+For the best results, start from a square source of at least 512px, preferably an SVG or a large PNG. For background on picking formats, see [Choosing an Image Format](/guide/image-formats/).
+
+## Summary
+
+- The core set: favicon.ico, favicon.svg, apple-touch-icon.png, icon-192.png, icon-512.png, a maskable icon and site.webmanifest.
+- Place them in the site root and reference them with `link` tags in the `head`.
+- SVG favicons can adapt to dark mode through `prefers-color-scheme`.
+- If an update does not show, suspect caching and change the URL to test.
+- For Google Search, put `link rel="icon"` on your home page and use a square image in multiples of 48px.
+
+If you are starting from scratch, the fastest route is to generate the set with the [icon generator](/icons/), drop it in your site root and verify.
