@@ -20,6 +20,14 @@ async function submitShareForm(page: Page) {
   await page.locator("#share-form button").dispatchEvent("click");
 }
 
+/**
+ * 他サイトに見立てるホスト名。Chromium の名前解決で localhost に向ける。
+ * 127.0.0.1 を直接使うと、preview が IPv6（::1）だけで待ち受ける環境（GitHub のランナー等）で接続できない。
+ * localhost と同じ先に繋がりつつ、サイトとしては別（Sec-Fetch-Site: cross-site）になる
+ */
+const FOREIGN_HOST = "foreign.test";
+test.use({ launchOptions: { args: [`--host-resolver-rules=MAP ${FOREIGN_HOST} localhost`] } });
+
 /** 1×1 の PNG */
 const PNG_1PX = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
@@ -117,10 +125,10 @@ test("他サイトのフォームから share-target に POST されたファイ
   await page.goto("/image-adjust/");
   await waitForServiceWorker(page);
 
-  // localhost と 127.0.0.1 は別サイト。127.0.0.1 のページから localhost の share-target に送る
+  // localhost と FOREIGN_HOST は別サイト。FOREIGN_HOST のページから localhost の share-target に送る
   const target = new URL("/image-adjust/share-target", baseURL).href;
   const foreign = new URL("/image-adjust/api/health", baseURL);
-  foreign.hostname = "127.0.0.1";
+  foreign.hostname = FOREIGN_HOST;
   await page.goto(foreign.href);
   await page.evaluate((action) => {
     const form = document.createElement("form");
@@ -143,7 +151,7 @@ test("他サイトのフォームから share-target に POST されたファイ
   await submitShareForm(page);
 
   // 変換画面は開くが（?share=1 は処理後に消える）、ファイルは渡されない
-  // 送信前は 127.0.0.1 にいるので、localhost の変換画面で ?share=1 が消えた時点が処理の完了
+  // 送信前は FOREIGN_HOST にいるので、localhost の変換画面で ?share=1 が消えた時点が処理の完了
   await page.waitForURL(new URL("/image-adjust/", baseURL).href);
   await expect(page.getByTestId("results-empty")).toBeVisible();
   await expect(page.getByTestId("pwa-received")).toHaveCount(0);
