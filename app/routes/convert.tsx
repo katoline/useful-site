@@ -1,3 +1,4 @@
+import { useLocation } from "react-router";
 import { NotFound } from "~/components/layout/NotFound";
 import { PageHeader } from "~/components/layout/PageHeader";
 import { faqJsonLd, webApplicationJsonLd } from "~/components/seo/json-ld";
@@ -5,18 +6,32 @@ import { buildPageMeta, metaContext } from "~/components/seo/meta";
 import { ImageTool } from "~/components/tools/ImageTool";
 import { faqFromDict } from "~/components/tools/ToolFaq";
 import { useI18n } from "~/i18n";
-import { type ConvertPair, FORMAT_LABEL, isConvertPair, parseConvertPair } from "~/lib/site-routes";
-import type { Route } from "./+types/convert.$pair";
+import {
+  type ConvertPair,
+  FORMAT_LABEL,
+  isConvertPair,
+  pageParam,
+  parseConvertPair,
+} from "~/lib/site-routes";
+import type { Route } from "./+types/convert";
 
-function labels(pair: string | undefined) {
-  if (!isConvertPair(pair)) return null;
+/**
+ * 変換方向（app/routes.ts が CONVERT_PAIRS の値ごとに登録する静的ルート）。パスから取り出す
+ */
+function pairFrom(pathname: string): ConvertPair | undefined {
+  const pair = pageParam(pathname, "convert");
+  return isConvertPair(pair) ? pair : undefined;
+}
+
+function labels(pair: ConvertPair) {
   const { from, to } = parseConvertPair(pair);
   return { from: FORMAT_LABEL[from], to: FORMAT_LABEL[to] };
 }
 
-export function meta({ location, params }: Route.MetaArgs) {
+export function meta({ location }: Route.MetaArgs) {
   const { lang, page, t } = metaContext(location.pathname);
-  const l = labels(params.pair);
+  const pair = pairFrom(location.pathname);
+  const l = pair && labels(pair);
   if (!l) return [{ title: t("errors.notFoundTitle") }, { name: "robots", content: "noindex" }];
   const title = t("pages.convert.title", l);
   const description = t("pages.convert.description", l);
@@ -28,25 +43,26 @@ export function meta({ location, params }: Route.MetaArgs) {
     breadcrumbs: [{ name: title, page }],
     jsonLd: [
       webApplicationJsonLd({ lang, page, name: title, description }),
-      faqJsonLd(faqFromDict(t, `convert.faq.${params.pair as ConvertPair}`)),
+      faqJsonLd(faqFromDict(t, `convert.faq.${pair}`)),
     ],
   });
 }
 
 /** 変換方向ごとの入口ページ（§3.7）。出力形式の初期値を変えたツール＋専用の説明・FAQ */
-export default function ConvertPairPage({ params }: Route.ComponentProps) {
+export default function ConvertPairPage() {
   const { t } = useI18n();
-  const l = labels(params.pair);
-  if (!l || !isConvertPair(params.pair)) return <NotFound />;
-  const { to } = parseConvertPair(params.pair);
+  const pair = pairFrom(useLocation().pathname);
+  if (!pair) return <NotFound />;
+  const l = labels(pair);
+  const { to } = parseConvertPair(pair);
   return (
     <>
       <PageHeader title={t("pages.convert.title", l)} lead={t("pages.convert.lead", l)} />
       <ImageTool
-        settingsKey={`tool:convert:${params.pair}`}
+        settingsKey={`tool:convert:${pair}`}
         initialSettings={{ output: to === "gif" || to === "svg" ? "same" : to }}
-        intro={t(`convert.intro.${params.pair}`)}
-        faq={faqFromDict(t, `convert.faq.${params.pair}`)}
+        intro={t(`convert.intro.${pair}`)}
+        faq={faqFromDict(t, `convert.faq.${pair}`)}
       />
     </>
   );

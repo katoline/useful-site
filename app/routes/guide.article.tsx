@@ -1,10 +1,11 @@
+import { useLocation } from "react-router";
 import { ContentPage, contentPageMeta } from "~/components/content/ContentPage";
 import { type ContentModule, pickContent } from "~/components/content/mdx";
 import { NotFound } from "~/components/layout/NotFound";
 import { metaContext } from "~/components/seo/meta";
-import { useLang } from "~/i18n";
-import { isGuideSlug } from "~/lib/site-routes";
-import type { Route } from "./+types/guide.$slug";
+import { type Lang, useLang } from "~/i18n";
+import { isGuideSlug, pageParam } from "~/lib/site-routes";
+import type { Route } from "./+types/guide.article";
 
 /**
  * 解説記事（content/<lang>/<slug>.mdx）。プリレンダリングとハイドレーションで同じ本文を出すため eager で読む
@@ -15,9 +16,15 @@ const GUIDES = import.meta.glob<ContentModule>(
   { eager: true },
 );
 
-export function meta({ location, params }: Route.MetaArgs) {
+/** 記事（app/routes.ts が GUIDE_SLUGS の値ごとに登録する静的ルート）。slug はパスから取り出す */
+function contentFor(lang: Lang, pathname: string) {
+  const slug = pageParam(pathname, "guide");
+  return isGuideSlug(slug) ? pickContent(GUIDES, lang, slug) : undefined;
+}
+
+export function meta({ location }: Route.MetaArgs) {
   const { lang, page, t } = metaContext(location.pathname);
-  const content = isGuideSlug(params.slug) ? pickContent(GUIDES, lang, params.slug) : undefined;
+  const content = contentFor(lang, location.pathname);
   if (!content) {
     return [{ title: t("errors.notFoundTitle") }, { name: "robots", content: "noindex" }];
   }
@@ -34,9 +41,9 @@ export function meta({ location, params }: Route.MetaArgs) {
 }
 
 /** 解説ページ */
-export default function GuideArticle({ params }: Route.ComponentProps) {
+export default function GuideArticle() {
   const lang = useLang();
-  const content = isGuideSlug(params.slug) ? pickContent(GUIDES, lang, params.slug) : undefined;
+  const content = contentFor(lang, useLocation().pathname);
   if (!content) return <NotFound />;
   return <ContentPage content={content} ads />;
 }
