@@ -114,7 +114,6 @@ export const ja = {
       copy: "コピー",
       copied: "コピーしました",
       copyFailed: "コピーできませんでした。選択してコピーしてください。",
-      svgNote: "favicon.svg は元の SVG を最適化したもので、余白・背景・角丸は反映されません。",
       ogNote:
         "og:image は https:// から始まる絶対 URL で書く必要があります。設置先に URL を入れるか、貼った後にドメインを補ってください。",
     },

@@ -113,8 +113,6 @@ export const en = {
       copy: "Copy",
       copied: "Copied",
       copyFailed: "Couldn't copy. Please select the text and copy it.",
-      svgNote:
-        "favicon.svg is your original SVG, optimized. Padding, background and corner radius are not applied to it.",
       ogNote:
         "og:image must be an absolute URL starting with https://. Enter a URL as the location, or add your domain after pasting.",
     },
