@@ -88,9 +88,12 @@ export function useToolSession<T>(
   initial: T | (() => T),
 ): [T, (action: SetStateAction<T>) => void] {
   const store = useToolSessionStore();
-  const initialRef = useRef<{ value: T } | null>(null);
-  if (initialRef.current === null) {
+  // 初期値は key ごとに持つ。同じコンポーネントのまま key だけ変わったら、その時点の initial で作り直す
+  // （前の key の初期値を新しい key に使わない）
+  const initialRef = useRef<{ key: string; value: T } | null>(null);
+  if (initialRef.current === null || initialRef.current.key !== key) {
     initialRef.current = {
+      key,
       value: typeof initial === "function" ? (initial as () => T)() : initial,
     };
   }
