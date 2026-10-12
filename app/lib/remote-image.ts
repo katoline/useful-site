@@ -3,6 +3,7 @@
  * 悪用対策はサーバー側（worker/routes/fetch-image.ts）で行う。ここでは結果の扱いだけをする。
  */
 import { API_BASE_PATH } from "./config";
+import { sanitizeFileName } from "./pipeline/naming";
 
 export type RemoteImageErrorCode =
   | "invalid_url"
@@ -46,19 +47,6 @@ const SERVER_CODES = new Set<RemoteImageErrorCode>([
   "upstream_error",
 ]);
 
-/** ファイル名に使えない文字（Windows の禁止文字・パス区切り） */
-const UNSAFE_FILENAME_CHARS = new Set([...'<>:"/\\|?*']);
-
-/** 禁止文字と制御文字を _ にする */
-function sanitizeFileName(name: string): string {
-  let out = "";
-  for (const ch of name) {
-    const code = ch.codePointAt(0) ?? 0;
-    out += code < 0x20 || code === 0x7f || UNSAFE_FILENAME_CHARS.has(ch) ? "_" : ch;
-  }
-  return out;
-}
-
 /**
  * URL のパス末尾からファイル名を作る。無ければ image.<拡張子>。
  * 拡張子が形式と合わなければ形式の拡張子に付け替える（例 photo.php → photo.png）
@@ -77,7 +65,7 @@ export function remoteImageFileName(url: string, contentType: string): string {
   } catch {
     base = "";
   }
-  base = sanitizeFileName(base).trim().replace(/^\.+/, "").slice(0, 120);
+  base = sanitizeFileName(base).slice(0, 120);
   if (!base) return `image.${ext}`;
   const dot = base.lastIndexOf(".");
   const stem = dot > 0 ? base.slice(0, dot) : base;

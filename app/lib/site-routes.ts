@@ -1,9 +1,9 @@
 /**
  * ページの一覧（prerender・sitemap・言語切り替えの元）。
- * 動的セグメント（:pair / :format / :slug）の値はここで列挙する。
+ * 変換・圧縮・解説の値（pair / format / slug）はここで列挙し、app/routes.ts が値ごとに静的ルートを作る。
  * ルートを足すときは app/routes.ts とここの両方を更新する。
  */
-import { LANGS, type Lang, localizedPath } from "../i18n/langs";
+import { LANGS, type Lang, localizedPath, splitLangPath } from "../i18n/langs";
 
 /** 変換方向ごとの入口ページ（/convert/:pair） */
 export const CONVERT_PAIRS = [
@@ -48,6 +48,15 @@ export function isCompressFormat(v: string | undefined): v is CompressFormat {
 }
 export function isGuideSlug(v: string | undefined): v is GuideSlug {
   return !!v && (GUIDE_SLUGS as readonly string[]).includes(v);
+}
+
+/**
+ * ルーターの pathname から「<section>/<値>」の値を取り出す（例 ("/en/convert/png-to-webp/", "convert")
+ * → "png-to-webp"）。形が違えば undefined。値の検証は isConvertPair() 等で行う
+ */
+export function pageParam(pathname: string, section: string): string | undefined {
+  const [head, value, ...rest] = splitLangPath(pathname).page.split("/");
+  return head === section && value && rest.length === 0 ? value : undefined;
 }
 
 /** 言語に依存しないページパス（BASE_PATH・言語接頭辞を除く）の一覧 */

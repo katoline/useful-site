@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { strFromU8, unzipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { encodeIco, ICO_ENTRY_SIZE, ICO_HEADER_SIZE, readPngSize } from "~/lib/icons/ico";
@@ -17,7 +18,14 @@ import {
 } from "~/lib/icons/settings";
 import { buildHeadSnippet, escapeHtmlAttr, isAbsoluteUrl } from "~/lib/icons/snippet";
 import { OG_SPEC } from "~/lib/icons/specs";
-import { isSvgFile, svgIntrinsicSize, withIntrinsicSize } from "~/lib/icons/svg";
+import {
+  FAVICON_SVG_ID_PREFIX,
+  isSvgFile,
+  svgIntrinsicSize,
+  utf8ToBase64,
+  withIntrinsicSize,
+  wrapFaviconSvg,
+} from "~/lib/icons/svg";
 import { buildIconZip } from "~/lib/icons/zip";
 
 /** IHDR までを持つ最小限の PNG 風バイト列（ICO のテストでは中身は読まない） */
@@ -256,6 +264,137 @@ describe("SVG", () => {
     });
     expect(svgIntrinsicSize("<svg></svg>")).toBeNull();
     expect(svgIntrinsicSize("not svg")).toBeNull();
+  });
+});
+
+describe("wrapFaviconSvg", () => {
+  const src =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100"><circle id="a" r="5"/></svg>';
+  const size = { width: 200, height: 100 };
+  const parse = (text: string) => new DOMParser().parseFromString(text, "image/svg+xml");
+  const noError = (doc: Document) => expect(doc.getElementsByTagName("parsererror").length).toBe(0);
+  const imageOf = (doc: Document) => doc.getElementsByTagName("image")[0] as Element;
+  const decode = (image: Element): string => {
+    const href = image.getAttribute("href") ?? "";
+    expect(href.startsWith("data:image/svg+xml;base64,")).toBe(true);
+    const bin = atob(href.slice(href.indexOf(",") + 1));
+    return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+  };
+
+  it("余白なし・背景なし・角丸なし：背景 rect も clipPath も無く、元の SVG を全面に置く", () => {
+    const out = wrapFaviconSvg(src, { padding: 0, background: null, radius: 0 }, size);
+    const doc = parse(out);
+    noError(doc);
+    expect(doc.documentElement.getAttribute("viewBox")).toBe("0 0 512 512");
+    expect(doc.getElementsByTagName("clipPath").length).toBe(0);
+    expect(doc.getElementsByTagName("rect").length).toBe(0);
+    const image = imageOf(doc);
+    // 200x100 を 512 角に収める：幅 512・高さ 256・縦は中央
+    expect(image.getAttribute("x")).toBe("0");
+    expect(image.getAttribute("y")).toBe("128");
+    expect(image.getAttribute("width")).toBe("512");
+    expect(image.getAttribute("height")).toBe("256");
+    expect(image.getAttribute("preserveAspectRatio")).toBe("xMidYMid meet");
+    // 元の SVG は data URL の中（px の width / height が付く）
+    expect(decode(image)).toContain('viewBox="0 0 200 100"');
+    expect(decode(image)).toContain('width="200"');
+  });
+
+  it("余白：余白の分だけ縮めて中央に置く", () => {
+    const doc = parse(wrapFaviconSvg(src, { padding: 0.25, background: null, radius: 0 }, size));
+    noError(doc);
+    const image = imageOf(doc);
+    expect(image.getAttribute("width")).toBe("256");
+    expect(image.getAttribute("height")).toBe("128");
+    expect(image.getAttribute("x")).toBe("128");
+    expect(image.getAttribute("y")).toBe("192");
+  });
+
+  it("背景色：rect を置く（透過なら置かない）", () => {
+    const doc = parse(wrapFaviconSvg(src, { padding: 0, background: "#336699", radius: 0 }, size));
+    noError(doc);
+    const rect = doc.getElementsByTagName("rect")[0] as Element;
+    expect(rect.getAttribute("fill")).toBe("#336699");
+    expect(rect.getAttribute("width")).toBe("512");
+    expect(rect.hasAttribute("rx")).toBe(false);
+  });
+
+  it("角丸：背景 rect の rx / ry と clipPath の両方に反映し、id に接頭辞を付ける", () => {
+    const doc = parse(
+      wrapFaviconSvg(src, { padding: 0, background: "#ffffff", radius: 0.25 }, size),
+    );
+    noError(doc);
+    const rects = Array.from(doc.getElementsByTagName("rect"));
+    expect(rects).toHaveLength(2);
+    for (const r of rects) {
+      expect(r.getAttribute("rx")).toBe("128");
+      expect(r.getAttribute("ry")).toBe("128");
+    }
+    const clip = doc.getElementsByTagName("clipPath")[0] as Element;
+    expect(clip.getAttribute("id")?.startsWith(FAVICON_SVG_ID_PREFIX)).toBe(true);
+    const g = doc.getElementsByTagName("g")[0] as Element;
+    expect(g.getAttribute("clip-path")).toBe(`url(#${clip.getAttribute("id")})`);
+  });
+
+  it("角丸だけ（背景なし）でも clipPath で切り抜く", () => {
+    const doc = parse(wrapFaviconSvg(src, { padding: 0, background: null, radius: 0.5 }, size));
+    noError(doc);
+    expect(doc.getElementsByTagName("clipPath").length).toBe(1);
+    expect(doc.getElementsByTagName("rect")).toHaveLength(1);
+  });
+
+  it("viewBox が無く width が 100% の SVG：配置は渡した size から計算する", () => {
+    const doc = parse(
+      wrapFaviconSvg(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="100%"><circle r="5"/></svg>',
+        { padding: 0.1, background: null, radius: 0 },
+        { width: 512, height: 512 },
+      ),
+    );
+    noError(doc);
+    const image = imageOf(doc);
+    expect(image.getAttribute("x")).toBe("51.2");
+    expect(image.getAttribute("y")).toBe("51.2");
+    expect(image.getAttribute("width")).toBe("409.6");
+    expect(image.getAttribute("height")).toBe("409.6");
+    // 埋め込む側には px の大きさが付く
+    expect(decode(image)).toContain('width="512" height="512"');
+  });
+
+  it("元の SVG の <style> は外側の文書に出ない（data URL の中だけ）", () => {
+    const style = "<style>rect{fill:#000}svg{width:100%}</style>";
+    const original = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">${style}<rect width="5" height="5"/></svg>`;
+    const out = wrapFaviconSvg(
+      original,
+      { padding: 0, background: "#ffffff", radius: 0.2 },
+      {
+        width: 10,
+        height: 10,
+      },
+    );
+    const doc = parse(out);
+    noError(doc);
+    expect(doc.getElementsByTagName("style").length).toBe(0);
+    expect(out).not.toContain("<style");
+    expect(decode(imageOf(doc))).toContain(style);
+  });
+
+  it("日本語・絵文字を含む SVG を base64 から戻すと元と一致する", () => {
+    const original =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" width="10" height="10"><title>日本語😀</title><text>あ</text></svg>';
+    expect(utf8ToBase64("日本語😀")).toBe("5pel5pys6Kqe8J+YgA==");
+    const doc = parse(
+      wrapFaviconSvg(
+        original,
+        { padding: 0, background: null, radius: 0 },
+        { width: 10, height: 10 },
+      ),
+    );
+    expect(decode(imageOf(doc))).toBe(original);
+  });
+
+  it("<svg> が無ければ元の文字列を返す", () => {
+    expect(wrapFaviconSvg("x", { padding: 0, background: null, radius: 0 }, size)).toBe("x");
   });
 });
 

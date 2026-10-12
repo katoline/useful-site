@@ -7,7 +7,7 @@ import { serializeWebManifest } from "./manifest";
 import { type DrawableSource, prepareSource, releasePreparedSource, renderIconPng } from "./render";
 import { type IconSettings, sanitizeIconSettings } from "./settings";
 import { FILE_NAMES, ICO_SIZES, OG_SPEC, PNG_SPECS, type PngSpec } from "./specs";
-import { optimizeFaviconSvg } from "./svg";
+import { optimizeFaviconSvg, wrapFaviconSvg } from "./svg";
 import type { IconFile } from "./zip";
 
 export interface GenerateInput extends DrawableSource {
@@ -50,7 +50,10 @@ async function generateFrom(source: GenerateInput, settings: IconSettings): Prom
   ];
 
   if (source.isSvg && source.svgText) {
-    const svg = await optimizeFaviconSvg(source.svgText);
+    const svg = wrapFaviconSvg(await optimizeFaviconSvg(source.svgText), settings, {
+      width: source.width,
+      height: source.height,
+    });
     files.push({ name: FILE_NAMES.svg, data: textEncoder.encode(svg), type: "image/svg+xml" });
   }
 

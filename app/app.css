@@ -52,6 +52,9 @@
   html {
     background-color: var(--background);
     color: var(--foreground);
+    /* 固定ヘッダー（SiteHeader の h-14 ＋下線 1px）の下に、スキップリンクやアンカーの移動先が隠れないようにする。
+       記事の見出しの余白は prose.css の scroll-margin-top（これに足される） */
+    scroll-padding-top: calc(var(--spacing) * 14 + 1px);
   }
   body {
     @apply bg-background font-sans text-foreground antialiased;
@@ -61,6 +64,35 @@
     font-family:
       "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, system-ui, sans-serif;
   }
+}
+
+/*
+ * スマホのツール画面にある下固定の操作バー（ImageTool・IconTool の data-mobile-action-bar）の高さ。
+ * p-3 ＋ Button の h-11 ＋上線 1px（下の余白の safe-area 分は bottom-above-action-bar 側で足す）
+ */
+@media (width < 48rem) {
+  html:has([data-mobile-action-bar]) {
+    --mobile-action-bar-height: calc(var(--spacing) * 17 + 1px);
+  }
+}
+
+/*
+ * 画面下の通知（BottomNotices）に何か出ている間は、ページの末尾（フッター）が隠れないよう body の下に余白を足す。
+ * 高さは BottomNotices が実際の高さを --bottom-notices-height に入れる（折り返しても足りる）。
+ * 末尾に足すだけなので、表示中の要素は動かない（CLS にならない）
+ */
+html:has([data-bottom-notices]:not(:empty)) body {
+  padding-bottom: calc(
+    var(--mobile-action-bar-height, 0px) +
+    var(--bottom-notices-height, 0px) +
+    1.5rem +
+    env(safe-area-inset-bottom)
+  );
+}
+
+/* 画面下の通知のコンテナ（BottomNotices）の位置。操作バーがあればその上に出す */
+@utility bottom-above-action-bar {
+  bottom: calc(var(--mobile-action-bar-height, 0px) + 0.75rem + env(safe-area-inset-bottom));
 }
 
 /* 透過画像の背景（市松模様）。テーマで濃淡が変わる */

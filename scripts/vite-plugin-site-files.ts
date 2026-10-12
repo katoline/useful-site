@@ -8,11 +8,12 @@
  */
 import { readdirSync } from "node:fs";
 import path from "node:path";
-import type { Plugin } from "vite";
+import type { Logger, Plugin } from "vite";
 import { LANGS } from "../app/i18n/langs.ts";
-import { BASE_PATH, DEFAULT_SITE_ORIGIN } from "../app/lib/config.ts";
+import { BASE_PATH, DEFAULT_SITE_ORIGIN, normalizeSiteOrigin } from "../app/lib/config.ts";
 import { buildSitemap } from "../app/lib/sitemap.ts";
 import { buildWebManifestFiles } from "../app/lib/web-manifest.ts";
+import { checkDeployOrigin } from "./lib/site-origin.ts";
 
 const CONTENT_DIR = path.resolve(import.meta.dirname, "../content");
 
@@ -41,6 +42,8 @@ export function findMissingTranslations(contentDir = CONTENT_DIR): string[] {
 
 export function siteFilesPlugin(): Plugin {
   let origin = DEFAULT_SITE_ORIGIN;
+  let envOrigin: string | undefined;
+  let logger: Logger | undefined;
   const files = (): Record<string, string> => ({
     ...buildWebManifestFiles(),
     "sitemap.xml": buildSitemap(origin),
@@ -54,10 +57,32 @@ export function siteFilesPlugin(): Plugin {
     enforce: "pre",
     configResolved(config) {
       const fromEnv = config.env.VITE_SITE_ORIGIN as string | undefined;
-      if (fromEnv) origin = fromEnv.replace(/\/+$/, "");
+      // app/lib/config.ts の SITE_ORIGIN と同じく正規化する（sitemap と canonical を揃える）
+      origin = normalizeSiteOrigin(fromEnv) ?? DEFAULT_SITE_ORIGIN;
+      logger = config.logger;
+      envOrigin = fromEnv;
     },
     buildStart() {
       if (this.environment?.name !== "client") return;
+      // 本番ビルドで公開に使えないオリジン（example 等の仮の値・https 以外・パス付き）なら目立たせる。
+      // 未設定なら既定値（暫定ドメイン）を確かめるので、既定値のままなら出ない。検証用のビルドは通すので
+      // 止めはしない（公開は `pnpm run deploy` が scripts/check-deploy-env.ts で同じ判定をして止める）。
+      // configResolved では出さない（react-router typegen でも呼ばれるため）
+      const error =
+        this.environment.config.command === "build" ? checkDeployOrigin(envOrigin) : null;
+      if (error) {
+        logger?.warn(
+          [
+            "",
+            `\x1b[33m${"=".repeat(72)}`,
+            ` 警告：${error}`,
+            ` canonical・hreflang・og:url・sitemap.xml が ${origin} を指します。`,
+            " 公開用のビルドでは VITE_SITE_ORIGIN を正しく設定してください（.env.example を参照）",
+            `${"=".repeat(72)}\x1b[0m`,
+            "",
+          ].join("\n"),
+        );
+      }
       for (const missing of findMissingTranslations()) {
         this.warn(`content/${missing} がありません（片方の言語にしか無い記事）`);
       }

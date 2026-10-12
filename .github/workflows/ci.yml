@@ -1,0 +1,78 @@
+# main への PR と main への push で、AGENTS.md の検証コマンドをすべて流す。
+# ローカルと同じく Nix の devShell（Node.js・pnpm・Playwright のブラウザ）で実行する。
+# main のルールセットは、このワークフローの job「verify」の成功をマージの条件にしている。
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# 既定では何も書き込めないようにする（公開リポジトリのため。必要な job だけで足す）
+permissions:
+  contents: read
+
+# PR は新しい push で古い実行を打ち切る。main への push は commit ごとに並列で流す
+# （同じ group だと、続けてマージしたときに待機中の実行が取り消されて確認が欠ける）
+concurrency:
+  group: ci-${{ github.event_name == 'push' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      # action はタグではなくコミット SHA で固定する（タグの付け替えによる差し替えを防ぐ）
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: devShell を用意する
+        run: nix develop -c node --version
+
+      - name: pnpm のストアの場所を調べる
+        id: pnpm-store
+        run: echo "path=$(nix develop -c pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+
+      - name: 依存を入れる
+        run: nix develop -c pnpm install --frozen-lockfile
+
+      - name: lint
+        run: nix develop -c pnpm lint
+
+      - name: typecheck
+        run: nix develop -c pnpm typecheck
+
+      - name: test
+        run: nix develop -c pnpm test
+
+      - name: build
+        run: nix develop -c pnpm build
+
+      - name: test:e2e
+        run: nix develop -c pnpm test:e2e
+        env:
+          # 直前の build の成果物をそのまま使う
+          E2E_SKIP_BUILD: "1"
+
+      - name: E2E の失敗時の記録を残す
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-test-results
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore

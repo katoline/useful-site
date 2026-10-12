@@ -7,6 +7,7 @@
 import { RefreshCw, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { BottomNotice } from "~/components/layout/BottomNotices";
 import { Button } from "~/components/ui/button";
 import { useI18n } from "~/i18n";
 import { SHARE_QUERY_PARAM } from "~/lib/pwa";
@@ -64,15 +65,25 @@ export function PwaRoot() {
   if (!showUpdate && received === 0) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+    // 画面下の通知のコンテナ（BottomNotices）に、言語の案内と縦に積んで出す（重ならない）
+    <BottomNotice>
       {received > 0 && (
-        <p
+        <div
           role="status"
           data-testid="pwa-received"
-          className="pointer-events-auto rounded-md border border-border bg-card px-4 py-3 text-sm text-card-foreground shadow-lg"
+          className="pointer-events-auto flex items-center gap-2 rounded-md border border-border bg-card py-1 pr-1 pl-4 text-sm text-card-foreground shadow-lg"
         >
-          {t("pwa.receivedFiles", { count: received })}
-        </p>
+          <span className="flex-1">{t("pwa.receivedFiles", { count: received })}</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t("pwa.dismiss")}
+            onClick={() => setReceived(0)}
+            data-testid="pwa-received-dismiss"
+          >
+            <X aria-hidden />
+          </Button>
+        </div>
       )}
       {showUpdate && (
         <div
@@ -80,7 +91,9 @@ export function PwaRoot() {
           data-testid="pwa-update"
           className="pointer-events-auto flex items-center gap-2 rounded-md border border-border bg-card py-1 pr-1 pl-4 text-sm text-card-foreground shadow-lg"
         >
-          <span>{t(updatedElsewhere ? "pwa.updatedElsewhere" : "pwa.updateAvailable")}</span>
+          <span className="flex-1">
+            {t(updatedElsewhere ? "pwa.updatedElsewhere" : "pwa.updateAvailable")}
+          </span>
           <Button size="sm" className="h-11" onClick={applyUpdate}>
             <RefreshCw aria-hidden />
             {t("pwa.reload")}
@@ -90,6 +103,6 @@ export function PwaRoot() {
           </Button>
         </div>
       )}
-    </div>
+    </BottomNotice>
   );
 }

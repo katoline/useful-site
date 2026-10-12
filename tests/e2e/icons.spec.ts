@@ -180,8 +180,11 @@ test("SVG を入れると favicon.svg と SVG 用の link が付く", async ({ p
   const files = await downloadZip(page);
   expect(Object.keys(files)).toContain("favicon.svg");
   const svg = strFromU8(files["favicon.svg"] as Uint8Array);
-  expect(svg).toContain("<circle");
-  expect(svg).not.toContain("comment");
+  // 元の SVG（最適化済み）は <image> の data URL の中に入っている
+  const dataUrl = /href="data:image\/svg\+xml;base64,([^"]+)"/.exec(svg)?.[1] ?? "";
+  const embedded = Buffer.from(dataUrl, "base64").toString("utf8");
+  expect(embedded).toContain("<circle");
+  expect(embedded).not.toContain("comment");
 });
 
 test("言語を切り替えても元画像と設定が残る", async ({ page }) => {
