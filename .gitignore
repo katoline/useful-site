@@ -1,0 +1,10 @@
+docs/
+.direnv/
+node_modules/
+build/
+dist/
+.wrangler/
+.react-router/
+test-results/
+playwright-report/
+.dev.vars
