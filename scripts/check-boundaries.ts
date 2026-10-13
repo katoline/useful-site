@@ -45,6 +45,26 @@ const domLib = ts.createSourceFile(
   readFileSync(path.join(path.dirname(ts.getDefaultLibFilePath({})), "lib.dom.d.ts"), "utf8"),
   ts.ScriptTarget.Latest,
 );
+/** DOM に依存しない、Node・Worker でも使える標準 API。 */
+const STANDARD_APIS = new Set([
+  "TextDecoder",
+  "TextEncoder",
+  "URL",
+  "URLSearchParams",
+  "setTimeout",
+  "clearTimeout",
+  "setInterval",
+  "clearInterval",
+  "queueMicrotask",
+  "structuredClone",
+  "atob",
+  "btoa",
+  "console",
+  "AbortController",
+  "AbortSignal",
+  "Blob",
+  "crypto",
+]);
 const domTypes = new Set<string>();
 /** DOM の値（window・document・sessionStorage・print 等、lib.dom.d.ts の declare var / function） */
 const domGlobals = new Set<string>();
@@ -54,13 +74,14 @@ for (const node of domLib.statements) {
     ts.isTypeAliasDeclaration(node) ||
     ts.isClassDeclaration(node)
   ) {
-    if (node.name) domTypes.add(node.name.text);
+    if (node.name && !STANDARD_APIS.has(node.name.text)) domTypes.add(node.name.text);
   } else if (ts.isVariableStatement(node)) {
     for (const declaration of node.declarationList.declarations) {
-      if (ts.isIdentifier(declaration.name)) domGlobals.add(declaration.name.text);
+      if (ts.isIdentifier(declaration.name) && !STANDARD_APIS.has(declaration.name.text))
+        domGlobals.add(declaration.name.text);
     }
   } else if (ts.isFunctionDeclaration(node) && node.name) {
-    domGlobals.add(node.name.text);
+    if (!STANDARD_APIS.has(node.name.text)) domGlobals.add(node.name.text);
   }
 }
 
@@ -94,6 +115,14 @@ function isValueReference(node: ts.Identifier): boolean {
   return true;
 }
 
+/** `import type` / `export type` / `import("...")` 型の位置など、実行時に残らない import か */
+function isTypeOnly(node: ts.Node): boolean {
+  if (ts.isImportTypeNode(node)) return true;
+  if (ts.isImportDeclaration(node)) return node.importClause?.isTypeOnly ?? false;
+  if (ts.isExportDeclaration(node)) return node.isTypeOnly;
+  return false;
+}
+
 export function analyzeBoundaries(
   fileName: string,
   source: string,
@@ -105,6 +134,9 @@ export function analyzeBoundaries(
   const owner = appPart(file);
   const feature = owner ? featurePart(owner.rest) : undefined;
   const core = feature?.rest.startsWith("core/") ?? false;
+  const inShared = owner?.rest.startsWith("shared/") ?? false;
+  const inDomain = owner?.rest.startsWith("domain/") ?? false;
+  const pure = core || inDomain;
   const declaredNames = new Set<string>();
   function collectNames(node: ts.Node) {
     if (
@@ -133,7 +165,7 @@ export function analyzeBoundaries(
       message,
     });
   }
-  function checkImport(node: ts.Node, spec: string, glob = false) {
+  function checkImport(node: ts.Node, spec: string, glob = false, typeOnly = false) {
     const target = modulePath(file, spec, root);
     const dependency = target ? appPart(target) : undefined;
     if (glob && dependency && !owner) {
@@ -172,6 +204,20 @@ export function analyzeBoundaries(
     const page = /^pages\/([^/]+)\//.exec(owner.rest)?.[1];
     const targetPage = dependency ? /^pages\/([^/]+)\//.exec(dependency.rest)?.[1] : undefined;
     if (page && targetPage && page !== targetPage) report(node, `別のページへの依存: ${spec}`);
+    if (
+      inShared &&
+      dependency &&
+      dependency.id === owner.id &&
+      /^(?:features|pages)\//.test(dependency.rest)
+    ) {
+      report(node, `shared は features・pages に依存できません: ${spec}`);
+    }
+    if (inDomain) {
+      const sameDomain =
+        !!dependency && dependency.id === owner.id && dependency.rest.startsWith("domain/");
+      if (!sameDomain && !typeOnly)
+        report(node, `domain は自分の domain と型だけの import 以外に依存できません: ${spec}`);
+    }
     if (core) {
       const sameCore =
         dependency?.id === owner.id &&
@@ -183,8 +229,9 @@ export function analyzeBoundaries(
     }
   }
   function checkLiteral(node: ts.Node, value: ts.Node | undefined, glob = false) {
-    if (value && ts.isStringLiteralLike(value)) checkImport(node, value.text, glob);
-    else if (value && ts.isArrayLiteralExpression(value)) {
+    if (value && ts.isStringLiteralLike(value)) {
+      checkImport(node, value.text, glob, isTypeOnly(node));
+    } else if (value && ts.isArrayLiteralExpression(value)) {
       for (const element of value.elements) checkLiteral(node, element, glob);
     } else if (glob) report(node, "glob の収集パターンは文字列リテラルで指定してください");
   }
@@ -214,18 +261,18 @@ export function analyzeBoundaries(
         checkLiteral(node, node.arguments[0], true);
     }
     if (
-      core &&
+      pure &&
       ts.isIdentifier(node) &&
       domGlobals.has(node.text) &&
       !declaredNames.has(node.text) &&
       isValueReference(node)
     ) {
-      report(node, `core で DOM のグローバルを使えません: ${node.text}`);
+      report(node, `${core ? "core" : "domain"} で DOM のグローバルを使えません: ${node.text}`);
     }
-    if (core && ts.isTypeReferenceNode(node) && ts.isIdentifier(node.typeName)) {
+    if (pure && ts.isTypeReferenceNode(node) && ts.isIdentifier(node.typeName)) {
       const name = node.typeName.text;
       if (domTypes.has(name) && !declaredNames.has(name))
-        report(node, `core で DOM の型を使えません: ${name}`);
+        report(node, `${core ? "core" : "domain"} で DOM の型を使えません: ${name}`);
     }
     ts.forEachChild(node, visit);
   }

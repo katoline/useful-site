@@ -63,6 +63,21 @@ test("オフラインでも再読み込みでトップとガイドが表示さ�
   }
 });
 
+test("プリキャッシュの共有アセットはこのアプリが使うものだけ（他アプリのチャンクを含まない）", async ({
+  request,
+}) => {
+  const sw = await (await request.get("/image-adjust/sw.js")).text();
+  const assets = [...new Set(sw.match(/\/assets\/[\w.-]+/g) ?? [])];
+  // このアプリの Web Worker・WASM・ルートマニフェストは入る
+  expect(assets.some((url) => /\/image\.worker-[\w-]+\.js$/.test(url))).toBe(true);
+  expect(assets.some((url) => url.endsWith(".wasm"))).toBe(true);
+  expect(assets.some((url) => /\/manifest-[\w-]+\.js$/.test(url))).toBe(true);
+  // 他アプリ（Markdown → PDF）だけが使う markdown-it のチャンクは入らない
+  expect(assets.filter((url) => /\/markdown-it/.test(url))).toEqual([]);
+  // 入っているものはすべて配信されている
+  for (const url of assets) expect((await request.get(url)).ok(), url).toBe(true);
+});
+
 test("マニフェストは表示言語に合わせて出し分けられ、id は共通", async ({ page, request }) => {
   await page.goto("/image-adjust/about/");
   const manifest = page.locator('link[rel="manifest"]');

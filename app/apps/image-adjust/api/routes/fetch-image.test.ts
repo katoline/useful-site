@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import worker from "../../../../../worker/index";
-import { API_BASE_PATH, SITE_ORIGIN } from "../../lib/config";
+import { API_BASE_PATH, SITE_ORIGIN } from "../../shared/config";
 import type { Env } from "../env";
 import { createFetchImageRoute, type FetchImageOptions, UPSTREAM_USER_AGENT } from "./fetch-image";
 

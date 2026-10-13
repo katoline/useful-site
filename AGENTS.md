@@ -47,6 +47,7 @@ apps/<A> ──▶ platform ◀── apps/<B>          apps/<A> ✕ apps/<B>
 platform ──▶ apps/*/manifest.ts 等（規約による自動収集だけ。下記）
 アプリの中： pages ─▶ features/*/index.ts ─▶ domain
             features/*/adapters ─▶ features/*/core ─▶ domain
+            pages・features ─▶ shared ─▶ domain
             feature ✕ feature、page ✕ page（組み合わせは pages でだけ行う）
 ```
 
@@ -58,11 +59,13 @@ platform ──▶ apps/*/manifest.ts 等（規約による自動収集だけ。
 
 ### アプリの中の構成（markdown-pdf が手本）
 
-- `domain/`：用語・規則・型・上限値。何にも依存しない
+- `domain/`：用語・規則・型・上限値。何にも依存しない（自分の `domain/` と型だけの import 以外は検査で不可。DOM のグローバル・型も使えない。端末の判定のように navigator 等を読むものは `shared/` や adapters に置く）
 - `features/<機能>/`：`core/`（純粋なロジックと外部との窓口 port の定義。ライブラリ・DOM・ストレージを知らない。DOM なしで単体テストできる）・`adapters/`（ライブラリ・DOM 等を使う実装。port を満たす）・`ui/`（その機能の部品）・`index.ts`（外に公開する窓口）。feature の外からは `index.ts` だけを import できる。`core` が import できるのは自分の `core` と `domain` だけで、DOM のグローバル・型も使えない
-- `pages/<ページ>/`：features を組み合わせて画面を作る（依存の注入もここ）。ページ同士は import しない
-- feature 同士は import しない
-- 小さなアプリ（image-adjust のように従来の `components/`・`lib/` で組んだもの）に feature 構成を強制はしないが、アプリ間・platform との境界は同じく検査される
+- `shared/`：アプリの中で複数の feature・ページ・レイアウトが使うもの（設定値・SEO の補助・ロゴ等）。features・pages には依存しない（検査される）
+- `pages/<ページ>/`：features を組み合わせて画面を作る（依存の注入もここ）。ページ同士は import しない。ルートのファイルは `pages/<ページ>/route.tsx`
+- feature 同士は import しない。ある feature が別の feature の処理を要るときは、共通部分を `domain/`・`shared/` に移すか、ページで組み合わせて注入する（例：Image Adjust の URL 入力は、`image-processing` の `ImageTool` が受け取る `remoteImage` に、ページが `remote-image` の `remoteImageLoader` を渡す）
+- feature の外（ページ・レイアウト・テスト・スクリプト）からは `features/<機能>/index.ts` だけを import する。公開窓口はページ・レイアウト・規約ファイルが使うものに絞る。内部関数のテストは feature 内に置き、相対パスで import する（`vi.mock` は import ではないので内部のパスを指してよい）
+- 規約で集めるファイル（`manifest.ts`・`routes.ts`・`layout*.tsx`・`legal/`・`api/index.ts`・`build/postbuild.ts`・`site-files.ts`・`public/`・`content/`・`scripts/`・`sw/`）はアプリの直下に置く（動かすと収集が壊れる）。Node から直接読まれるもの（`routes.ts`・`site-files.ts`・`sw/sw.ts`・`scripts/` から辿る `domain/`・`shared/` の一部）は `.ts` の拡張子付きの相対 import で書き、`~/` やバレル（index）を経由しない
 
 これらは `scripts/check-boundaries.ts` が `pnpm lint` で検査する（`tests/unit/check-boundaries.test.ts` でテスト）。**例外やパターンを足して通さない**。違反したら依存の向きを直す（共有が要るなら `platform` に上げる）。
 
@@ -79,7 +82,7 @@ platform ──▶ apps/*/manifest.ts 等（規約による自動収集だけ。
 | `layout.tsx` | 実質必須 | `<Shell config={{ appPath, name, menu }}>` で包んで `<Outlet />` を出す |
 | `i18n/` | 必須 | `ja.ts`・`en.ts`・`types.ts`・`index.ts`（アプリの文言。`en` は型で縛る。Vitest が日英のキー一致を検査する） |
 | `pages/` | 必須 | ページ本体 |
-| `public/` | 任意 | `/<path>/` で配信する静的ファイル（アイコン等。`svg`・`png`・`ico`・`webmanifest`・`txt` 以外は `application/octet-stream`） |
+| `public/` | 任意 | `/<path>/` で配信する静的ファイル（アイコン・OGP 画像 `og/{ja,en}.png` 等。`svg`・`png`・`ico`・`webmanifest`・`txt` 以外は `application/octet-stream`） |
 | `legal/{privacy,terms}.{ja,en}.mdx` | 任意 | `/privacy/`・`/terms/` にアプリ名の見出しつきで差し込まれる節。無ければ何も出ない |
 | `api/index.ts` | 任意 | Hono の `api` と `appPath` を export する。Worker が `/<path>/api/*` に載せる（`wrangler.jsonc` の `run_worker_first` は `/*/api/*`） |
 | `build/postbuild.ts` | 任意 | `postbuild(context): Promise<AppBuildResult>` を export する。`scripts/postbuild.ts` が呼ぶ。`_headers` に足すルールを返せる（型は `scripts/lib/postbuild-types.ts`） |
@@ -88,7 +91,7 @@ platform ──▶ apps/*/manifest.ts 等（規約による自動収集だけ。
 | `tests/` | 任意 | 単体テスト（`app/**/*.test.ts(x)` なので `tests/` の中でも `*.test.ts` なら拾われる） |
 | `tests/e2e/*.spec.ts` | 任意 | アプリ固有の E2E（アプリを消せば一緒に消える） |
 
-- `manifest.path` は小文字の英数字とハイフン（`^[a-z0-9]+(?:-[a-z0-9]+)*$`）で、他のアプリと重複しないこと。予約語は使えない：`en`・`assets`・`privacy`・`terms`・`404`・`sitemap.xml`・`robots.txt`・`ads.txt`・`favicon.ico`（`app/platform/registry/validation.ts` の `RESERVED_APP_PATHS`）。`id` も重複不可。ポータルだけ `path` が空
+- `manifest.path` は小文字の英数字とハイフン（`^[a-z0-9]+(?:-[a-z0-9]+)*$`）で、他のアプリと重複しないこと。予約語は使えない：`en`・`assets`・`privacy`・`terms`・`404`・`sitemap.xml`・`robots.txt`・`ads.txt`・`favicon.ico`・`og`（`app/platform/registry/validation.ts` の `RESERVED_APP_PATHS`）。`id` も重複不可。ポータルだけ `path` が空
 - `icon` と `category` は `app/platform/types.ts` の許可リスト（`APP_ICON_KEYS`・`APP_CATEGORIES`）から選ぶ。足りなければ `platform` の側に足す（`registry/icons.tsx` も）。**これは中央の一覧への追加が要る唯一の例外**
 - 動的セグメント（`:pair` 等）は使わず、値ごとに静的ルートを登録する（「ルートの追加」参照）
 - アプリ固有の外部サービスを使うなら、`scripts/lib/csp.ts` の許可リストに足す（CSP は全ページ共通の 1 本）
@@ -104,8 +107,11 @@ platform ──▶ apps/*/manifest.ts 等（規約による自動収集だけ。
 - ヘッダー直下のバナーは `Shell` が出す（アプリ側で足さない）。それ以外の位置は各ページが決める
 - 入力・ダウンロード・保存・設定の近くには置かない（誤クリック防止。ドロップエリア・「PDF を保存」ボタン・設定パネルの近くなど）
 - 高さを先に確保する（CLS 防止）。オフラインでは隠す。印刷では隠す（`print:hidden`）
-- 1 ページの広告枠は 3 つ以内。AdSense のスクリプトは 1 ページで 1 回、表示が落ち着いてから読む
-- `VITE_ADSENSE_CLIENT` が未設定なら、広告枠は dev で破線のプレースホルダー、本番で非表示
+- 1 ページの広告枠は 3 つ以内に配置する。枠数による描画の制限は行わない。開発時だけ `ads/slot-registry.ts` が実際に表示中の枠を数え、3 つを超えたら `console.warn` を出す（CSS で非表示の枠は除き、画面幅の変更時も確認する）
+- AdSense のスクリプト（`adsbygoogle.js?client=…`、`async`・`crossorigin="anonymous"`）は `app/root.tsx` の `<AdSenseScript />`（`ads/AdSenseScript.tsx`・`ads/loader.ts`）が 1 ページで 1 回だけ入れる。ハイドレーション後に `requestIdleCallback`（無ければ `load` 後の `setTimeout`）で読み、オフラインでは読まない。クライアント側遷移では入れ直さない。インラインスクリプトは使わない
+- 各枠は画面に近づいてから（IntersectionObserver、rootMargin 200px）、スクリプトの読み込み後に 1 回だけ `adsbygoogle.push({})` する。push は「まだ埋まっていない最初の `ins.adsbygoogle`」を埋めるので、`adsbygoogle` のクラスは push の直前に付ける（画面外の枠を先に埋めない）
+- 環境変数（`.env.example`）：`VITE_ADSENSE_CLIENT`（`ca-pub-<数字>`）と、形式ごとの既定の広告ユニット ID `VITE_ADSENSE_SLOT_BANNER`・`_RESPONSIVE`・`_IN_ARTICLE`・`_SIDEBAR`（数字のみ。形式違いは未設定扱い）。`<AdSlot>` は `slot` 省略時に形式の既定 ID を使う（`ads/config.ts`）
+- クライアント ID と広告ユニット ID が揃わない枠は、dev で破線のプレースホルダー、本番で非表示
 
 ## 構成
 
@@ -122,14 +128,14 @@ platform ──▶ apps/*/manifest.ts 等（規約による自動収集だけ。
 4. **prerender のパスは末尾スラッシュなしで渡す**（各アプリの `routes.ts` の `allBuildPaths()`、規約類は `app/platform/legal/paths.ts`）。付けると本文の無い SPA フォールバックが書き出される
 5. **URL は末尾スラッシュ付きに統一**（`/image-adjust/about/`）。Workers の `html_handling: "auto-trailing-slash"` が `/about` を `/about/` にリダイレクトする。サイト内リンク・canonical・hreflang も末尾スラッシュ付きで出す（`createAppPaths()` が返す `localizedPath()` / `withBase()`）
 6. Worker の出力先は `vite.config.ts` の `environments.useful_site.build.outDir`（`build/worker`）。環境名は `wrangler.jsonc` の `name` を snake_case にしたもの
-7. **Service Worker は `vite-plugin-pwa` ではなく postbuild で作る**（`scripts/lib/service-worker.ts`。呼ぶのは Image Adjust のビルド後フック `app/apps/image-adjust/build/postbuild.ts`）。vite-plugin-pwa は Vite のバンドル完了時に SW を作るが、プリレンダリング HTML はその後に React Router が書き出す。これでは日英の全ページの HTML がプリキャッシュに入らない。そこで postbuild の最後（CSP の meta を入れた後）に、`app/apps/image-adjust/sw/sw.ts` を Vite の build API で IIFE にバンドルし、`workbox-build` の `injectManifest` で `build/client/image-adjust/` の HTML・JS・CSS・WASM 等の一覧を埋め込む。プリキャッシュの URL は配信 URL に揃える（`about/index.html` → `/image-adjust/about/`）。サイズ上限で漏れた（警告が出た）ときはビルドを失敗させる。workbox の各パッケージは pnpm の厳格な node_modules では推移的依存として解決できないので、devDependencies に直接入れている。更新通知（prompt）は `workbox-window` で自前で実装している（`app/apps/image-adjust/components/pwa/pwa-store.ts`）。workbox-window は CommonJS なので、プリレンダリングで読まれないよう動的 import にしている
+7. **Service Worker は `vite-plugin-pwa` ではなく postbuild で作る**（`scripts/lib/service-worker.ts`。呼ぶのは Image Adjust のビルド後フック `app/apps/image-adjust/build/postbuild.ts`）。vite-plugin-pwa は Vite のバンドル完了時に SW を作るが、プリレンダリング HTML はその後に React Router が書き出す。これでは日英の全ページの HTML がプリキャッシュに入らない。そこで postbuild の最後（CSP の meta を入れた後）に、`app/apps/image-adjust/sw/sw.ts` を Vite の build API で IIFE にバンドルし、`workbox-build` の `injectManifest` で `build/client/image-adjust/` の HTML・JS・CSS・WASM 等の一覧を埋め込む。共有の `build/client/assets/` からは、そのアプリの HTML（404.html も起点にする）から到達できるものだけを入れる（`scripts/lib/precache-assets.ts`。HTML と JS / CSS の中に現れるアセットのファイル名を推移的に辿る。Web Worker のチャンク・WASM も含む）。全アプリのルートを列挙する React Router のルートマニフェスト（`window.__reactRouterManifest` を含むファイル）は入れるが中身は辿らない（辿ると全アプリが入る）。プリキャッシュの URL は配信 URL に揃える（`about/index.html` → `/image-adjust/about/`）。サイズ上限で漏れた（警告が出た）ときはビルドを失敗させる。workbox の各パッケージは pnpm の厳格な node_modules では推移的依存として解決できないので、devDependencies に直接入れている。更新通知（prompt）は `workbox-window` で自前で実装している（`app/apps/image-adjust/features/pwa/adapters/pwa-store.ts`）。workbox-window は CommonJS なので、プリレンダリングで読まれないよう動的 import にしている
 8. **サイト直下のファイル（`sitemap.xml`・`robots.txt`・`ads.txt`）、各アプリの sitemap、アプリのマニフェストは Vite プラグイン**（`scripts/vite-plugin-site-files.ts`）で作る。ビルドでは `build/client/` に出し、dev でも同じ URL で返す。`sitemap.xml` は索引で、`sitemaps/site.xml`（ポータルと規約類）と各アプリの `/<アプリ>/sitemap.xml` を束ねる（`hidden` のアプリは含めない）。`robots.txt` は `Allow: /` と `Sitemap:`。`ads.txt` は `VITE_ADSENSE_CLIENT` が `ca-pub-<数字>` の形式のときだけ出す。アプリ固有のファイルは `app/apps/<id>/site-files.ts`。postbuild は Node で直接実行するので拡張子なしの import を含む `app/` のモジュールを読めず、ルート定義を使うものはこちらに置く
-9. **静的ファイルはアプリの `public/` を `/<アプリ>/` で配信する**（`scripts/vite-plugin-app-public.ts`。許可された一覧だけを出し、dev でも同じ URL で返す）。ルートの `public/` は `favicon.ico` だけで、ドメイン直下のファイルは上記 8 のプラグインで作る
+9. **静的ファイルはアプリの `public/` を `/<アプリ>/` で配信する**（`scripts/vite-plugin-app-public.ts`。許可された一覧だけを出し、dev でも同じ URL で返す。あわせて OGP 画像を持つアプリの一覧を define の `__APP_OG_IMAGE_PATHS__` で渡す）。ルートの `public/` は `favicon.ico` とサイト共通の OGP 画像（`og/`）だけで、ドメイン直下のファイルは上記 8 のプラグインで作る
 10. **CSP は各 HTML の `<meta http-equiv="Content-Security-Policy">` ＋ `_headers` の `/*` 1 本**（`scripts/lib/csp.ts`）。プリレンダリング HTML のインラインスクリプトはページごとに違う（React Router のハイドレーション用データ等）ので、postbuild がページごとにハッシュを計算して meta に入れる。`frame-ancestors` 等 meta では効かないものは、`_headers` の `/*` で付ける。同じヘッダーを複数のルールで付けると値が連結されるので、CSP は `/*` にだけ書く（他のルールに書くとビルドが失敗する）。ページが増えても `_headers` のルール数は増えない（`/*`・`/assets/*` ＋アプリのフックが足すルール。上限は 100 件・1 行 2000 文字で、超えるとビルドが失敗する）。インラインスクリプトの CSP ハッシュは自動計算なので手で更新しない
 
 ### 設定値
 
-- `SITE_ORIGIN`・`DEFAULT_SITE_ORIGIN`・`SITE_NAME`・サイトのストレージ接頭辞（`site:`）は **`app/platform/config/index.ts` だけ**で定義する。`vite.config.ts`・`react-router.config.ts`・Worker・スクリプトもここから import する。`BASE_PATH` はサイト全体では空文字（アプリごとの接頭辞は `manifest.path` から `createAppPaths()` で得る。image-adjust は `app/apps/image-adjust/lib/config.ts`）
+- `SITE_ORIGIN`・`DEFAULT_SITE_ORIGIN`・`SITE_NAME`・サイトのストレージ接頭辞（`site:`）は **`app/platform/config/index.ts` だけ**で定義する。`vite.config.ts`・`react-router.config.ts`・Worker・スクリプトもここから import する。`BASE_PATH` はサイト全体では空文字（アプリごとの接頭辞は `manifest.path` から `createAppPaths()` で得る。image-adjust は `app/apps/image-adjust/shared/config.ts`）
 - `SITE_ORIGIN` の既定値は暫定ドメインの `https://t0n03k1.com`（`DEFAULT_SITE_ORIGIN`）。ビルド時に `VITE_SITE_ORIGIN` で上書きできる。ドメインを変えるときは `DEFAULT_SITE_ORIGIN` と `wrangler.jsonc` の `routes` の 2 か所を変える
   - canonical・hreflang・og:url・sitemap が誤ったオリジンを指したまま公開されないよう、3 段で防ぐ。① 本番ビルドで、使うオリジン（`VITE_SITE_ORIGIN`、未設定なら既定値）が仮の値（example ドメイン等）・https 以外・パス付きなら目立つ警告を出す（`scripts/vite-plugin-site-files.ts`。既定値のままなら出ない。検証用の `pnpm build` は止めない）② 公開は **`pnpm run deploy`**（`pnpm deploy` は pnpm 組み込みのコマンドなので `run` を付ける）で行う。最初に `scripts/check-deploy-env.ts` が同じ判定をして問題があれば止め（未設定なら既定値で通す）、通ったら `pnpm build` → `wrangler deploy`。判定は `scripts/lib/site-origin.ts` ③ 環境変数の雛形は `.env.example`（`.env` / `.env.*` は git に入れない）
 - 広告：`VITE_ADSENSE_CLIENT`（未設定なら広告枠は dev で破線のプレースホルダー、本番で非表示。`ads.txt` もこの値から作る）
@@ -156,7 +162,7 @@ app/
     shell/                 Shell・ヘッダー・ハンバーガーメニュー・フッター・言語切り替え・テーマ切り替え・LocalizedLink・PageHeader・NotFound・画面下の通知（BottomNotices・LangSuggestion）
     registry/              アプリの登録簿（manifest.ts を自動収集）・検証（validation.ts）・アイコン
     i18n/                  ja.ts（正）・en.ts・types.ts・langs.ts・index.ts（仕組みと共通の文言）
-    ads/AdSlot.tsx         広告枠
+    ads/                   広告枠（AdSlot.tsx）・AdSense の読み込み（AdSenseScript.tsx・loader.ts）・設定値（config.ts）・表示枠数の警告（slot-registry.ts）
     analytics/             CloudflareAnalytics
     seo/                   meta ヘルパー・JSON-LD・sitemap の組み立て
     storage/ theme/ ui/    ストレージ・テーマ（tokens.css）・shadcn 風の部品
@@ -169,7 +175,7 @@ app/
     types.ts utils.ts      AppManifest 等の型・cn()
   apps/
     portal/                ルート（/）のアプリ一覧。external-links.ts に外部システム
-    image-adjust/          画像調整（下記「アプリ別の注意」）
+    image-adjust/          画像調整（domain/・features/{image-processing,icon-generator,remote-image,pwa,guide-content}/・shared/・pages/<ページ>/。下記「アプリ別の注意」）
     markdown-pdf/          Markdown → PDF（domain/・features/{document-input,render,settings,print}/・pages/tool/）
 worker/                    Hono の入口（index.ts）と Env 型（env.ts）。API は各アプリの api/ から集める
 scripts/
@@ -177,10 +183,11 @@ scripts/
   check-boundaries.ts      依存の境界の検査（pnpm lint から）
   check-app-removal.ts     アプリを外したビルドの検査（pnpm check:apps）
   check-deploy-env.ts      pnpm run deploy の前提の検査
+  generate-og-images.ts    アプリとサイト共通の OGP 画像の生成
   vite-plugin-site-files.ts  sitemap・robots.txt・ads.txt・アプリのサイトファイル・記事の訳し漏れ警告
   vite-plugin-app-public.ts  アプリの public/ の配信
-  lib/                     csp.ts・service-worker.ts・site-origin.ts・ads-txt.ts・app-routes.ts（アプリのルートの収集）・postbuild-types.ts
-public/                    favicon.ico だけ（ドメイン直下）
+  lib/                     csp.ts・service-worker.ts・precache-assets.ts（プリキャッシュするアセットの到達判定）・site-origin.ts・ads-txt.ts・app-routes.ts（アプリのルートの収集）・app-og-images.ts（OGP 画像の規約と有無）・postbuild-types.ts
+public/                    favicon.ico とサイト共通の OGP 画像 og/（ドメイン直下）
 tests/unit, tests/e2e      サイト共通の Vitest・Playwright
 ```
 
@@ -201,16 +208,17 @@ tests/unit, tests/e2e      サイト共通の Vitest・Playwright
 
 ### ルートの追加（アプリ内のページ）
 
-1. `app/apps/<id>/pages/…` にページを作る（`meta()` は `buildPageMeta()` を返す。既存ページを参照）
+1. `app/apps/<id>/pages/<ページ>/route.tsx` にページを作る（`meta()` は `buildPageMeta()` を返す。既存ページを参照）
 2. そのアプリの `routes.ts` の `pages()` に `route(...)` を足す（日英の両方が生成される）
 3. 同じ `routes.ts` の `allPagePaths()`（sitemap・prerender の対象）に足す
-- 動的セグメント（`:pair` 等）は使わない。変換・圧縮・解説は `CONVERT_PAIRS`・`COMPRESS_FORMATS`・`GUIDE_SLUGS`（`app/apps/image-adjust/lib/site-routes.ts`）の値ごとに静的ルートを登録し（同じモジュールを `image-adjust/ja/convert/png-to-webp` 等の別 id で）、ページ側は `pageParam(pathname, "convert")` でパスから値を取り出す。動的ルートだと不正な値（`/image-adjust/convert/bogus/`）で、配信される 404.html とクライアントのマッチが食い違い、ハイドレーションに失敗する。静的ルートなら不正な値は splat（not-found）に落ちる
+- 動的セグメント（`:pair` 等）は使わない。変換・圧縮・解説は `CONVERT_PAIRS`・`COMPRESS_FORMATS`・`GUIDE_SLUGS`（`app/apps/image-adjust/domain/pages.ts`）の値ごとに静的ルートを登録し（同じモジュールを `image-adjust/ja/convert/png-to-webp` 等の別 id で）、ページ側は `pageParam(pathname, "convert")`（`shared/site-routes.ts`）でパスから値を取り出す。動的ルートだと不正な値（`/image-adjust/convert/bogus/`）で、配信される 404.html とクライアントのマッチが食い違い、ハイドレーションに失敗する。静的ルートなら不正な値は splat（not-found）に落ちる
 4. メニューに出すなら `manifest.ts` の `menu` と辞書に足す
 
 ### SEO
 
-- 各ルートの `meta({ location })` で `buildPageMeta({ lang, page, title, description, ... })` を返す。title・description・canonical・OGP・Twitter・hreflang（ja / en / x-default）・パンくずの JSON-LD が絶対 URL で入る。共通の部品は `app/platform/seo/`、image-adjust は自アプリ用の `app/apps/image-adjust/seo/`
+- 各ルートの `meta({ location })` で `buildPageMeta({ lang, page, title, description, ... })` を返す。title・description・canonical・OGP・Twitter・hreflang（ja / en / x-default）・パンくずの JSON-LD が絶対 URL で入る。共通の部品は `app/platform/seo/`、image-adjust は自アプリ用の `app/apps/image-adjust/shared/seo/`
 - 追加の構造化データは `jsonLd: [webApplicationJsonLd(...)]` / `articleJsonLd` / `faqJsonLd`（`json-ld.ts`）。本文中に置くなら `<JsonLd data={...} />`
+- **OGP 画像**（1200×630、言語ごとに 1 枚）：`buildPageMeta()` は `image` 省略時に、そのページのアプリの `app/apps/<id>/public/og/<lang>.png`（`/<アプリ>/og/<lang>.png`）を、アプリが日英とも持っていなければサイト共通の `public/og/<lang>.png`（`/og/<lang>.png`。ポータル・規約類・404）を使う。有無は `scripts/lib/app-og-images.ts` が調べ、仮想モジュール `virtual:app-og-images` で渡す（vitest も同じプラグイン）。dev では `public/og/` の画像の追加・削除で再計算してリロードする。生成は `nix develop -c node scripts/generate-og-images.ts`（manifest の name・description、platform のアイコン対応表 `registry/icon-components.ts`、`SITE_NAME` から、Playwright の Chromium で描く）。アプリが自前の `scripts/generate-og-images.ts` を持つならそのアプリは飛ばす（Image Adjust はロゴ入りの独自デザイン）。アプリを足したら実行して PNG をコミットする（`tests/unit/og-images.test.ts` が全アプリの画像の有無と大きさを、`tests/e2e/og-images.spec.ts` が全ページの og:image の実在を確かめる）。manifest の name・description を変えたときも作り直す
 
 ### テーマ・デザイン
 
@@ -227,7 +235,7 @@ tests/unit, tests/e2e      サイト共通の Vitest・Playwright
 
 ### ストレージ
 
-`localStorage` は直接使わず `app/platform/storage/index.ts`（`getItem` / `setItem` / `getJSON` / `setJSON`）を使う。キーには自動で接頭辞が付く（サイト共通は `site:`、image-adjust は `app/apps/image-adjust/lib/config.ts` の `STORAGE_PREFIX` = `image-adjust:`）。使うキーは `STORAGE_KEYS` に足す。Cache Storage・IndexedDB の名前にも同じ接頭辞を付ける。
+`localStorage` は直接使わず `app/platform/storage/index.ts`（`getItem` / `setItem` / `getJSON` / `setJSON`）を使う。キーには自動で接頭辞が付く（サイト共通は `site:`、image-adjust は `app/apps/image-adjust/shared/config.ts` の `STORAGE_PREFIX` = `image-adjust:`）。使うキーは `STORAGE_KEYS` に足す。Cache Storage・IndexedDB の名前にも同じ接頭辞を付ける。
 
 ### 依存
 
@@ -253,20 +261,29 @@ tests/unit, tests/e2e      サイト共通の Vitest・Playwright
 
 画像の変換・圧縮・アイコン生成。ブラウザ内処理。仕様はローカルの `docs/plan.md`。
 
-- 構成：`components/`（`layout/`・`tools/`・`tools/icons/`・`pwa/`・`content/`）・`lib/`（`codecs/`・`pipeline/`・`archive/`・`icons/`・`limits.ts`・`remote-image.ts`・`site-routes.ts`・`web-manifest.ts`・`pwa.ts`・`logo.ts`・`config.ts`）・`workers/image.worker.ts`・`state/incoming-files.ts`・`pages/`・`api/`・`sw/`・`build/postbuild.ts`・`site-files.ts`・`legal/`・`content/`・`public/`・`tests/`（E2E は `tests/e2e/`）。platform とアプリ間の境界は検査されるが、アプリ内は従来の構成
-- ファイル名の無害化は `lib/pipeline/naming.ts` の `sanitizeFileName` / `sanitizePath` に集約する
-- 入力サイズ・枚数・ピクセル数などの上限は `lib/limits.ts`。URL 入力（Worker の中継 API 経由の取得とファイル名の決定）は `lib/remote-image.ts`。API は `api/`（`fetch-image`・`health`。URL 検証・回数制限つき。回数制限は `wrangler.jsonc` の `ratelimits`）
-- **Web Worker・WASM**：Worker は `new Worker(new URL("../workers/image.worker.ts", import.meta.url), { type: "module" })` で作り、`comlink` の `wrap` / `expose` で呼ぶ（`vite.config.ts` の `worker.format` は `es`）。jSquash（`@jsquash/*`）は Worker 内で普通に `import { encode } from "@jsquash/webp"` すればよい。WASM は Vite が `assets/` に出力する。WASM とコーデックは画像が入力されたときに動的 import する（初回表示に含めない）。PNG 減色は `libimagequant-wasm`（Worker 対応）を第一候補、`image-q`（純 JS）を代替として入れてある。dev で初めて読み込む依存があると Vite の依存最適化で 1 回再読み込み（504 Outdated Optimize Dep）が起きることがある。気になるなら `optimizeDeps.include` に足す
+- 構成（markdown-pdf と同じ。`features/<機能>/{core,adapters,ui,index.ts}`）
+  - `domain/`：形式（`format.ts`。MIME・拡張子・先頭バイトでの判定）・上限（`limits.ts`）・ファイル名の無害化（`naming.ts`）・ページの値の一覧と表示名（`pages.ts`。`CONVERT_PAIRS`・`COMPRESS_FORMATS`・`GUIDE_SLUGS`・`FORMAT_LABEL`）・URL 入力の失敗の種類（`remote-image.ts`）
+  - `features/image-processing/`：変換・圧縮。`core/`（設定と結果の型 `types.ts`・プリセット・目標サイズの探索・ヘッダーからの寸法・ZIP 内パスの正規化）・`adapters/`（`codecs/`（jSquash・gifsicle・SVGO・libimagequant・メタデータ）・`process.ts`・`processor.ts`（Worker プール）・`image.worker.ts`・`archive/`（ZIP の入出力・ダウンロード）・`engine.ts`（処理の進行）・`preview.ts`・`collect-files.ts`・`tool-types.ts`（画面の状態の型））・`ui/`（`ImageTool`・`SettingsPanel`・`ResultList`・`CompareDialog`・`SnippetDialog`・`FileInput`・`ToolFaq`・`use-image-tool`）
+  - `features/icon-generator/`：アイコン生成。`core/`（サイズ・配置・ICO・マニフェスト・HTML スニペット・設定・画像ヘッダー）・`adapters/`（canvas 描画・SVG・元画像の読み込み・ZIP・`generate.ts`）・`ui/`（`IconTool` 等）
+  - `features/remote-image/`：URL 入力（Worker の中継 API の呼び出しとファイル名の決定）。`index.ts` の `remoteImageLoader` をページが `ImageTool` の `remoteImage` に渡す
+  - `features/pwa/`：Service Worker の登録と更新通知（`pwa-store.ts`）・共有受け取り（`shared-files.ts`）・`InstallPrompt`・`PwaRoot`
+  - `features/guide-content/`：MDX の記事（解説・about）の表示（`ContentPage`）
+  - `shared/`：`config.ts`（`BASE_PATH`・`STORAGE_PREFIX` 等）・`pwa.ts`（PWA の定数。SW にもバンドルされる）・`web-manifest.ts`・`site-routes.ts`（`pageParam`・prerender と sitemap のパス）・`incoming-files.ts`（共有受け取り → ツールへの受け渡し口）・`seo/`・`logo.ts`・`layout/`（`LogoMark`・フッターの項目）
+  - `pages/<ページ>/route.tsx`：`home`・`convert`・`compress`・`icons`・`guide-index`・`guide-article`・`about`・`not-found`（`not-found` はどのルートからも使っていない）
+  - アプリ直下：`manifest.ts`・`routes.ts`・`layout*.tsx`・`i18n/`・`api/`・`sw/`・`build/postbuild.ts`・`site-files.ts`・`legal/`・`content/`・`public/`・`scripts/`・`tests/`（E2E は `tests/e2e/`）
+- ファイル名の無害化は `domain/naming.ts` の `sanitizeFileName` / `sanitizePath` に集約する
+- 入力サイズ・枚数・ピクセル数などの上限は `domain/limits.ts`。URL 入力（Worker の中継 API 経由の取得とファイル名の決定）は `features/remote-image/`。API は `api/`（`fetch-image`・`health`。URL 検証・回数制限つき。回数制限は `wrangler.jsonc` の `ratelimits`）
+- **Web Worker・WASM**：Worker は `features/image-processing/adapters/processor.ts` で `new Worker(new URL("./image.worker.ts", import.meta.url), { type: "module" })` の形で作り（Vite が検出できるようこの形を保つ）、`comlink` の `wrap` / `expose` で呼ぶ（`vite.config.ts` の `worker.format` は `es`）。jSquash（`@jsquash/*`）は Worker 内で普通に `import { encode } from "@jsquash/webp"` すればよい。WASM は Vite が `assets/` に出力する。WASM とコーデックは画像が入力されたときに動的 import する（初回表示に含めない）。PNG 減色は `libimagequant-wasm`（Worker 対応）を第一候補、`image-q`（純 JS）を代替として入れてある。dev で初めて読み込む依存があると Vite の依存最適化で 1 回再読み込み（504 Outdated Optimize Dep）が起きることがある。気になるなら `optimizeDeps.include` に足す
 - **PWA**
-  - Service Worker：`/image-adjust/sw.js`、スコープ `/image-adjust/`（定数は `lib/pwa.ts`）。プリキャッシュだけで、ランタイムキャッシュは持たない（広告・解析・`/image-adjust/api/` はキャッシュしない）。キャッシュ名は `image-adjust-precache-…`、古いキャッシュの削除も `image-adjust-precache-` で始まるものだけ。`sw.js` は `_headers` で `Cache-Control: no-cache`（ビルド後フックが足す）
-  - 更新：新しい版が待機中なら「更新があります」→「再読み込み」で SKIP_WAITING → 切り替わったら再読み込み。他のタブで先に切り替わったときは、作業中の画像を失わせないため自動では再読み込みせず「再読み込みしてください」と案内する（`components/pwa/pwa-store.ts`）
-  - 共有受け取り：マニフェストの `share_target`（POST `/image-adjust/share-target`）を SW が受けて Cache Storage（`image-adjust:share-target`）に一時保存し、`/image-adjust/?share=1`（英語は `/image-adjust/en/?share=1`）にリダイレクトする。ページ側の `components/pwa/PwaRoot.tsx` が取り出して `pushIncomingFiles()` に渡し、キャッシュを消す。`file_handlers`（launchQueue）も同じく `pushIncomingFiles()` に渡す。ツール側は `subscribeIncomingFiles()` で受け取る
+  - Service Worker：`/image-adjust/sw.js`、スコープ `/image-adjust/`（定数は `shared/pwa.ts`）。プリキャッシュだけで、ランタイムキャッシュは持たない（広告・解析・`/image-adjust/api/` はキャッシュしない）。キャッシュ名は `image-adjust-precache-…`、古いキャッシュの削除も `image-adjust-precache-` で始まるものだけ。`sw.js` は `_headers` で `Cache-Control: no-cache`（ビルド後フックが足す）
+  - 更新：新しい版が待機中なら「更新があります」→「再読み込み」で SKIP_WAITING → 切り替わったら再読み込み。他のタブで先に切り替わったときは、作業中の画像を失わせないため自動では再読み込みせず「再読み込みしてください」と案内する（`features/pwa/adapters/pwa-store.ts`）
+  - 共有受け取り：マニフェストの `share_target`（POST `/image-adjust/share-target`）を SW が受けて Cache Storage（`image-adjust:share-target`）に一時保存し、`/image-adjust/?share=1`（英語は `/image-adjust/en/?share=1`）にリダイレクトする。ページ側の `features/pwa/ui/PwaRoot.tsx` が取り出して `pushIncomingFiles()`（`shared/incoming-files.ts`）に渡し、キャッシュを消す。`file_handlers`（launchQueue）も同じく `pushIncomingFiles()` に渡す。ツール側は `subscribeIncomingFiles()` で受け取る
   - 共有受け取りは他サイトからのフォーム POST を受け取らない（`Sec-Fetch-Site` が `none`（OS の共有）・`same-origin` 以外なら保存せずリダイレクトだけ。ヘッダーが SW に見えない環境では Referer のオリジンで判定）。**未確認：Android 実機の共有で `Sec-Fetch-Site: none`（またはヘッダー無し・Referer 無し）になること**
-  - マニフェスト（日英）は `site-files.ts` → `lib/web-manifest.ts` で作る
-- **OGP 画像**：`public/og/<lang>.png`（1200×630、言語ごとに共通の 1 枚）。`buildPageMeta()` が `image` 省略時に自動で付ける。作り直しは `nix develop -c node app/apps/image-adjust/scripts/generate-og-images.ts`（Playwright の Chromium で描画）
-- **ロゴ**：図形は `lib/logo.ts` だけで定義する（角丸の正方形の面に、山と太陽の写真マークと調整スライダーを抜いた形。32 の格子で 16px でも潰れないように設計）。ヘッダーは `components/layout/LogoMark.tsx`（インライン SVG。面は `currentColor`、記号は背景色のトークンで塗るので、テーマに合わせて白黒が反転する）。単体のファイルは `public/logo.svg`（黒地に白）
-- **アイコン**：`public/favicon.ico`・`favicon.svg`・`apple-touch-icon.png`・`public/pwa/icon-*.png`（すべて `/image-adjust/` 配下で配信）。ロゴを元に、アイコン生成ツール（`lib/icons/`）と同じ処理で作る。ロゴを変えたら `nix develop -c node app/apps/image-adjust/scripts/generate-icons.ts`（`public/logo.svg` とアイコン）→ `nix develop -c node app/apps/image-adjust/scripts/generate-og-images.ts`（OGP 画像）で作り直す。16px・32px での見え方は `/image-adjust/icons/` ページに `public/logo.svg` を入れるとライト・ダークのタブで確かめられる。`public/icons/` はアイコン生成ページ（`/image-adjust/icons/`）と衝突するので使わない
-- テスト画像は `tests/fixtures/`（`generate-fixtures.ts` で作る）。ブラウザ用コーデックを Node で動かす補助は `tests/helpers/codecs-node.ts`
+  - マニフェスト（日英）は `site-files.ts` → `shared/web-manifest.ts` で作る
+- **OGP 画像**：`public/og/<lang>.png`（1200×630、言語ごとに共通の 1 枚。ロゴ入りの独自デザインなので、サイト共通の `scripts/generate-og-images.ts` の対象外）。`buildPageMeta()` が `image` 省略時に自動で付ける。作り直しは `nix develop -c node app/apps/image-adjust/scripts/generate-og-images.ts`（Playwright の Chromium で描画）
+- **ロゴ**：図形は `shared/logo.ts` だけで定義する（角丸の正方形の面に、山と太陽の写真マークと調整スライダーを抜いた形。32 の格子で 16px でも潰れないように設計）。ヘッダーは `shared/layout/LogoMark.tsx`（インライン SVG。面は `currentColor`、記号は背景色のトークンで塗るので、テーマに合わせて白黒が反転する）。単体のファイルは `public/logo.svg`（黒地に白）
+- **アイコン**：`public/favicon.ico`・`favicon.svg`・`apple-touch-icon.png`・`public/pwa/icon-*.png`（すべて `/image-adjust/` 配下で配信）。ロゴを元に、アイコン生成ツール（`features/icon-generator/`。`scripts/lib/icon-generator-entry.ts` はその `index.ts` から読む）と同じ処理で作る。ロゴを変えたら `nix develop -c node app/apps/image-adjust/scripts/generate-icons.ts`（`public/logo.svg` とアイコン）→ `nix develop -c node app/apps/image-adjust/scripts/generate-og-images.ts`（OGP 画像）で作り直す。16px・32px での見え方は `/image-adjust/icons/` ページに `public/logo.svg` を入れるとライト・ダークのタブで確かめられる。`public/icons/` はアイコン生成ページ（`/image-adjust/icons/`）と衝突するので使わない
+- テスト画像は `tests/fixtures/`（`generate-fixtures.ts` で作る）。ブラウザ用コーデックを Node で動かす補助は `tests/helpers/codecs-node.ts`、GIF のフレーム数等を読む検証用の補助は `tests/helpers/gif-info.ts`
 
 ### Markdown → PDF（`app/apps/markdown-pdf/`、`/markdown-pdf/`）
 
@@ -279,6 +296,6 @@ Markdown をブラウザ内で整え、**ブラウザの印刷で PDF にする*
 
 ## 未解決の注意
 
-- お問い合わせフォームの URL が仮（`https://forms.gle/REPLACE_ME`）。`app/platform/content/{ja,en}/{privacy,terms}.mdx` と `app/apps/image-adjust/content/{ja,en}/about.mdx` にある。公開前に本物へ差し替える
+- お問い合わせは GitHub の Issue（`https://github.com/katoline/useful-site/issues`）で受け付ける。Issue は公開されるので、規約・about に「個人情報を書かない」旨を書いてある（`app/platform/content/{ja,en}/privacy.mdx` の「個人情報の取り扱い」）
 - サイト名（`SITE_NAME`）は仮。決まったら `app/platform/config/index.ts` を変える
 - Android 実機の共有受け取りの `Sec-Fetch-Site` は未確認（Image Adjust の PWA の項）

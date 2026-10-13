@@ -1,2 +1,2 @@
-import { buildWebManifestFiles } from "./lib/web-manifest.ts";
+import { buildWebManifestFiles } from "./shared/web-manifest.ts";
 export const buildSiteFiles = buildWebManifestFiles;

@@ -4,7 +4,7 @@ import {
   allBuildPaths,
   allPagePaths,
   allPrerenderPaths,
-} from "~/apps/image-adjust/lib/site-routes";
+} from "~/apps/image-adjust/shared/site-routes";
 import { LANGS } from "~/platform/i18n";
 
 describe("Image Adjust の辞書", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { localizedPath } from "~/apps/image-adjust/i18n/langs";
-import { BASE_PATH } from "~/apps/image-adjust/lib/config";
-import { allPagePaths } from "~/apps/image-adjust/lib/site-routes";
+import { BASE_PATH } from "~/apps/image-adjust/shared/config";
+import { allPagePaths } from "~/apps/image-adjust/shared/site-routes";
 import { LANGS } from "~/platform/i18n/langs";
 import { buildSitemap } from "~/platform/seo/sitemap";
 

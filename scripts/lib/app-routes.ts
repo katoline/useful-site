@@ -1,5 +1,7 @@
-import { readdir } from "node:fs/promises";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import type { RouteConfig } from "@react-router/dev/routes";
+import { listAppDirs } from "./apps.ts";
 export interface AppRoutes {
   appPath: string;
   createRoutes(): Awaited<RouteConfig>;
@@ -8,17 +10,13 @@ export interface AppRoutes {
 }
 /** アプリを中央の一覧に反映する必要をなくす。 */
 export async function collectAppRoutes(): Promise<AppRoutes[]> {
-  const appsDir = new URL("../../app/apps/", import.meta.url);
-  const entries = await readdir(appsDir, { withFileTypes: true });
+  const dirs = await listAppDirs(path.resolve(import.meta.dirname, "../.."));
   return Promise.all(
-    entries
-      .filter((entry) => entry.isDirectory())
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(
-        (entry) =>
-          import(
-            /* @vite-ignore */ new URL(`${entry.name}/routes.ts`, appsDir).href
-          ) as Promise<AppRoutes>,
-      ),
+    dirs.map(
+      (dir) =>
+        import(
+          /* @vite-ignore */ pathToFileURL(path.join(dir, "routes.ts")).href
+        ) as Promise<AppRoutes>,
+    ),
   );
 }

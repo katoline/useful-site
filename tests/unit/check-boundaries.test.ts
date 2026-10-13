@@ -91,4 +91,94 @@ describe("依存の境界（scripts/check-boundaries.ts）", () => {
       ).toEqual([]);
     });
   });
+
+  it("環境を問わない標準 API は domain・core で使える", () => {
+    const source =
+      'new TextDecoder(); new TextEncoder(); new URL("https://example.com"); new URLSearchParams(); setTimeout(() => {}, 0); clearTimeout(1); setInterval(() => {}, 0); clearInterval(1); queueMicrotask(() => {}); structuredClone({}); atob("YQ=="); btoa("a"); console.log(); new AbortController(); AbortSignal.abort(); new Blob(); crypto.getRandomValues(new Uint8Array(1)); type A = Blob; type B = AbortSignal;';
+    for (const file of ["app/apps/a/domain/x.ts", "app/apps/a/features/one/core/x.ts"]) {
+      expect(messages(file, source)).toEqual([]);
+      for (const name of [
+        "window",
+        "document",
+        "navigator",
+        "localStorage",
+        "sessionStorage",
+        "location",
+      ]) {
+        expect(messages(file, `export const value = ${name};`)).toEqual([
+          expect.stringContaining("DOM のグローバル"),
+        ]);
+      }
+    }
+  });
+
+  describe("shared", () => {
+    const shared = "app/apps/a/shared/x.ts";
+
+    it("features・pages に依存できない", () => {
+      for (const spec of ["../features/one", "~/apps/a/pages/tool/Page"]) {
+        expect(messages(shared, `import { y } from "${spec}";`), spec).toEqual([
+          expect.stringContaining("shared は features・pages に依存できません"),
+        ]);
+      }
+    });
+
+    it("domain・shared・platform・npm は import できる", () => {
+      for (const spec of ["../domain/limits", "./y", "~/platform/storage", "zod"]) {
+        expect(messages(shared, `import { y } from "${spec}";`), spec).toEqual([]);
+      }
+    });
+
+    it("shared は DOM を使える", () => {
+      expect(messages(shared, "export const x = document.title;")).toEqual([]);
+    });
+  });
+
+  describe("domain", () => {
+    const domain = "app/apps/a/domain/x.ts";
+
+    it("自分の domain と型だけの import を許す", () => {
+      expect(messages(domain, 'import { y } from "./y";')).toEqual([]);
+      expect(messages(domain, 'import type { Y } from "zod";')).toEqual([]);
+      expect(messages(domain, 'export type { Y } from "~/platform/types";')).toEqual([]);
+      expect(messages(domain, 'type Y = import("zod").Y;')).toEqual([]);
+    });
+
+    it("指定子ごとの type は実行時の依存として扱う", () => {
+      for (const source of [
+        'import { type Y } from "~/platform/types";',
+        'export { type Y } from "zod";',
+      ]) {
+        expect(messages(domain, source)).toEqual([
+          expect.stringContaining("domain は自分の domain"),
+        ]);
+      }
+    });
+
+    it("npm・platform・shared・features・pages の値を import できない", () => {
+      for (const spec of [
+        "zod",
+        "~/platform/storage",
+        "../shared/device",
+        "../features/one",
+        "../pages/tool/Page",
+      ]) {
+        expect(messages(domain, `import { z } from "${spec}";`), spec).toEqual([
+          expect.stringContaining("domain は自分の domain と型だけの import 以外"),
+        ]);
+      }
+      expect(messages(domain, 'import { type Y, z } from "zod";')).toEqual([
+        expect.stringContaining("domain は自分の domain"),
+      ]);
+    });
+
+    it("DOM の型とグローバルを使えない", () => {
+      expect(messages(domain, "export const f = (e: HTMLElement) => e;")).toEqual([
+        expect.stringContaining("DOM の型"),
+      ]);
+      expect(messages(domain, "export const x = () => typeof navigator;")).toEqual([
+        expect.stringContaining("DOM のグローバル"),
+      ]);
+    });
+  });
 });

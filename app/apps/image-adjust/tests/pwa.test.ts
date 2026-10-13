@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { BASE_PATH } from "~/apps/image-adjust/lib/config";
-import { SHARE_TARGET_PATH, SW_SCOPE, shareRedirectPath } from "~/apps/image-adjust/lib/pwa";
-import { buildWebManifest } from "~/apps/image-adjust/lib/web-manifest";
+import { BASE_PATH } from "~/apps/image-adjust/shared/config";
+import { SHARE_TARGET_PATH, SW_SCOPE, shareRedirectPath } from "~/apps/image-adjust/shared/pwa";
+import { buildWebManifest } from "~/apps/image-adjust/shared/web-manifest";
 import { toPrecacheUrl } from "../../../../scripts/lib/service-worker";
 
 describe("PWA マニフェスト", () => {

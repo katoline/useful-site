@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { GUIDE_SLUGS } from "~/apps/image-adjust/lib/site-routes";
+import { GUIDE_SLUGS } from "~/apps/image-adjust/domain/pages";
 import { LANGS } from "~/platform/i18n/langs";
 import { findMissingTranslations } from "../../../../scripts/vite-plugin-site-files";
 

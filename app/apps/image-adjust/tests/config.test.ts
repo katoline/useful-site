@@ -7,7 +7,7 @@ import {
   SITE_ORIGIN,
   STORAGE_PREFIX,
   withBase,
-} from "~/apps/image-adjust/lib/config";
+} from "~/apps/image-adjust/shared/config";
 
 describe("config", () => {
   it("BASE_PATH は先頭スラッシュあり・末尾スラッシュなし", () => {

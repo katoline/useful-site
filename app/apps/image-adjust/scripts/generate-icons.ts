@@ -1,13 +1,13 @@
 /**
  * サイト自身のロゴとアイコンを app/apps/image-adjust/public/ に生成する（`nix develop -c node app/apps/image-adjust/scripts/generate-icons.ts`）。
  *
- * 1. ロゴ（app/apps/image-adjust/lib/logo.ts の図形）を app/apps/image-adjust/public/logo.svg に書き出す
- * 2. そのロゴを元画像にして、アイコン生成ツール（/icons/）と同じ処理（app/apps/image-adjust/lib/icons/ の loadIconSource →
+ * 1. ロゴ（app/apps/image-adjust/shared/logo.ts の図形）を app/apps/image-adjust/public/logo.svg に書き出す
+ * 2. そのロゴを元画像にして、アイコン生成ツール（/icons/）と同じ処理（app/apps/image-adjust/features/icon-generator/ の loadIconSource →
  *    generateIconFiles。ICO の組み立て・maskable の余白計算・favicon.svg の包み方もそのまま）で
  *    アイコン一式を作り、サイトで使うものだけを app/apps/image-adjust/public/ に置く（plan.md §6.1）
  *
  * 描画は canvas が要るので、E2E 用に入っている Playwright の Chromium の中で動かす（ブラウザは Nix の devShell が
- * 供給する）。app/apps/image-adjust/lib/icons/ は拡張子なしの import を含み Node から直接読めないので、
+ * 供給する）。app/apps/image-adjust/features/icon-generator/ は拡張子なしの import を含み Node から直接読めないので、
  * ./lib/icon-generator-entry.ts を Vite の build API で IIFE にバンドルしてページに入れる。
  */
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -15,8 +15,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { chromium } from "@playwright/test";
 import { build } from "vite";
-import { SITE_NAME } from "../lib/config.ts";
-import { buildLogoSvg, LOGO_TILE_RADIUS_RATIO } from "../lib/logo.ts";
+import { SITE_NAME } from "../shared/config.ts";
+import { buildLogoSvg, LOGO_TILE_RADIUS_RATIO } from "../shared/logo.ts";
 import type { GeneratedIconFile } from "./lib/icon-generator-entry.ts";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
