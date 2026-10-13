@@ -10,7 +10,9 @@ export async function postbuild(context: AppBuildContext): Promise<AppBuildResul
     baseDir: context.appDir,
     basePath: context.basePath,
   });
-  console.log(`postbuild: ${context.basePath}/sw.js（プリキャッシュ ${sw.count} 件）`);
+  console.log(
+    `postbuild: ${context.basePath}/sw.js（プリキャッシュ ${sw.count} 件、うち共有アセット ${sw.assets.length} 件）`,
+  );
   // SW 自体は毎回確認させる（更新の検出が遅れないように）
   return { headers: [{ path: `${context.basePath}/sw.js`, headers: ["Cache-Control: no-cache"] }] };
 }
