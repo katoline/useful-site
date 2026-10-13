@@ -355,6 +355,9 @@ export const ja = {
       white: "白",
       black: "黒",
       slider: "比較位置",
+      outputWidth: "出力幅",
+      loading: "処理前の画像を読み込み中…",
+      loadFailed: "処理前の画像を読み込めませんでした",
     },
     faq: {
       title: "よくある質問",

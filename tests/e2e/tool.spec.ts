@@ -125,6 +125,102 @@ test("アニメーション GIF を圧縮してもフレームが保たれる", 
   expect(info).toMatchObject({ width: 48, height: 32, frames: 4, animated: true });
 });
 
+test("ZIP 由来の処理済み項目でも比較の処理前画像を読み込める", async ({ page }) => {
+  await page.goto("/image-adjust/en/");
+  await chooseOutput(page, "webp");
+  await addFiles(page, "sample.zip");
+  const card = page.getByTestId("result-card").filter({ hasText: "photos/a.png" });
+  await expectDone(card);
+  await card.getByTestId("result-compare").click();
+
+  const before = page
+    .getByTestId("compare-stage")
+    .getByRole("img", { name: "Before", exact: true });
+  await expect(before).toBeVisible();
+  await expect
+    .poll(() => before.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0))
+    .toBe(true);
+  const bytes = await before.evaluate(async (img: HTMLImageElement): Promise<number[]> => {
+    const response = await fetch(img.src);
+    const buffer = await response.arrayBuffer();
+    return Array.from(new Uint8Array(buffer));
+  });
+  expect(new Uint8Array(bytes)).toEqual(
+    unzipSync(new Uint8Array(readFileSync(fixture("sample.zip"))))["photos/a.png"],
+  );
+
+  await page.keyboard.press("Escape");
+  await card.getByTestId("result-compare").click();
+  await expect(before).toBeVisible();
+  await expect
+    .poll(() => before.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0))
+    .toBe(true);
+});
+
+test("GIF の比較は処理前後ともアニメーションのデータを表示する", async ({ page }) => {
+  await page.goto("/image-adjust/en/compress/gif/");
+  await addFiles(page, "animated.gif");
+  const card = page.getByTestId("result-card").first();
+  await expectDone(card);
+  await card.getByTestId("result-compare").click();
+  const stage = page.getByTestId("compare-stage");
+  await expect(stage.locator("img")).toHaveCount(2);
+  for (const name of ["Before", "After"]) {
+    const image = stage.getByRole("img", { name, exact: true });
+    await expect
+      .poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0))
+      .toBe(true);
+    const bytes = await image.evaluate(async (img: HTMLImageElement): Promise<number[]> => {
+      const response = await fetch(img.src);
+      const buffer = await response.arrayBuffer();
+      return Array.from(new Uint8Array(buffer));
+    });
+    expect(readGifInfo(new Uint8Array(bytes))).toMatchObject({ frames: 4, animated: true });
+  }
+  await expect(page.getByRole("radiogroup", { name: "Output width" })).toHaveCount(0);
+});
+
+test("複数幅の比較は最大幅で開き、比較する出力を切り替えられる", async ({ page }) => {
+  await page.goto("/image-adjust/en/");
+  await chooseOutput(page, "webp");
+  await openSettingsIfMobile(page);
+  await page.locator("summary:visible").filter({ hasText: "Advanced" }).click();
+  await page.getByRole("checkbox", { name: "640px", exact: true }).check();
+  await page.getByRole("checkbox", { name: "1280px", exact: true }).check();
+  await closeSettingsIfMobile(page);
+
+  // 設定の幅より大きな元画像を用意し、異なる幅の出力を作る
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1600;
+    canvas.height = 800;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("canvas context unavailable");
+    context.fillStyle = "#4678ab";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/png").split(",")[1] as string;
+  });
+  await page
+    .getByTestId("file-input")
+    .setInputFiles({ name: "wide.png", mimeType: "image/png", buffer: Buffer.from(png, "base64") });
+  const card = page.getByTestId("result-card").first();
+  await expectDone(card);
+  await card.getByTestId("result-compare").click();
+  const widths = page.getByRole("radiogroup", { name: "Output width" });
+  await expect(widths.getByRole("radio", { name: "1280px", exact: true })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  const after = page.getByTestId("compare-stage").getByRole("img", { name: "After", exact: true });
+  await expect.poll(() => after.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1280);
+  await widths.getByRole("radio", { name: "640px", exact: true }).click();
+  await expect(widths.getByRole("radio", { name: "640px", exact: true })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  await expect.poll(() => after.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(640);
+});
+
 test("SVG を最適化でき、プレビューに SVG の blob: URL を出さない", async ({ page }) => {
   await page.goto("/image-adjust/compress/svg/");
   await addFiles(page, "sample.svg", "script.svg");
