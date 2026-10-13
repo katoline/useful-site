@@ -123,6 +123,7 @@ describe("_headers", () => {
     expect(file).toContain(`/*\n  Content-Security-Policy: ${HEADER_CSP}\n`);
     expect(HEADER_CSP).toBe("frame-ancestors 'none'; object-src 'none'; base-uri 'self'");
     expect(file).toContain("  X-Content-Type-Options: nosniff");
+    expect(file).toContain("  Strict-Transport-Security: max-age=31536000\n");
     expect(file).toContain("/assets/*\n  Cache-Control: public, max-age=31536000, immutable");
     expect(file).toContain("/image-adjust/sw.js\n  Cache-Control: no-cache");
     // CSP はワイルドカードの 1 本だけ（同じヘッダーを複数ルールで付けると値が連結される）

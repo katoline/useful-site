@@ -176,6 +176,7 @@ export function buildHeadersFile(basePath: string, extraRules: HeaderRule[] = []
       headers: [
         `Content-Security-Policy: ${HEADER_CSP}`,
         "X-Content-Type-Options: nosniff",
+        "Strict-Transport-Security: max-age=31536000",
         "Referrer-Policy: strict-origin-when-cross-origin",
         "X-Frame-Options: DENY",
       ],
