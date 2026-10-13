@@ -1,5 +1,5 @@
 import { Menu } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type MouseEvent, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { SITE_NAME } from "../config";
 import { useI18n } from "../i18n";
@@ -10,6 +10,7 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
 import { cn } from "../utils";
+import { handleAppNavigation } from "./app-navigation";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { LocalizedLink, LocalizedNavLink } from "./LocalizedLink";
 import type { ShellConfig } from "./Shell";
@@ -29,6 +30,12 @@ export function SiteHeader({ config }: { config: ShellConfig }) {
     setMenuOpen(false);
   }, [location.key]);
   const close = () => setMenuOpen(false);
+  const navigate = (event: MouseEvent<HTMLAnchorElement>) =>
+    handleAppNavigation(event, config.appPath);
+  const navigateAndClose = (event: MouseEvent<HTMLAnchorElement>) => {
+    navigate(event);
+    close();
+  };
   const sitePath = createAppPaths("");
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -42,6 +49,7 @@ export function SiteHeader({ config }: { config: ShellConfig }) {
         <Link
           to={sitePath.localizedPath(lang, "")}
           data-testid="site-home"
+          onClick={navigate}
           className="inline-flex min-h-11 shrink-0 items-center text-sm font-bold"
         >
           {SITE_NAME[lang]}
@@ -93,7 +101,7 @@ export function SiteHeader({ config }: { config: ShellConfig }) {
               <Link
                 to={sitePath.localizedPath(lang, "")}
                 className="inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold"
-                onClick={close}
+                onClick={navigateAndClose}
               >
                 {SITE_NAME[lang]}
               </Link>
@@ -106,7 +114,7 @@ export function SiteHeader({ config }: { config: ShellConfig }) {
                     <li key={app.id}>
                       <Link
                         to={createAppPaths(app.path).localizedPath(lang, "")}
-                        onClick={close}
+                        onClick={navigateAndClose}
                         aria-current={config.appPath === app.path ? "page" : undefined}
                         className={cn(
                           "flex min-h-11 items-center gap-2 rounded-md px-3 text-sm",
@@ -154,7 +162,7 @@ export function SiteHeader({ config }: { config: ShellConfig }) {
                 <Link
                   key={page}
                   to={sitePath.localizedPath(lang, page)}
-                  onClick={close}
+                  onClick={navigateAndClose}
                   className="inline-flex min-h-11 items-center text-sm"
                 >
                   {t(page === "privacy" ? "legal.privacy" : "legal.terms")}
