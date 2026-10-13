@@ -37,7 +37,7 @@ describe("fetch-image の判定バッファの安全弁", () => {
     const res = await app.request(
       `${SITE_ORIGIN}${API_BASE_PATH}/fetch-image?url=${encodeURIComponent("https://cdn.example.com/x.svg")}`,
       { headers: { "Sec-Fetch-Site": "same-origin" } },
-      {} as Env,
+      { FETCH_IMAGE_RATE_LIMITER: { limit: async () => ({ success: true }) } } as unknown as Env,
     );
     expect(res.status).toBe(415);
     expect(((await res.json()) as { error: string }).error).toBe("not_image");
