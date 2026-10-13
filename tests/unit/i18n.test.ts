@@ -7,8 +7,7 @@ import {
   splitLangPath,
   switchLangPath,
   translate,
-} from "~/i18n";
-import { allBuildPaths, allPagePaths, allPrerenderPaths } from "~/lib/site-routes";
+} from "~/platform/i18n";
 
 /** 辞書の葉のキーを列挙する */
 function leafKeys(obj: unknown, prefix = ""): string[] {
@@ -34,15 +33,6 @@ describe("辞書", () => {
     for (const key of leafKeys(dictionaries.ja)) {
       expect(vars(translate("en", key as never)), key).toEqual(vars(translate("ja", key as never)));
     }
-  });
-
-  it("t() は変数を埋める", () => {
-    expect(translate("ja", "pages.convert.title", { from: "PNG", to: "WebP" })).toBe(
-      "PNG を WebP に変換",
-    );
-    expect(translate("en", "pages.convert.title", { from: "PNG", to: "WebP" })).toBe(
-      "Convert PNG to WebP",
-    );
   });
 
   it("バイト数を言語に合わせて表示する", () => {
@@ -75,15 +65,36 @@ describe("URL と言語", () => {
     expect(switchLangPath("/en/compress/jpeg/", "ja")).toBe("/compress/jpeg/");
     expect(switchLangPath("/en/", "ja")).toBe("/");
   });
-
-  it("prerender 対象は全ページ × 全言語で、末尾スラッシュなし", () => {
-    const paths = allPrerenderPaths();
-    expect(paths).toHaveLength(allPagePaths().length * LANGS.length);
-    expect(paths).toContain("/");
-    expect(paths).toContain("/en");
-    expect(paths).toContain("/en/convert/webp-to-jpeg");
-    expect(paths).toContain("/compress/svg");
-    expect(paths.filter((p) => p !== "/" && p.endsWith("/"))).toEqual([]);
-    expect(allBuildPaths()).toEqual(expect.arrayContaining(["/404", "/en/404"]));
-  });
 });
+
+const appDictionaries = import.meta.glob<{ ja?: unknown; en?: unknown }>(
+  "../../app/apps/*/i18n/{ja,en}.ts",
+  { eager: true },
+);
+for (const [file, module] of Object.entries(appDictionaries).filter(([file]) =>
+  file.endsWith("/ja.ts"),
+)) {
+  describe(file, () => {
+    it("日英のキーと置換変数が一致する", () => {
+      const en = appDictionaries[file.replace("/ja.ts", "/en.ts")]?.en;
+      expect(leafKeys(en).sort()).toEqual(leafKeys(module.ja).sort());
+      function flatten(dict: unknown, prefix = ""): Record<string, string> {
+        if (typeof dict === "string") return { [prefix]: dict };
+        return Object.assign(
+          {},
+          ...Object.entries(dict as Record<string, unknown>).map(([key, value]) =>
+            flatten(value, prefix ? `${prefix}.${key}` : key),
+          ),
+        );
+      }
+      const jaFlat = flatten(module.ja),
+        enFlat = flatten(en);
+      for (const key of Object.keys(jaFlat)) {
+        expect((enFlat[key] ?? "").trim()).not.toBe("");
+        expect([...(enFlat[key] ?? "").matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort()).toEqual(
+          [...(jaFlat[key] ?? "").matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort(),
+        );
+      }
+    });
+  });
+}

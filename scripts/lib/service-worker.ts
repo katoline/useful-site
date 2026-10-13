@@ -1,9 +1,9 @@
 /**
- * Service Worker の生成（scripts/postbuild.ts から、アセットを build/client/image-adjust/ に移した後に呼ぶ）。
+ * Service Worker の生成（scripts/postbuild.ts から、プリレンダリング完了後に呼ぶ）。
  *
- * 1. sw/sw.ts を Vite（ライブラリモード・IIFE）で 1 ファイルにバンドルする
- * 2. workbox-build の injectManifest で、配信ディレクトリ（build/client/image-adjust/）の
- *    HTML（日英の全ページ）・JS・CSS・WASM・アイコン・マニフェストの一覧を self.__WB_MANIFEST に埋め込む
+ * 1. アプリの sw/sw.ts（呼び出し側が sourceEntry で渡す）を Vite（ライブラリモード・IIFE）で 1 ファイルにバンドルする
+ * 2. アプリの配信ディレクトリの HTML・アイコン・マニフェストと、共有 /assets/ の JS・CSS・WASM を
+ *    workbox-build の injectManifest で self.__WB_MANIFEST に埋め込む
  *
  * vite-plugin-pwa を使わない理由は AGENTS.md「組み合わせの都合」7（プリレンダリング HTML の出力が
  * Vite のバンドル完了より後で、かつ postbuild で配置が変わるため）。
@@ -19,7 +19,7 @@ export const MAX_PRECACHE_FILE_BYTES = 20 * 1024 * 1024;
 
 /**
  * プリキャッシュの URL を配信 URL に揃える。
- * "about/index.html" → "/image-adjust/about/"、"index.html" → "/image-adjust/"、それ以外は接頭辞だけ付ける
+ * "about/index.html" → "/<アプリ>/about/"、"index.html" → "/<アプリ>/"、それ以外は接頭辞だけ付ける
  * （Workers の html_handling: auto-trailing-slash では index.html 付きの URL はリダイレクトになるため）
  */
 export function toPrecacheUrl(basePath: string, file: string): string {
@@ -30,13 +30,14 @@ export function toPrecacheUrl(basePath: string, file: string): string {
 export async function generateServiceWorker(options: {
   /** プロジェクトのルート */
   root: string;
-  /** 配信ディレクトリ（build/client/image-adjust） */
+  sourceEntry: string;
+  /** 配信ディレクトリ（build/client/app） */
   baseDir: string;
-  /** "/image-adjust" */
+  /** "/<アプリ>"（先頭スラッシュ付き） */
   basePath: string;
 }): Promise<{ count: number; size: number }> {
-  const { root, baseDir, basePath } = options;
-  const tmp = await mkdtemp(path.join(tmpdir(), "image-adjust-sw-"));
+  const { root, baseDir, basePath, sourceEntry } = options;
+  const tmp = await mkdtemp(path.join(tmpdir(), "app-sw-"));
   try {
     await build({
       configFile: false,
@@ -52,9 +53,9 @@ export async function generateServiceWorker(options: {
         sourcemap: false,
         copyPublicDir: false,
         lib: {
-          entry: path.join(root, "sw/sw.ts"),
+          entry: sourceEntry,
           formats: ["iife"],
-          name: "imageAdjustServiceWorker",
+          name: "appServiceWorker",
           fileName: () => "sw.js",
         },
       },
@@ -63,16 +64,19 @@ export async function generateServiceWorker(options: {
     const { count, size, warnings } = await injectManifest({
       swSrc: path.join(tmp, "sw.js"),
       swDest: path.join(baseDir, "sw.js"),
-      globDirectory: baseDir,
-      globPatterns: ["**/*.{html,js,css,wasm,svg,png,ico,webmanifest,woff2}"],
+      globDirectory: path.dirname(baseDir),
+      globPatterns: [
+        `${basePath.slice(1)}/**/*.{html,js,css,wasm,svg,png,ico,webmanifest,woff2}`,
+        "assets/**/*.{js,css,wasm,woff2}",
+      ],
       // 404 ページは配信 URL が別（存在しないパスで返る）なのでプリキャッシュしない
-      globIgnores: ["sw.js", "404.html", "*/404.html", "**/*.map"],
+      globIgnores: ["**/sw.js", "**/404.html", "**/*.map"],
       maximumFileSizeToCacheInBytes: MAX_PRECACHE_FILE_BYTES,
       // ファイル名にハッシュが付いたアセットは revision を持たせない
       dontCacheBustURLsMatching: /^assets\//,
       manifestTransforms: [
         async (entries) => ({
-          manifest: entries.map((entry) => ({ ...entry, url: toPrecacheUrl(basePath, entry.url) })),
+          manifest: entries.map((entry) => ({ ...entry, url: toPrecacheUrl("", entry.url) })),
           warnings: [],
         }),
       ],

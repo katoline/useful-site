@@ -1,0 +1,26 @@
+### How We Handle Your Images
+
+All converting, compressing, and icon generation in Image Adjust happens inside your browser. The images you add, and the processed results, are never sent to or stored on our servers.
+
+### Loading an Image from a URL
+
+Only when you use the "load an image from a URL" feature, the request goes through our relay server, as follows:
+
+- The URL you enter is sent to our relay server, which runs on Cloudflare Workers.
+- The relay server fetches the image from that URL and streams it back to your browser. The image is then processed in your browser, just like with every other feature.
+- The relay server does not store the fetched image or the URL you entered.
+- However, to operate Image Adjust and prevent abuse (for rate limiting), Cloudflare, Inc.'s systems may temporarily record access logs, including your IP address, the request URL, and your User-Agent.
+
+Unless you use this feature, no information about your images is sent to our servers.
+
+### Information Stored on Your Device
+
+- **The app itself:** So Image Adjust can work offline, its program files (HTML, JavaScript, CSS, and so on) are stored using a Service Worker and Cache Storage.
+- **Images shared from other apps:** When you share an image to Image Adjust from another app, it's kept briefly in a cache on your device only until it's handed to the converter, and is deleted once the converter has received it.
+
+### External Transmission When Loading an Image URL
+
+| Recipient (company) | Information sent | Purpose | Privacy policy / opt-out |
+| --- | --- | --- | --- |
+| Cloudflare (Cloudflare, Inc.), only when you load an image from a URL | The image URL you entered, IP address, User-Agent, and date and time of the request | Fetching (relaying) the image from the URL you specified, operating Image Adjust, and preventing abuse (rate limiting) | [Privacy policy](https://www.cloudflare.com/privacypolicy/) (nothing is sent unless you use this feature) |
+

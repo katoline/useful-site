@@ -13,5 +13,5 @@
     "isolatedModules": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["sw/**/*", "app/lib/pwa.ts", "app/lib/config.ts", "app/i18n/langs.ts"]
+  "include": ["app/apps/*/sw/**/*", "app/platform/config/**/*"]
 }

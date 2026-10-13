@@ -1,24 +1,17 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "image-adjust",
+  "name": "useful-site",
   "main": "./worker/index.ts",
   "compatibility_date": "2026-10-01",
-  // 公開先（暫定ドメイン。plan.md §4.2）。このアプリは /image-adjust 以下だけを担当する。
-  // "/image-adjust*" の 1 本にすると /image-adjust-foo 等の他アプリのパスにも一致するので、
-  // /image-adjust（末尾スラッシュ付きへのリダイレクト用）と /image-adjust/* の 2 本に分ける。
-  // ドメインを変えるときは app/lib/config.ts の DEFAULT_SITE_ORIGIN と合わせて変える
-  // （`pnpm run deploy` は公開オリジンのホストがここのどれとも一致しなければ止まる）
-  "routes": [
-    { "pattern": "t0n03k1.com/image-adjust", "zone_name": "t0n03k1.com" },
-    { "pattern": "t0n03k1.com/image-adjust/*", "zone_name": "t0n03k1.com" }
-  ],
+  // サイト全体を担当する。公開オリジンは platform/config とそろえる。
+  "routes": [{ "pattern": "t0n03k1.com/*", "zone_name": "t0n03k1.com" }],
   // workers.dev は独自ドメインの設定が済むまでの確認用に残す。wrangler は routes があると
   // workers_dev の既定値を false にするので、明示して routes を足す前と同じ（有効）にしておく
   "workers_dev": true,
   "assets": {
     "binding": "ASSETS",
     // API だけ Worker を先に通し、それ以外は静的アセット（プリレンダリング済み HTML 等）を返す
-    "run_worker_first": ["/image-adjust/api/*"],
+    "run_worker_first": ["/*/api/*"],
     // /about → /about/ に寄せ、about/index.html を返す（末尾スラッシュ付きに統一）
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page"

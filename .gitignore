@@ -1,7 +1,7 @@
 docs/
 .direnv/
 node_modules/
-build/
+/build/
 dist/
 .wrangler/
 .react-router/

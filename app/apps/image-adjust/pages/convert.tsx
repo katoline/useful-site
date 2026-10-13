@@ -1,0 +1,69 @@
+import { useLocation } from "react-router";
+import { ImageTool } from "~/apps/image-adjust/components/tools/ImageTool";
+import { faqFromDict } from "~/apps/image-adjust/components/tools/ToolFaq";
+import { useI18n } from "~/apps/image-adjust/i18n";
+import {
+  type ConvertPair,
+  FORMAT_LABEL,
+  isConvertPair,
+  pageParam,
+  parseConvertPair,
+} from "~/apps/image-adjust/lib/site-routes";
+import { faqJsonLd, webApplicationJsonLd } from "~/apps/image-adjust/seo/json-ld";
+import { buildPageMeta, metaContext } from "~/apps/image-adjust/seo/meta";
+import { NotFound } from "~/platform/shell/NotFound";
+import { PageHeader } from "~/platform/shell/PageHeader";
+import type { Route } from "./+types/convert";
+
+/**
+ * 変換方向（app/routes.ts が CONVERT_PAIRS の値ごとに登録する静的ルート）。パスから取り出す
+ */
+function pairFrom(pathname: string): ConvertPair | undefined {
+  const pair = pageParam(pathname, "convert");
+  return isConvertPair(pair) ? pair : undefined;
+}
+
+function labels(pair: ConvertPair) {
+  const { from, to } = parseConvertPair(pair);
+  return { from: FORMAT_LABEL[from], to: FORMAT_LABEL[to] };
+}
+
+export function meta({ location }: Route.MetaArgs) {
+  const { lang, page, t } = metaContext(location.pathname);
+  const pair = pairFrom(location.pathname);
+  const l = pair && labels(pair);
+  if (!l) return [{ title: t("errors.notFoundTitle") }, { name: "robots", content: "noindex" }];
+  const title = t("pages.convert.title", l);
+  const description = t("pages.convert.description", l);
+  return buildPageMeta({
+    lang,
+    page,
+    title: t("pages.convert.metaTitle", l),
+    description,
+    breadcrumbs: [{ name: title, page }],
+    jsonLd: [
+      webApplicationJsonLd({ lang, page, name: title, description }),
+      faqJsonLd(faqFromDict(t, `convert.faq.${pair}`)),
+    ],
+  });
+}
+
+/** 変換方向ごとの入口ページ（§3.7）。出力形式の初期値を変えたツール＋専用の説明・FAQ */
+export default function ConvertPairPage() {
+  const { t } = useI18n();
+  const pair = pairFrom(useLocation().pathname);
+  if (!pair) return <NotFound />;
+  const l = labels(pair);
+  const { to } = parseConvertPair(pair);
+  return (
+    <>
+      <PageHeader title={t("pages.convert.title", l)} lead={t("pages.convert.lead", l)} />
+      <ImageTool
+        settingsKey={`tool:convert:${pair}`}
+        initialSettings={{ output: to === "gif" || to === "svg" ? "same" : to }}
+        intro={t(`convert.intro.${pair}`)}
+        faq={faqFromDict(t, `convert.faq.${pair}`)}
+      />
+    </>
+  );
+}

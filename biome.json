@@ -4,7 +4,7 @@
   "files": {
     "includes": [
       "**",
-      "!**/build",
+      "!build",
       "!**/dist",
       "!**/.react-router",
       "!**/.wrangler",

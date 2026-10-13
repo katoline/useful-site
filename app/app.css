@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "./theme/tokens.css";
+@import "./platform/theme/tokens.css";
 
 /* dark: バリアントを data-theme 属性に紐付ける（prefers-color-scheme ではなく） */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
