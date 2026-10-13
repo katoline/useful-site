@@ -21,3 +21,23 @@ export const IMAGE_EXTENSIONS = [
   ".avif",
   ".svg",
 ] as const;
+
+/** プレビュー画像に付ける MIME（入力ファイルの MIME は使わない） */
+export const IMAGE_MIME_TYPES = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".avif": "image/avif",
+  ".svg": "image/svg+xml",
+} as const satisfies Record<(typeof IMAGE_EXTENSIONS)[number], string>;
+
+/** 読み込める画像の拡張子から固定 MIME を得る */
+export function imageMimeTypeForFileName(name: string): string | undefined {
+  const dot = name.lastIndexOf(".");
+  if (dot <= 0) return undefined;
+  const extension = name.slice(dot).toLowerCase();
+  const accepted = IMAGE_EXTENSIONS.find((value) => value === extension);
+  return accepted ? IMAGE_MIME_TYPES[accepted] : undefined;
+}
