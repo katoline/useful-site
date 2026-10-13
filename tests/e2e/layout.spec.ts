@@ -59,7 +59,7 @@ test("テーマの選択が再読み込み後も保たれ、描画前に適用�
 
   await chooseTheme(page, "dark");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  expect(await page.evaluate(() => localStorage.getItem("image-adjust:theme"))).toBe("dark");
+  expect(await page.evaluate(() => localStorage.getItem("site:theme"))).toBe("dark");
 
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
@@ -93,7 +93,7 @@ test("言語切り替えは同じページの他言語版へクライアント�
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("How to Use & About");
   expect(await page.evaluate(() => (window as { __marker?: number }).__marker)).toBe(1);
-  expect(await page.evaluate(() => localStorage.getItem("image-adjust:lang"))).toBe("en");
+  expect(await page.evaluate(() => localStorage.getItem("site:lang"))).toBe("en");
 });
 
 test("ヘッダーのロゴのマークは読み上げず、テーマで白黒が反転する", async ({ page }) => {
@@ -132,9 +132,9 @@ test("ヘッダーのリンクとフッターのリンクがある", async ({ pa
   }
   await expect(page).toHaveURL(/\/image-adjust\/en\/guide\/$/);
   const footer = page.getByRole("contentinfo");
-  await expect(footer.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute(
+  await expect(footer.getByRole("link", { name: /Privacy policy/i })).toHaveAttribute(
     "href",
-    "/image-adjust/en/privacy/",
+    "/en/privacy/",
   );
 });
 
@@ -173,9 +173,11 @@ function collectErrors(page: Page) {
   return errors;
 }
 
-test("動的な値が不正な URL は 404 で、ハイドレーションでエラーが出ない", async ({ page }) => {
+test("存在しない URL は共通 404 で、ハイドレーションでエラーが出ない", async ({ page }) => {
   const errors = collectErrors(page);
   for (const [path, heading] of [
+    ["/no-such-page/", "ページが見つかりません"],
+    ["/en/no-such-page/", "Page not found"],
     ["/image-adjust/convert/bogus/", "ページが見つかりません"],
     ["/image-adjust/en/guide/bogus/", "Page not found"],
   ] as const) {

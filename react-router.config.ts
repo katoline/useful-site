@@ -1,12 +1,17 @@
 import type { Config } from "@react-router/dev/config";
-import { BASE_PATH } from "./app/lib/config";
-import { allBuildPaths } from "./app/lib/site-routes";
+import { allLegalBuildPaths } from "./app/platform/legal/paths.ts";
+import { collectAppRoutes } from "./scripts/lib/app-routes.ts";
 
 export default {
   // SEO のため全ページをビルド時に静的 HTML にする。SSR はしない
   ssr: false,
-  basename: `${BASE_PATH}/`,
-  prerender: () => allBuildPaths(),
+  basename: "/",
+  prerender: async () => [
+    ...(await collectAppRoutes()).flatMap((app) => app.allBuildPaths()),
+    ...allLegalBuildPaths(),
+    "/404",
+    "/en/404",
+  ],
   future: {
     // @cloudflare/vite-plugin と併用するため Vite の Environment API を使う
     v8_viteEnvironmentApi: true,

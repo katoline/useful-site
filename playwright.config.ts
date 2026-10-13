@@ -8,7 +8,9 @@ const PORT = Number(process.env.E2E_PORT) || 4173;
  * ブラウザは Nix の devShell が PLAYWRIGHT_BROWSERS_PATH で供給する（`nix develop -c pnpm test:e2e`）。
  */
 export default defineConfig({
-  testDir: "tests/e2e",
+  // サイト共通の E2E（tests/e2e）と、アプリ固有の E2E（app/apps/<id>/tests/e2e。アプリを消せば一緒に消える）
+  testDir: ".",
+  testMatch: /(^|\/)(tests\/e2e|app\/apps\/[^/]+\/tests\/e2e)\/[^/]+\.spec\.ts$/,
   fullyParallel: true,
   // 同じマシンで他の作業が走っていても安定するよう、並列数を抑えて待ち時間を長めにする
   workers: process.env.CI ? 2 : 4,

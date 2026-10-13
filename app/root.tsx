@@ -12,20 +12,13 @@ import {
   useLocation,
   useRouteError,
 } from "react-router";
-import { AdSlot } from "~/components/ads/AdSlot";
-import { CloudflareAnalytics } from "~/components/analytics/CloudflareAnalytics";
-import { BottomNoticesProvider } from "~/components/layout/BottomNotices";
-import { LangSuggestion } from "~/components/layout/LangSuggestion";
-import { PageHeader } from "~/components/layout/PageHeader";
-import { SiteFooter } from "~/components/layout/SiteFooter";
-import { SiteHeader } from "~/components/layout/SiteHeader";
-import { PwaRoot } from "~/components/pwa/PwaRoot";
-import { TooltipProvider } from "~/components/ui/tooltip";
-import { I18nProvider, langFromPathname, translate } from "~/i18n";
-import { BASE_PATH } from "~/lib/config";
-import { manifestFileName } from "~/lib/pwa";
-import { ToolSessionProvider } from "~/state/ToolSessionProvider";
-import { THEME_COLORS, THEME_INIT_SCRIPT } from "~/theme/theme";
+import { CloudflareAnalytics } from "~/platform/analytics/CloudflareAnalytics";
+import { SITE_NAME } from "~/platform/config";
+import { I18nProvider, langFromPathname, translate } from "~/platform/i18n";
+import { PageHeader } from "~/platform/shell/PageHeader";
+import { Shell, ShellProviders } from "~/platform/shell/Shell";
+import { ToolSessionProvider } from "~/platform/state/ToolSessionProvider";
+import { THEME_COLORS, THEME_INIT_SCRIPT } from "~/platform/theme/theme";
 import "./app.css";
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -46,11 +39,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           content={THEME_COLORS.light}
         />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content={THEME_COLORS.dark} />
-        {/* PWA：表示中の言語のマニフェスト（id は日英共通）とアイコン（§6.1） */}
-        <link rel="manifest" href={`${BASE_PATH}/${manifestFileName(lang)}`} />
-        <link rel="icon" href={`${BASE_PATH}/favicon.ico`} sizes="32x32" />
-        <link rel="icon" href={`${BASE_PATH}/favicon.svg`} type="image/svg+xml" />
-        <link rel="apple-touch-icon" href={`${BASE_PATH}/apple-touch-icon.png`} />
+        <link rel="icon" href="/favicon.ico" sizes="32x32" />
         <Meta />
         <Links />
       </head>
@@ -64,38 +53,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
-  const { pathname } = useLocation();
-  const lang = langFromPathname(pathname);
-  return (
-    <I18nProvider lang={lang}>
-      <TooltipProvider delayDuration={300}>
-        {/* 画面下の通知（言語の案内・PWA の通知）を 1 つの固定コンテナに縦に積む */}
-        <BottomNoticesProvider>
-          <SiteHeader />
-          {/* ヘッダー直下の横長バナー（PC のみ。§7.2） */}
-          <div className="mx-auto hidden max-w-6xl px-4 md:block">
-            <AdSlot format="banner" />
-          </div>
-          <main id="main" className="mx-auto w-full max-w-6xl px-4 py-8">
-            {children}
-          </main>
-          <SiteFooter />
-          {/* 画面下に重ねて出す（流れに入れるとハイドレーション後にヘッダーが押し下げられる） */}
-          <LangSuggestion />
-          <PwaRoot />
-        </BottomNoticesProvider>
-      </TooltipProvider>
-    </I18nProvider>
-  );
-}
-
 export default function App() {
   return (
     <ToolSessionProvider>
-      <Shell>
-        <Outlet />
-      </Shell>
+      <I18nProvider lang={langFromPathname(useLocation().pathname)}>
+        <ShellProviders>
+          <Outlet />
+        </ShellProviders>
+      </I18nProvider>
     </ToolSessionProvider>
   );
 }
@@ -108,13 +73,17 @@ export function ErrorBoundary() {
   const detail = import.meta.env.DEV && error instanceof Error ? error.message : "";
   return (
     <ToolSessionProvider>
-      <Shell>
-        <PageHeader
-          title={translate(lang, notFound ? "errors.notFoundTitle" : "errors.genericTitle")}
-          lead={translate(lang, notFound ? "errors.notFoundBody" : "errors.genericBody")}
-        />
-        {detail && <pre className="overflow-x-auto text-sm text-destructive">{detail}</pre>}
-      </Shell>
+      <I18nProvider lang={lang}>
+        <ShellProviders>
+          <Shell config={{ appPath: "", name: SITE_NAME, menu: [] }}>
+            <PageHeader
+              title={translate(lang, notFound ? "errors.notFoundTitle" : "errors.genericTitle")}
+              lead={translate(lang, notFound ? "errors.notFoundBody" : "errors.genericBody")}
+            />
+            {detail && <pre className="overflow-x-auto text-sm text-destructive">{detail}</pre>}
+          </Shell>
+        </ShellProviders>
+      </I18nProvider>
     </ToolSessionProvider>
   );
 }

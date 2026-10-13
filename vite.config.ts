@@ -5,12 +5,12 @@ import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
 import remarkGfm from "remark-gfm";
 import { defineConfig } from "vite";
-import { BASE_PATH } from "./app/lib/config.ts";
+import { appPublicPlugin } from "./scripts/vite-plugin-app-public.ts";
 import { siteFilesPlugin } from "./scripts/vite-plugin-site-files.ts";
 
 export default defineConfig({
-  // JS / CSS / WASM の URL に /image-adjust/ を付ける
-  base: `${BASE_PATH}/`,
+  // サイト共通のアセットはドメイン直下で配信する
+  base: "/",
   resolve: {
     alias: { "~": path.resolve(import.meta.dirname, "app") },
   },
@@ -26,10 +26,11 @@ export default defineConfig({
     // PWA のマニフェスト（日英）と sitemap.xml を出す。Service Worker は postbuild で生成する
     // （プリレンダリング後の HTML をプリキャッシュに含めるため。AGENTS.md「組み合わせの都合」7）
     siteFilesPlugin(),
+    appPublicPlugin(),
   ],
   environments: {
     // Worker（wrangler.jsonc の name を snake_case にした環境名）の出力先を build/ にまとめる
-    image_adjust: { build: { outDir: "build/worker" } },
+    useful_site: { build: { outDir: "build/worker" } },
   },
   worker: {
     // Web Worker は ES モジュールで出す（new Worker(new URL(...), { type: "module" })）

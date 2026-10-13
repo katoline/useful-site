@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SITE_ORIGIN, normalizeSiteOrigin } from "~/lib/config";
+import { DEFAULT_SITE_ORIGIN, normalizeSiteOrigin } from "~/platform/config";
 import {
   checkDeployOrigin,
   checkOriginMatchesRoutes,
@@ -73,10 +73,7 @@ describe("site-origin", () => {
   });
 
   describe("公開オリジンと wrangler.jsonc の routes のずれ", () => {
-    const routes = [
-      { pattern: "t0n03k1.com/image-adjust", zone_name: "t0n03k1.com" },
-      { pattern: "t0n03k1.com/image-adjust/*", zone_name: "t0n03k1.com" },
-    ];
+    const routes = [{ pattern: "t0n03k1.com/*", zone_name: "t0n03k1.com" }];
 
     it("routes の pattern からホスト部を取り出す", () => {
       expect(routeHost(routes[0] as { pattern: string })).toBe("t0n03k1.com");

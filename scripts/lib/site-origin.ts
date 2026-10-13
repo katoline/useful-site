@@ -1,9 +1,9 @@
 /**
  * 公開時の SITE_ORIGIN の確認（canonical・hreflang・og:url・sitemap が仮のドメインや形の誤った値を指したまま
- * 公開しないため）。VITE_SITE_ORIGIN が未設定なら app/lib/config.ts の DEFAULT_SITE_ORIGIN（暫定ドメイン）を
+ * 公開しないため）。VITE_SITE_ORIGIN が未設定なら app/platform/config/index.ts の DEFAULT_SITE_ORIGIN（暫定ドメイン）を
  * 確かめる。Node で直接実行するスクリプトからも読むので、import 先は他を import しないファイルに限る。
  */
-import { DEFAULT_SITE_ORIGIN } from "../../app/lib/config.ts";
+import { DEFAULT_SITE_ORIGIN } from "../../app/platform/config/index.ts";
 
 /** 仮のオリジン（example ドメイン等）か */
 export function isPlaceholderOrigin(origin: string): boolean {
