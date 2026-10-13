@@ -4,6 +4,7 @@ import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promi
 import path from "node:path";
 // Node の型除去で直接実行するので、import 先は他を import しないファイルに限る
 import { BASE_PATH } from "../app/platform/config/index.ts";
+import { loadAppManifests } from "./lib/apps.ts";
 import { buildHeadersFile, type HeaderRule, injectCspMeta } from "./lib/csp.ts";
 import type { AppPostbuild } from "./lib/postbuild-types.ts";
 
@@ -16,11 +17,8 @@ for (const lang of ["", "en"]) {
   await rm(path.join(dir, "404"), { recursive: true });
 }
 // Workers は要求されたディレクトリに最も近い404を探すので、アプリ配下にも同じ共通ページを置く。
-const appsDir = path.resolve(import.meta.dirname, "../app/apps");
-for (const app of await readdir(appsDir, { withFileTypes: true })) {
-  if (!app.isDirectory()) continue;
-  const manifestFile = path.join(appsDir, app.name, "manifest.ts");
-  const { manifest } = (await import(manifestFile)) as { manifest: { path: string } };
+const apps = await loadAppManifests(path.resolve(import.meta.dirname, ".."));
+for (const { manifest } of apps) {
   if (!manifest.path) continue;
   for (const lang of ["", "en"]) {
     const dir = path.join(clientDir, manifest.path, lang);
@@ -57,13 +55,9 @@ console.log(`postbuild: ${htmlFiles.length} 件の HTML に CSP の meta を入�
 
 // アプリのビルド後フック（app/apps/<id>/build/postbuild.ts）を規約で集めて呼ぶ
 const extraHeaders: HeaderRule[] = [];
-for (const app of await readdir(appsDir, { withFileTypes: true })) {
-  if (!app.isDirectory()) continue;
-  const hookFile = path.join(appsDir, app.name, "build/postbuild.ts");
+for (const { dir, manifest } of apps) {
+  const hookFile = path.join(dir, "build/postbuild.ts");
   if (!existsSync(hookFile)) continue;
-  const { manifest } = (await import(path.join(appsDir, app.name, "manifest.ts"))) as {
-    manifest: { path: string };
-  };
   const { postbuild } = (await import(hookFile)) as { postbuild: AppPostbuild };
   const result = await postbuild({
     root: path.resolve(import.meta.dirname, ".."),

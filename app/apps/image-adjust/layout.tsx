@@ -1,14 +1,13 @@
 import { type LinksFunction, Outlet } from "react-router";
 import type { Lang } from "~/platform/i18n";
 import { Shell } from "~/platform/shell/Shell";
-import { LogoMark } from "./components/layout/LogoMark";
-import { FOOTER_ITEMS } from "./components/layout/nav-items";
-import { InstallPrompt } from "./components/pwa/InstallPrompt";
-import { PwaRoot } from "./components/pwa/PwaRoot";
+import { InstallPrompt, PwaRoot } from "./features/pwa";
 import { createT } from "./i18n";
-import { BASE_PATH } from "./lib/config";
-import { manifestFileName } from "./lib/pwa";
 import { manifest } from "./manifest";
+import { BASE_PATH } from "./shared/config";
+import { LogoMark } from "./shared/layout/LogoMark";
+import { FOOTER_ITEMS } from "./shared/layout/nav-items";
+import { manifestFileName } from "./shared/pwa";
 
 export function appLinks(lang: Lang): ReturnType<LinksFunction> {
   return [

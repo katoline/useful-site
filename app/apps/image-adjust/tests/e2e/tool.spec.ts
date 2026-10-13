@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { type Download, expect, type Locator, type Page, test } from "@playwright/test";
 import { unzipSync } from "fflate";
-import { detectFormat } from "../../lib/codecs/format";
-import { readGifInfo } from "../../lib/codecs/gif-info";
+import { detectFormat } from "../../domain/format";
+import { readGifInfo } from "../helpers/gif-info";
 
 const FIXTURES = path.resolve(import.meta.dirname, "../fixtures");
 const fixture = (name: string) => path.join(FIXTURES, name);

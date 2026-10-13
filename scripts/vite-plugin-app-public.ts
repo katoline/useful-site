@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { Plugin } from "vite";
+import { loadAppManifests } from "./lib/apps.ts";
 
 const TYPES: Record<string, string> = {
   ".svg": "image/svg+xml",
@@ -14,13 +15,10 @@ export function appPublicPlugin(): Plugin {
   const files = new Map<string, { source: Buffer; type: string }>();
   async function load() {
     files.clear();
-    const appsDir = path.resolve(import.meta.dirname, "../app/apps");
-    for (const app of await readdir(appsDir, { withFileTypes: true })) {
-      if (!app.isDirectory()) continue;
-      const { manifest } = (await import(path.join(appsDir, app.name, "manifest.ts"))) as {
-        manifest: { path: string };
-      };
-      const publicDir = path.join(appsDir, app.name, "public");
+    for (const { dir, manifest } of await loadAppManifests(
+      path.resolve(import.meta.dirname, ".."),
+    )) {
+      const publicDir = path.join(dir, "public");
       async function walk(dir: string, prefix: string) {
         let entries: import("node:fs").Dirent[];
         try {
@@ -55,6 +53,21 @@ export function appPublicPlugin(): Plugin {
     },
     async configureServer(server) {
       await load();
+      const refresh = async (file: string) => {
+        const relative = path
+          .relative(path.resolve(import.meta.dirname, "../app/apps"), file)
+          .split(path.sep)
+          .join("/");
+        if (/^[^/]+\/public\//.test(relative)) await load();
+      };
+      server.watcher.on("add", refresh);
+      server.watcher.on("unlink", refresh);
+      server.watcher.on("change", refresh);
+      server.httpServer?.once("close", () => {
+        server.watcher.off("add", refresh);
+        server.watcher.off("unlink", refresh);
+        server.watcher.off("change", refresh);
+      });
       server.middlewares.use((req, res, next) => {
         let pathname: string;
         try {

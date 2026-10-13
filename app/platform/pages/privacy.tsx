@@ -8,9 +8,7 @@ const CONTENT = import.meta.glob<ContentModule>("../content/*/privacy.mdx", { ea
 export function meta({ location }: Route.MetaArgs) {
   const { lang } = metaContext(location.pathname);
   const content = pickContent(CONTENT, lang, "privacy");
-  return content
-    ? buildPageMeta({ lang, page: "privacy", ...content.frontmatter, image: false })
-    : [];
+  return content ? buildPageMeta({ lang, page: "privacy", ...content.frontmatter }) : [];
 }
 export default function PrivacyPage() {
   const content = pickContent(CONTENT, useLang(), "privacy");

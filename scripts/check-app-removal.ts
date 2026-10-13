@@ -8,13 +8,13 @@
  * 使い方：`nix develop -c pnpm check:apps`（引数でアプリの id を渡すとそれだけを確かめる）
  */
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { cp, mkdtemp, readdir, rm, symlink } from "node:fs/promises";
+import { cp, mkdtemp, rm, symlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
+import { loadAppManifests } from "./lib/apps.ts";
+
 const root = path.resolve(import.meta.dirname, "..");
-const appsDir = path.join(root, "app/apps");
 
 /** 複製しないもの（ルート直下の名前）。生成物・依存・履歴・秘密情報 */
 const SKIP_TOP = new Set([
@@ -34,23 +34,6 @@ function shouldCopy(relative: string): boolean {
   if (relative === top && /^\.env/.test(top) && top !== ".env.example") return false;
   if (relative === top && top === ".dev.vars") return false;
   return true;
-}
-
-interface AppEntry {
-  dir: string;
-  path: string;
-}
-
-async function listApps(): Promise<AppEntry[]> {
-  const apps: AppEntry[] = [];
-  for (const entry of await readdir(appsDir, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const manifestFile = path.join(appsDir, entry.name, "manifest.ts");
-    if (!existsSync(manifestFile)) continue;
-    const { manifest } = (await import(manifestFile)) as { manifest: { path: string } };
-    apps.push({ dir: entry.name, path: manifest.path });
-  }
-  return apps.sort((a, b) => a.dir.localeCompare(b.dir));
 }
 
 function run(cwd: string, args: string[]): boolean {
@@ -86,7 +69,10 @@ async function check(removed: string[]): Promise<boolean> {
   }
 }
 
-const apps = await listApps();
+const apps = (await loadAppManifests(root)).map(({ dir, manifest }) => ({
+  dir: path.basename(dir),
+  path: manifest.path,
+}));
 const targets = apps.filter((app) => app.path !== "");
 const only = process.argv.slice(2);
 const unknown = only.filter((id) => !targets.some((app) => app.dir === id));

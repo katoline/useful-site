@@ -34,7 +34,6 @@ export function meta({ location }: { location: { pathname: string } }) {
     page: "",
     title: SITE_NAME[lang],
     description: manifest.description[lang],
-    image: false,
     jsonLd: [
       {
         "@context": "https://schema.org",

@@ -14,6 +14,7 @@ import { SITE_LEGAL_PAGES } from "../app/platform/legal/paths.ts";
 import { buildSitemap } from "../app/platform/seo/sitemap.ts";
 import { buildAdsTxt } from "./lib/ads-txt.ts";
 import { collectAppRoutes } from "./lib/app-routes.ts";
+import { listAppDirs, loadAppManifests } from "./lib/apps.ts";
 import { checkDeployOrigin } from "./lib/site-origin.ts";
 
 /** 片方の言語にしか無い記事（"en/foo.mdx が無い" 等）の一覧 */
@@ -55,13 +56,10 @@ export function siteFilesPlugin(): Plugin {
     ];
     generatedFiles["sitemaps/site.xml"] = buildSitemap(origin, [{ appPath: "", pages: sitePages }]);
     const sitemapNames = ["sitemaps/site.xml"];
-    const appsDir = path.resolve(import.meta.dirname, "../app/apps");
-    for (const entry of readdirSync(appsDir, { withFileTypes: true })) {
-      const file = path.join(appsDir, entry.name, "site-files.ts");
-      if (!entry.isDirectory()) continue;
-      const { manifest } = (await import(path.join(appsDir, entry.name, "manifest.ts"))) as {
-        manifest: { path: string; status: string };
-      };
+    for (const { dir, manifest } of await loadAppManifests(
+      path.resolve(import.meta.dirname, ".."),
+    )) {
+      const file = path.join(dir, "site-files.ts");
       const app = apps.find((item) => item.appPath === manifest.path);
       if (manifest.path && manifest.status !== "hidden" && app) {
         const sitemapName = `${manifest.path}/sitemap.xml`;
@@ -133,13 +131,13 @@ export function siteFilesPlugin(): Plugin {
           ].join("\n"),
         );
       }
-      const appsDir = path.resolve(import.meta.dirname, "../app/apps");
-      for (const app of readdirSync(appsDir, { withFileTypes: true })) {
-        if (!app.isDirectory()) continue;
-        const content = path.join(appsDir, app.name, "content");
+      for (const dir of await listAppDirs(path.resolve(import.meta.dirname, ".."))) {
+        const content = path.join(dir, "content");
         if (!existsSync(content)) continue;
         for (const missing of findMissingTranslations(content))
-          this.warn(`${app.name}/content/${missing} がありません（片方の言語にしか無い記事）`);
+          this.warn(
+            `${path.basename(dir)}/content/${missing} がありません（片方の言語にしか無い記事）`,
+          );
       }
     },
     generateBundle() {

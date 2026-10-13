@@ -4,7 +4,7 @@
  */
 import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
-import { API_BASE_PATH, SITE_ORIGIN } from "../../lib/config";
+import { API_BASE_PATH, SITE_ORIGIN } from "../../shared/config";
 import type { Env } from "../env";
 import { createFetchImageRoute, MAX_SNIFF_BUFFER_BYTES } from "./fetch-image";
 

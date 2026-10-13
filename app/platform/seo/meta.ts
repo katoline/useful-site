@@ -2,6 +2,7 @@
  * ページごとのメタ情報（plan.md §3.7, §9.1）。各ルートの meta() から buildPageMeta() を返す。
  * canonical・OGP・hreflang はすべて SITE_ORIGIN からの絶対 URL。
  */
+import { appOgImagePaths } from "virtual:app-og-images";
 import type { MetaDescriptor } from "react-router";
 import { absoluteAssetUrl, absoluteUrl, SITE_NAME } from "~/platform/config";
 import type { Lang } from "~/platform/i18n";
@@ -20,8 +21,9 @@ export interface PageMetaInput {
   description: string;
   ogType?: "website" | "article";
   /**
-   * OGP 画像（BASE_PATH からの相対パス、1200×630）。省略時は言語ごとの共通画像（public/og/<lang>.png。
-   * app/apps/image-adjust/scripts/generate-og-images.ts で生成）
+   * OGP 画像（アプリのパスからの相対パス、1200×630）。省略時は言語ごとの画像：そのページのアプリの
+   * og/<lang>.png（app/apps/<id>/public/og/）、アプリが持っていなければサイト共通の og/<lang>.png
+   * （public/og/）。生成は scripts/generate-og-images.ts。false なら付けない
    */
   image?: string | false;
   /** パンくず（トップは自動で先頭に付く）。省略時はトップ＋このページ */
@@ -34,9 +36,15 @@ export interface PageMetaInput {
 /** OGP 画像の大きさ（px） */
 export const OG_IMAGE_SIZE = { width: 1200, height: 630 } as const;
 
-/** 言語ごとの共通の OGP 画像（BASE_PATH からの相対パス） */
+/** 言語ごとの共通の OGP 画像（アプリのパス、またはサイトのルートからの相対パス） */
 export function defaultOgImage(lang: Lang): string {
   return `og/${lang}.png`;
+}
+
+/** image 省略時の OGP 画像の絶対 URL（アプリの画像、無ければサイト共通の画像） */
+export function defaultOgImageUrl(lang: Lang, appPath = ""): string {
+  const dir = appPath && appOgImagePaths.includes(appPath) ? `${appPath}/` : "";
+  return absoluteAssetUrl(`${dir}${defaultOgImage(lang)}`);
 }
 
 export function pageUrl(lang: Lang, page: string, appPath = ""): string {
@@ -74,7 +82,9 @@ export function buildPageMeta(input: PageMetaInput): MetaDescriptor[] {
   const imageUrl =
     image === false
       ? null
-      : absoluteAssetUrl(`${appPath ? `${appPath}/` : ""}${image ?? defaultOgImage(lang)}`);
+      : image === undefined
+        ? defaultOgImageUrl(lang, appPath)
+        : absoluteAssetUrl(`${appPath ? `${appPath}/` : ""}${image}`);
 
   const crumbs: BreadcrumbItem[] = [
     { name: SITE_NAME[lang], page: "", appPath: "" },

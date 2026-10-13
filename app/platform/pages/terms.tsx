@@ -8,9 +8,7 @@ const CONTENT = import.meta.glob<ContentModule>("../content/*/terms.mdx", { eage
 export function meta({ location }: Route.MetaArgs) {
   const { lang } = metaContext(location.pathname);
   const content = pickContent(CONTENT, lang, "terms");
-  return content
-    ? buildPageMeta({ lang, page: "terms", ...content.frontmatter, image: false })
-    : [];
+  return content ? buildPageMeta({ lang, page: "terms", ...content.frontmatter }) : [];
 }
 export default function TermsPage() {
   const content = pickContent(CONTENT, useLang(), "terms");

@@ -9,7 +9,7 @@
  * - ランタイムキャッシュは持たない。プリキャッシュに無いリクエスト（広告・解析・/image-adjust/api/）は
  *   素通しでネットワークへ行く（キャッシュしない）
  * - 共有受け取り（share_target）：POST /image-adjust/share-target の画像を Cache Storage に一時保存し、
- *   変換画面（/image-adjust/?share=1）にリダイレクトする。ページ側（app/apps/image-adjust/components/pwa/PwaRoot.tsx）が
+ *   変換画面（/image-adjust/?share=1）にリダイレクトする。ページ側（app/apps/image-adjust/features/pwa/ui/PwaRoot.tsx）が
  *   取り出して pushIncomingFiles() に渡し、キャッシュを消す
  */
 import { cacheNames, clientsClaim, setCacheNameDetails } from "workbox-core";
@@ -21,7 +21,7 @@ import {
   SW_CACHE_PREFIX,
   shareEntryUrl,
   shareRedirectPath,
-} from "../lib/pwa.ts";
+} from "../shared/pwa.ts";
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: (string | PrecacheEntry)[];

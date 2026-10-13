@@ -3,9 +3,12 @@
  * アイコン生成ツール（/icons/）と同じ処理（loadIconSource → generateIconFiles）で、ロゴの SVG からアイコン一式を作る
  * （plan.md §6.1「このサイト自身のアイコン生成機能で作る」）。
  */
-import { generateIconFiles } from "../../lib/icons/generate";
-import { DEFAULT_ICON_SETTINGS, type IconSettings } from "../../lib/icons/settings";
-import { loadIconSource } from "../../lib/icons/source";
+import {
+  DEFAULT_ICON_SETTINGS,
+  generateIconFiles,
+  type IconSettings,
+  loadIconSource,
+} from "../../features/icon-generator";
 
 export interface GeneratedIconFile {
   name: string;

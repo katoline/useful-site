@@ -9,6 +9,8 @@ export const RESERVED_APP_PATHS = [
   "robots.txt",
   "ads.txt",
   "favicon.ico",
+  // サイト共通の OGP 画像（public/og/）
+  "og",
 ] as const;
 
 /** ビルド時と単体テストで登録簿の衝突を検出する。 */
