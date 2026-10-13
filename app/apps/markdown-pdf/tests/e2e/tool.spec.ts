@@ -291,10 +291,12 @@ test("PDF の回帰：プレビューと同じ HTML から作った PDF のペ�
   await page.goto("/markdown-pdf/");
   await typeMarkdown(
     page,
-    "# 第一章 Hello\n\n最初のページ。\n\n| 列 | 値 |\n| --- | --- |\n| 甲 | 1 |\n\n---\n\n## 第二章\n\n次のページ。\n\n---\n\n## 第三章\n\n最後のページ。",
+    // PDF の文字の検査は英数字で行う（日本語は端末の書体で描くので、CJK フォントの無い環境（CI 等）では
+    // PDF から読み取れない。このテストはページ数・用紙・改ページでの振り分けを確かめるもの）
+    "# Alpha\n\nFirstPageBody\n\n| Key | Value |\n| --- | --- |\n| TableCell | 1 |\n\n---\n\n## Beta\n\nSecondPageBody\n\n---\n\n## Gamma\n\nLastPageBody",
   );
   await showPreview(page);
-  await expect(frame(page).getByRole("heading", { level: 2 }).last()).toHaveText("第三章");
+  await expect(frame(page).getByRole("heading", { level: 2 }).last()).toHaveText("Gamma");
   const srcdoc = async () => (await page.getByTestId("preview-frame").getAttribute("srcdoc")) ?? "";
 
   const render = async (html: string) => {
@@ -312,11 +314,11 @@ test("PDF の回帰：プレビューと同じ HTML から作った PDF のペ�
     expect(Math.round(size.width)).toBe(595);
     expect(Math.round(size.height)).toBe(842);
   }
-  expect(a4.pageTexts[0]).toContain("第一章Hello");
-  expect(a4.pageTexts[0]).toContain("最初のページ。");
-  expect(a4.pageTexts[0]).toContain("甲");
-  expect(a4.pageTexts[1]).toContain("第二章");
-  expect(a4.pageTexts[2]).toContain("最後のページ。");
+  expect(a4.pageTexts[0]).toContain("Alpha");
+  expect(a4.pageTexts[0]).toContain("FirstPageBody");
+  expect(a4.pageTexts[0]).toContain("TableCell");
+  expect(a4.pageTexts[1]).toContain("SecondPageBody");
+  expect(a4.pageTexts[2]).toContain("LastPageBody");
 
   // 改ページを切り、Letter・横にすると 1 ページで用紙も変わる
   await page.getByTestId("setting-pageBreakOnRule").click();
@@ -329,5 +331,5 @@ test("PDF の回帰：プレビューと同じ HTML から作った PDF のペ�
   expect(letter.pageCount).toBe(1);
   expect(Math.round(letter.pageSizes[0]?.width ?? 0)).toBe(792);
   expect(Math.round(letter.pageSizes[0]?.height ?? 0)).toBe(612);
-  expect(letter.pageTexts[0]).toContain("最後のページ。");
+  expect(letter.pageTexts[0]).toContain("LastPageBody");
 });
