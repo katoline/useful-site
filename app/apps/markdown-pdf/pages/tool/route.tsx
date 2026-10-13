@@ -18,8 +18,6 @@ export function meta({ location }: { location: { pathname: string } }) {
     page,
     title: t("page.metaTitle"),
     description,
-    // このアプリの OGP 画像はまだ無い
-    image: false,
     jsonLd: [
       webApplicationJsonLd({
         lang,

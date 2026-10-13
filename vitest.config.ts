@@ -1,8 +1,10 @@
 import path from "node:path";
 import { defineConfig } from "vitest/config";
+import { appOgImagesPlugin } from "./scripts/vite-plugin-app-og-images.ts";
 
 // React Router / Cloudflare のプラグインは読み込まない（単体テストを軽く保つ）
 export default defineConfig({
+  plugins: [appOgImagesPlugin()],
   resolve: {
     alias: { "~": path.resolve(import.meta.dirname, "app") },
   },

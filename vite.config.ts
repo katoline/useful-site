@@ -5,6 +5,7 @@ import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
 import remarkGfm from "remark-gfm";
 import { defineConfig } from "vite";
+import { appOgImagesPlugin } from "./scripts/vite-plugin-app-og-images.ts";
 import { appPublicPlugin } from "./scripts/vite-plugin-app-public.ts";
 import { siteFilesPlugin } from "./scripts/vite-plugin-site-files.ts";
 
@@ -27,6 +28,7 @@ export default defineConfig({
     // （プリレンダリング後の HTML をプリキャッシュに含めるため。AGENTS.md「組み合わせの都合」7）
     siteFilesPlugin(),
     appPublicPlugin(),
+    appOgImagesPlugin(),
   ],
   environments: {
     // Worker（wrangler.jsonc の name を snake_case にした環境名）の出力先を build/ にまとめる

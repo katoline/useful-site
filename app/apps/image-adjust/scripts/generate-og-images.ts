@@ -4,14 +4,14 @@
  *
  * 文字（日本語を含む）を描くため、依存を増やさず、E2E 用に入っている Playwright の Chromium で
  * HTML を描画してスクリーンショットを撮る（ブラウザは Nix の devShell が供給する）。
- * ロゴは app/apps/image-adjust/public/logo.svg と同じ図形（app/apps/image-adjust/lib/logo.ts）。当面は言語ごとに共通の 1 枚。
+ * ロゴは app/apps/image-adjust/public/logo.svg と同じ図形（app/apps/image-adjust/shared/logo.ts）。当面は言語ごとに共通の 1 枚。
  * ロゴを変えたら app/apps/image-adjust/scripts/generate-icons.ts と合わせて作り直す。
  */
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "@playwright/test";
-import { SITE_NAME } from "../lib/config.ts";
-import { buildLogoSvg } from "../lib/logo.ts";
+import { SITE_NAME } from "../shared/config.ts";
+import { buildLogoSvg } from "../shared/logo.ts";
 
 const PUBLIC_DIR = path.resolve(import.meta.dirname, "../public");
 // 白い背景に黒いタイル（ロゴ自身が面を持つ）。読み上げは h1 のサイト名で足りるので title は付けない
