@@ -1,27 +1,36 @@
-# Image Adjust
+# useful-site
 
-Web サイト・LP 制作で使う画像を、ブラウザの中だけで変換・圧縮・最適化できるツールです。画像はサーバーに送らず、WASM と Web Worker で処理します。PNG / JPEG / WebP の相互変換、圧縮（品質・目標ファイルサイズ・リサイズ）、GIF / SVG の最適化、ZIP の一括処理、Web 用アイコン一式（ファビコン等）の生成に対応しています。日本語と英語、ライトとダーク、PWA（インストール・オフライン動作）に対応し、`/image-adjust/` 以下に配置して公開します。
+1 つのドメイン（https://t0n03k1.com）に、ブラウザの中だけで動く便利なアプリを多数載せるサイトです。ポータル（アプリの一覧）が `/`、各アプリが `/<アプリ>/` で、英語版はアプリのパスの内側に `/en/` を付けた URL です。アプリは `app/apps/<id>/` のフォルダを足す・消すだけで差し込めます。
+
+現在のアプリ：
+
+- **portal**（`/`）：アプリの一覧
+- **image-adjust**（`/image-adjust/`）：画像の変換・圧縮・最適化、ZIP の一括処理、Web 用アイコン一式の生成。画像はサーバーに送らず、WASM と Web Worker で処理します。PWA（インストール・オフライン動作）に対応しています
+- **markdown-pdf**（`/markdown-pdf/`）：Markdown を整えて、ブラウザの印刷で PDF にします
+
+日本語と英語、ライトとダークに対応しています。
 
 ## 技術スタック
 
 - TypeScript、React 19、React Router 7（framework モード。全ページ・全言語をビルド時に静的 HTML にする）
 - Vite 8、Tailwind CSS 4、shadcn/ui 風の部品（Radix UI）
-- Hono（Cloudflare Worker。URL 入力のための画像取得の中継 API）、Wrangler
+- Hono（Cloudflare Worker。各アプリの API を集めて配信する。image-adjust の URL 入力のための画像取得の中継 API など）、Wrangler
 - 画像処理：jSquash（MozJPEG・libwebp・OxiPNG）、libimagequant-wasm、gifsicle-wasm-browser、SVGO、fflate、Comlink
-- PWA：Workbox（Service Worker を postbuild で生成）
+- Markdown：markdown-it
+- PWA：Workbox（image-adjust の Service Worker を postbuild で生成）
 - テスト・品質：Biome、Vitest、Playwright
 - 開発環境：Nix の devShell（Node.js 22・pnpm・Playwright のブラウザ）と direnv
 
 ## ディレクトリ構成
 
 ```
-app/               フロントエンド（ルート・UI 部品・i18n・テーマ・画像処理・アイコン生成）
-content/           解説ページ・規約類の MDX（ja / en）
-worker/            Cloudflare Worker（Hono）
-sw/                Service Worker
-scripts/           ビルド後の整形・アイコン / OGP 画像の生成・公開前の確認
-public/            アイコン・OGP 画像
-tests/             Vitest（unit）・Playwright（e2e）
+app/
+  platform/        土台（シェル・アプリの登録簿・i18n・広告枠・SEO・UI 部品）。どのアプリにも依存しない
+  apps/<id>/       アプリ（portal・image-adjust・markdown-pdf）。文言・ページ・ルート・API・テスト等を全部この中に置く
+worker/            Cloudflare Worker（Hono）。各アプリの api/ を集める
+scripts/           ビルド後の整形・依存の境界の検査・OGP 画像の生成・公開前の確認
+public/            favicon とサイト共通の OGP 画像
+tests/             サイト共通の Vitest（unit）・Playwright（e2e）
 ```
 
 詳しい構成と開発の取り決めは [AGENTS.md](AGENTS.md) にあります。
@@ -44,23 +53,24 @@ nix develop -c pnpm install
 
 | コマンド | 内容 |
 | --- | --- |
-| `dev` | 開発サーバー（http://localhost:5173/image-adjust/） |
-| `preview` | ビルド済みの成果物を workerd で配信（http://localhost:4173/image-adjust/） |
+| `dev` | 開発サーバー（http://localhost:5173/） |
+| `preview` | ビルド済みの成果物を workerd で配信（http://localhost:4173/） |
 
 ### 検証
 
 | コマンド | 内容 |
 | --- | --- |
-| `lint` | Biome（lint・書式・import の並び） |
-| `lint:fix` | Biome の自動修正 |
+| `lint` | Biome（lint・書式・import の並び）と依存の境界の検査 |
+| `lint:fix` | Biome の自動修正（境界の検査は含まない） |
 | `format` | Biome で整形 |
 | `typecheck` | 型生成と `tsc`（app・worker・sw） |
 | `test` | Vitest |
 | `test:e2e` | Playwright（ビルドしてから preview を起動。PC とスマホ表示） |
+| `check:apps` | ポータル以外のアプリを外した状態でも `typecheck`・`build` が通るかを確かめる |
 
 ### ビルド・公開
 
 | コマンド | 内容 |
 | --- | --- |
-| `build` | 本番ビルド（プリレンダリング・Worker・Service Worker） |
+| `build` | 本番ビルド（プリレンダリング・Worker・各アプリのビルド後フック） |
 | `run deploy` | 公開前の確認 → ビルド → `wrangler deploy`。公開オリジンが仮の値や Worker の routes と食い違うときは止まる |
