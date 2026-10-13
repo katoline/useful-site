@@ -9,6 +9,11 @@ export type RasterFormat = "png" | "jpeg" | "webp";
 
 export const RASTER_FORMATS: readonly RasterFormat[] = ["png", "jpeg", "webp"];
 export const IMAGE_FORMATS: readonly ImageFormat[] = ["png", "jpeg", "webp", "gif", "svg"];
+/** 通常のファイル入力と共有受け取りで受け付ける ZIP の MIME */
+export const ZIP_MIME_TYPES: readonly string[] = [
+  "application/zip",
+  "application/x-zip-compressed",
+];
 
 export const MIME_TYPE: Record<ImageFormat, string> = {
   png: "image/png",
@@ -27,7 +32,7 @@ export const EXTENSION: Record<ImageFormat, string> = {
 };
 
 /** 拡張子（小文字、ドットなし）→ 形式。ZIP 内のファイルの絞り込みに使う */
-const EXTENSION_TO_FORMAT: Record<string, ImageFormat> = {
+export const EXTENSION_TO_FORMAT: Record<string, ImageFormat> = {
   png: "png",
   jpg: "jpeg",
   jpeg: "jpeg",
@@ -36,6 +41,17 @@ const EXTENSION_TO_FORMAT: Record<string, ImageFormat> = {
   webp: "webp",
   gif: "gif",
   svg: "svg",
+};
+
+/** 入力で受け付ける MIME → 形式。マニフェストも同じ集合を使う */
+export const MIME_TO_FORMAT: Record<string, ImageFormat> = {
+  "image/png": "png",
+  "image/jpeg": "jpeg",
+  "image/jpg": "jpeg",
+  "image/pjpeg": "jpeg",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/svg+xml": "svg",
 };
 
 export function isRasterFormat(format: ImageFormat): format is RasterFormat {
@@ -48,22 +64,8 @@ export function formatFromExtension(name: string): ImageFormat | null {
 }
 
 export function formatFromMime(type: string | undefined): ImageFormat | null {
-  switch ((type ?? "").toLowerCase().split(";")[0]?.trim()) {
-    case "image/png":
-      return "png";
-    case "image/jpeg":
-    case "image/jpg":
-    case "image/pjpeg":
-      return "jpeg";
-    case "image/webp":
-      return "webp";
-    case "image/gif":
-      return "gif";
-    case "image/svg+xml":
-      return "svg";
-    default:
-      return null;
-  }
+  const mime = (type ?? "").toLowerCase().split(";")[0]?.trim() ?? "";
+  return Object.hasOwn(MIME_TO_FORMAT, mime) ? (MIME_TO_FORMAT[mime] ?? null) : null;
 }
 
 function startsWith(bytes: Uint8Array, sig: number[], offset = 0): boolean {

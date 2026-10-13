@@ -11,12 +11,13 @@ import { Button } from "~/platform/ui/button";
 import { Input } from "~/platform/ui/input";
 import { Label } from "~/platform/ui/label";
 import { cn } from "~/platform/utils";
+import { ZIP_MIME_TYPES } from "../../../domain/format";
 import { useI18n } from "../../../i18n";
 import { filesFromDrop, filesFromInput, type PickedFile } from "../adapters/collect-files";
 
 const ACCEPT_IMAGES =
   "image/png,image/jpeg,image/webp,image/gif,image/svg+xml,.png,.jpg,.jpeg,.webp,.gif,.svg";
-const ACCEPT_WITH_ZIP = `${ACCEPT_IMAGES},.zip,application/zip,application/x-zip-compressed`;
+const ACCEPT_WITH_ZIP = `${ACCEPT_IMAGES},.zip,${ZIP_MIME_TYPES.join(",")}`;
 
 export interface FileInputProps {
   onFiles: (files: PickedFile[]) => void;

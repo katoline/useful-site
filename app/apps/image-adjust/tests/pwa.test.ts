@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { formatFromExtension, formatFromMime } from "~/apps/image-adjust/domain/format";
 import { BASE_PATH } from "~/apps/image-adjust/shared/config";
 import { SHARE_TARGET_PATH, SW_SCOPE, shareRedirectPath } from "~/apps/image-adjust/shared/pwa";
 import { buildWebManifest } from "~/apps/image-adjust/shared/web-manifest";
@@ -24,9 +25,52 @@ describe("PWA マニフェスト", () => {
     expect(en.share_target.action).toBe(`${SHARE_TARGET_PATH}?lang=en`);
     expect(ja.share_target.method).toBe("POST");
     expect(ja.share_target.enctype).toBe("multipart/form-data");
-    expect(ja.share_target.params.files[0]?.accept).toEqual(
-      expect.arrayContaining(["image/*", ".zip"]),
+    expect(ja.share_target.params.files[0]?.accept).toEqual([
+      "image/png",
+      ".png",
+      "image/jpeg",
+      ".jpg",
+      ".jpeg",
+      ".jpe",
+      ".jfif",
+      "image/jpg",
+      "image/pjpeg",
+      "image/webp",
+      ".webp",
+      "image/gif",
+      ".gif",
+      "image/svg+xml",
+      ".svg",
+      "application/zip",
+      ".zip",
+      "application/x-zip-compressed",
+    ]);
+    expect(en.share_target.params.files[0]?.accept).toEqual(
+      ja.share_target.params.files[0]?.accept,
     );
+  });
+
+  it("共有とファイルの関連付けは SW が受け付ける MIME・拡張子だけを使う", () => {
+    const accept = ja.share_target.params.files[0]?.accept ?? [];
+    const handlers = ja.file_handlers[0]?.accept ?? {};
+    expect([
+      ...new Set(Object.entries(handlers).flatMap(([mime, exts]) => [mime, ...exts])),
+    ]).toEqual(accept);
+    for (const type of accept) {
+      if (
+        type === ".zip" ||
+        type === "application/zip" ||
+        type === "application/x-zip-compressed"
+      ) {
+        continue;
+      }
+      expect(
+        type.startsWith(".") ? formatFromExtension(`file${type}`) : formatFromMime(type),
+      ).not.toBeNull();
+    }
+    expect(accept).not.toContain("image/*");
+    expect(accept).not.toContain("image/avif");
+    expect(accept).not.toContain(".avif");
   });
 
   it("アイコンに 192・512・maskable がある", () => {
