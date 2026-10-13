@@ -101,6 +101,8 @@ platform ──▶ apps/*/manifest.ts 等（規約による自動収集だけ。
 
 `app/apps/<id>/` を消す。他のアプリ・platform は無傷のはずで、`nix develop -c pnpm check:apps` が「外しても `typecheck`・`build` が通る」ことを確かめる。このアプリの規約の節・sitemap・メニュー・API・ビルド後フックも一緒に消える。
 
+Service Worker を持つアプリ（現状 Image Adjust）は、先に自分を unregister してそのアプリのキャッシュを消すだけの `sw.js` を 1 回デプロイしてから消す。フォルダを消しただけでは、過去の訪問者に古いプリキャッシュが残る。
+
 ## 広告の置き方
 
 - 広告枠は `app/platform/ads/AdSlot.tsx` の `<AdSlot format="banner" | "sidebar" | "responsive" | "in-article" slot="..." />` を全アプリで使う（アプリ独自の広告枠は作らない）
@@ -115,7 +117,7 @@ platform ──▶ apps/*/manifest.ts 等（規約による自動収集だけ。
 
 ## 構成
 
-- **Vite 8 + React Router 7（framework モード、`ssr: false` + `prerender`）**：全ページ・全言語をビルド時に静的 HTML にする。`basename` は `/`。1 つのビルドにして、React と土台のコードを全アプリで共有する（アプリ間の移動をクライアント側で済ませ、読み込み直しを避ける）
+- **Vite 8 + React Router 7（framework モード、`ssr: false` + `prerender`）**：全ページ・全言語をビルド時に静的 HTML にする。`basename` は `/`。1 つのビルドにして、React と土台のコードを全アプリで共有する（アプリ間の移動は原則クライアント側。Service Worker の制御下では、Shell の現在のアプリ外へのリンクはクリック時にドキュメントの遷移にする）
 - **Hono（Cloudflare Worker、`worker/index.ts`）**：`app/apps/*/api/index.ts` を集めて `/<アプリ>/api/*` に載せる。`wrangler.jsonc` の `assets.run_worker_first`（`/*/api/*`）で API だけ Worker を通し、それ以外は静的アセットを返す。Worker 名は `useful-site`（サイト名と切り離している）
 - **`@cloudflare/vite-plugin`**：dev・preview でも Worker を workerd で動かす
 - **Tailwind CSS v4**（`@tailwindcss/vite`）＋ shadcn/ui 風の部品（Radix UI）
@@ -148,6 +150,7 @@ platform ──▶ apps/*/manifest.ts 等（規約による自動収集だけ。
 - `pnpm run deploy` は、公開オリジン（`VITE_SITE_ORIGIN`、未設定なら既定値）のホストが `routes[].pattern` のホストのどれとも一致しなければ止まる（canonical 等が配信していないホストを指すのを防ぐ。判定は `scripts/lib/site-origin.ts` の `checkOriginMatchesRoutes()`）。routes が無いとき（workers.dev だけで公開）は、`workers_dev` が有効で、オリジンが `*.workers.dev` のときだけ通す
 - `workers_dev: true` は明示している。wrangler は routes があると workers.dev を既定で無効にするため。独自ドメインでの確認が済むまで、workers.dev は確認用に残す
 - ドメインの準備（Cloudflare 側。デプロイ前に済ませる）：t0n03k1.com を Cloudflare のゾーンに追加し、ネームサーバーを切り替える。ルートの Worker はプロキシ（オレンジの雲）されたホスト名でしか動かないので、`t0n03k1.com` の DNS レコード（A / AAAA / CNAME。ドメイン直下を担当するものが無ければ `AAAA t0n03k1.com 100::` のプロキシ有効レコード）を置く
+  - Rocket Loader・Bot Fight Mode の JavaScript detections・Email Obfuscation など、HTML を書き換えるゾーンの機能は無効にする（ハッシュ方式の meta CSP とぶつかる。有効にするならデプロイ後に CSP 違反を確かめる）。Always Use HTTPS を有効にする（HSTS は `_headers` で `Strict-Transport-Security: max-age=31536000` を付ける）
 - www 付き（`www.t0n03k1.com`）でも開けるよう、プロキシ有効の `www` の DNS レコード（例 `AAAA www 100::`）を置き、Cloudflare の Redirect Rule で `www.t0n03k1.com/*` を `https://t0n03k1.com/$1` へ 301 で転送する（コードでは扱わない。routes は www を含まない）
 - workers.dev から独自ドメインへの移行（Cloudflare 側で行う。コードでは行わない）：独自ドメインで全機能が動くのを確かめたら、ダッシュボードの Workers & Pages → useful-site → Settings → Domains & Routes で workers.dev を無効にし、`wrangler.jsonc` の `workers_dev` も `false` にそろえる（そろえないと次のデプロイで有効に戻る）。canonical は既に独自ドメインを指しているので、検索結果の重複はこれで解消する。workers.dev は自分のゾーンではないため、Redirect Rules・Bulk Redirects では 301 を返せない。301 が必須なら、Worker でホスト名を見てリダイレクトする実装（`run_worker_first` の範囲の見直しを含む）が別途要る
 
@@ -246,6 +249,7 @@ tests/unit, tests/e2e      サイト共通の Vitest・Playwright
 - E2E の 404 テスト：dev サーバーでは存在しないパスも 200 で返る（404.html はビルド後にだけある）。404 の確認は preview で行う
 - `vite-plugin-pwa` は使っていない（「組み合わせの都合」7）。SW は本番ビルド（preview を含む）でだけ登録する。dev には sw.js が無い
 - Service Worker は Image Adjust だけが持つ（スコープ `/image-adjust/`）。ドメイン直下（`/`）には置かない
+- Shell のアプリ間・規約類のリンクは、クリック時に Service Worker の controller があれば `window.location.assign()` で遷移する（他アプリのチャンクはプリキャッシュしないため）。修飾キー・中クリック・target 指定は既定の動作に任せ、描画する要素・属性は変えない
 
 ### 記事（MDX）
 
@@ -273,12 +277,14 @@ tests/unit, tests/e2e      サイト共通の Vitest・Playwright
   - アプリ直下：`manifest.ts`・`routes.ts`・`layout*.tsx`・`i18n/`・`api/`・`sw/`・`build/postbuild.ts`・`site-files.ts`・`legal/`・`content/`・`public/`・`scripts/`・`tests/`（E2E は `tests/e2e/`）
 - ファイル名の無害化は `domain/naming.ts` の `sanitizeFileName` / `sanitizePath` に集約する
 - 入力サイズ・枚数・ピクセル数などの上限は `domain/limits.ts`。URL 入力（Worker の中継 API 経由の取得とファイル名の決定）は `features/remote-image/`。API は `api/`（`fetch-image`・`health`。URL 検証・回数制限つき。回数制限は `wrangler.jsonc` の `ratelimits`）
+- プレビュー用の Blob は判定した形式の MIME で作り直す。形式が不明なら表示しない。`fetch-image` は回数制限のバインディングが無ければ `upstream_error` を返す（localhost・127.0.0.1・[::1] の dev・preview は例外）
 - **Web Worker・WASM**：Worker は `features/image-processing/adapters/processor.ts` で `new Worker(new URL("./image.worker.ts", import.meta.url), { type: "module" })` の形で作り（Vite が検出できるようこの形を保つ）、`comlink` の `wrap` / `expose` で呼ぶ（`vite.config.ts` の `worker.format` は `es`）。jSquash（`@jsquash/*`）は Worker 内で普通に `import { encode } from "@jsquash/webp"` すればよい。WASM は Vite が `assets/` に出力する。WASM とコーデックは画像が入力されたときに動的 import する（初回表示に含めない）。PNG 減色は `libimagequant-wasm`（Worker 対応）を第一候補、`image-q`（純 JS）を代替として入れてある。dev で初めて読み込む依存があると Vite の依存最適化で 1 回再読み込み（504 Outdated Optimize Dep）が起きることがある。気になるなら `optimizeDeps.include` に足す
 - **PWA**
   - Service Worker：`/image-adjust/sw.js`、スコープ `/image-adjust/`（定数は `shared/pwa.ts`）。プリキャッシュだけで、ランタイムキャッシュは持たない（広告・解析・`/image-adjust/api/` はキャッシュしない）。キャッシュ名は `image-adjust-precache-…`、古いキャッシュの削除も `image-adjust-precache-` で始まるものだけ。`sw.js` は `_headers` で `Cache-Control: no-cache`（ビルド後フックが足す）
   - 更新：新しい版が待機中なら「更新があります」→「再読み込み」で SKIP_WAITING → 切り替わったら再読み込み。他のタブで先に切り替わったときは、作業中の画像を失わせないため自動では再読み込みせず「再読み込みしてください」と案内する（`features/pwa/adapters/pwa-store.ts`）
   - 共有受け取り：マニフェストの `share_target`（POST `/image-adjust/share-target`）を SW が受けて Cache Storage（`image-adjust:share-target`）に一時保存し、`/image-adjust/?share=1`（英語は `/image-adjust/en/?share=1`）にリダイレクトする。ページ側の `features/pwa/ui/PwaRoot.tsx` が取り出して `pushIncomingFiles()`（`shared/incoming-files.ts`）に渡し、キャッシュを消す。`file_handlers`（launchQueue）も同じく `pushIncomingFiles()` に渡す。ツール側は `subscribeIncomingFiles()` で受け取る
   - 共有受け取りは他サイトからのフォーム POST を受け取らない（`Sec-Fetch-Site` が `none`（OS の共有）・`same-origin` 以外なら保存せずリダイレクトだけ。ヘッダーが SW に見えない環境では Referer のオリジンで判定）。**未確認：Android 実機の共有で `Sec-Fetch-Site: none`（またはヘッダー無し・Referer 無し）になること**
+  - 共有で一時保存するファイルは、通常のファイル入力と同じ MIME・拡張子の集合（ZIP を含む）に絞る。マニフェストの accept も同じ集合にする
   - マニフェスト（日英）は `site-files.ts` → `shared/web-manifest.ts` で作る
 - **OGP 画像**：`public/og/<lang>.png`（1200×630、言語ごとに共通の 1 枚。ロゴ入りの独自デザインなので、サイト共通の `scripts/generate-og-images.ts` の対象外）。`buildPageMeta()` が `image` 省略時に自動で付ける。作り直しは `nix develop -c node app/apps/image-adjust/scripts/generate-og-images.ts`（Playwright の Chromium で描画）
 - **ロゴ**：図形は `shared/logo.ts` だけで定義する（角丸の正方形の面に、山と太陽の写真マークと調整スライダーを抜いた形。32 の格子で 16px でも潰れないように設計）。ヘッダーは `shared/layout/LogoMark.tsx`（インライン SVG。面は `currentColor`、記号は背景色のトークンで塗るので、テーマに合わせて白黒が反転する）。単体のファイルは `public/logo.svg`（黒地に白）
@@ -292,10 +298,13 @@ Markdown をブラウザ内で整え、**ブラウザの印刷で PDF にする*
 - 変換は `markdown-it`（`html: false`。生の HTML はすべて文字として表示し、危険な URL はリンクにしない）＋ `markdown-it-footnote`・`@mdit/plugin-tasklist`。使う瞬間に動的 import する（`features/render/adapters/`）
 - プレビュー（＝印刷する文書）は `sandbox="allow-same-origin allow-modals"` の iframe（`srcdoc`）。`allow-scripts` は付けない（`features/print/adapters/frame.ts`）。iframe の中に `<meta http-equiv="Content-Security-Policy">` を入れ、外部への通信を禁止する（`default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'`。`features/print/core/document.ts`）。ページ本体の CSP（広告のために外部画像を許可）とは別に絞っている。sandbox や CSP を緩めない
 - iframe 内のリンクのクリックは親で扱う（sandbox に `allow-popups` が無く、`srcdoc` の基底 URL が親のページのため。`frame.ts`）
+- 同梱した SVG 画像（拡張子 `.svg` または MIME `image/svg+xml`）は、固定 MIME の `data:image/svg+xml;base64,...` にする。それ以外の画像は、受け付ける拡張子から決めた固定 MIME の Blob に作り直して blob: URL を使う。未対応の拡張子は URL を作らない
 - 広告は印刷されない（印刷されるのは iframe の中身だけ。念のため `print:hidden` でも隠す）。入力の上限は `domain/limits.ts`
 
 ## 未解決の注意
 
+- `/assets/*` は存在しないファイルの 404 にも immutable のキャッシュが付く。`wrangler rollback` で旧版に戻した直後にその 404 を受け取った利用者は、旧チャンクを読めない
+- Service Worker が無い状態（サイトデータを消した後）で OS の共有を使うと、`POST /image-adjust/share-target` は 405 になる
 - お問い合わせは GitHub の Issue（`https://github.com/katoline/useful-site/issues`）で受け付ける。Issue は公開されるので、規約・about に「個人情報を書かない」旨を書いてある（`app/platform/content/{ja,en}/privacy.mdx` の「個人情報の取り扱い」）
 - サイト名（`SITE_NAME`）は仮。決まったら `app/platform/config/index.ts` を変える
 - Android 実機の共有受け取りの `Sec-Fetch-Site` は未確認（Image Adjust の PWA の項）

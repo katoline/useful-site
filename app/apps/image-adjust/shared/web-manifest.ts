@@ -53,7 +53,19 @@ export function buildWebManifest(lang: Lang) {
       method: "POST",
       enctype: "multipart/form-data",
       params: {
-        files: [{ name: SHARE_TARGET_FIELD, accept: ["image/*", ".zip", "application/zip"] }],
+        files: [
+          {
+            name: SHARE_TARGET_FIELD,
+            accept: [
+              ...new Set(
+                Object.entries(ACCEPTED_FILE_TYPES).flatMap(([mime, extensions]) => [
+                  mime,
+                  ...extensions,
+                ]),
+              ),
+            ],
+          },
+        ],
       },
     },
     // PC の Chrome / Edge で「このアプリで開く」。ページ側は launchQueue で受け取る

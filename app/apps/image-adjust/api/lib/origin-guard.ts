@@ -9,6 +9,11 @@
 
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
+/** 開発・preview 用の loopback ホストか */
+export function isLoopbackHost(hostname: string): boolean {
+  return LOOPBACK_HOSTS.has(hostname);
+}
+
 function originOf(value: string): string | undefined {
   try {
     const url = new URL(value);
@@ -28,10 +33,10 @@ function originOf(value: string): string | undefined {
  */
 export function isAllowedOrigin(origin: string, requestUrl: URL, siteOrigin: string): boolean {
   if (origin === siteOrigin || origin === requestUrl.origin) return true;
-  if (LOOPBACK_HOSTS.has(requestUrl.hostname)) {
+  if (isLoopbackHost(requestUrl.hostname)) {
     try {
       const url = new URL(origin);
-      return url.protocol === "http:" && LOOPBACK_HOSTS.has(url.hostname);
+      return url.protocol === "http:" && isLoopbackHost(url.hostname);
     } catch {
       return false;
     }

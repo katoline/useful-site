@@ -1,6 +1,7 @@
-/** File・Blob URL・ダウンロード・sessionStorage を扱う部分（DOM に依存する） */
+/** File・画像 URL・ダウンロード・sessionStorage を扱う部分（DOM に依存する） */
 import { useEffect, useState } from "react";
 import { createStorage } from "~/platform/storage";
+import { imageMimeTypeForFileName } from "../../../domain/limits";
 
 export function readTextFile(file: File): Promise<string> {
   return file.text();
@@ -20,14 +21,48 @@ export function downloadText(fileName: string, text: string, type = "text/markdo
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-/** 画像ファイルの一覧から「ファイル名 → blob: URL」を作る。一覧が変われば古い URL を解放する */
+/** SVG はサイトのオリジンを継がない data: URL にし、MIME を固定する */
+function readSvgUrl(file: File): Promise<string | undefined> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : undefined);
+    reader.onerror = () => resolve(undefined);
+    reader.onabort = () => resolve(undefined);
+    reader.readAsDataURL(new Blob([file], { type: "image/svg+xml" }));
+  });
+}
+
+/** 画像の一覧から「ファイル名 → URL」を作る。一覧が変われば古い blob: URL を解放する */
 export function useObjectUrls(files: readonly File[]): ReadonlyMap<string, string> {
   const [urls, setUrls] = useState<ReadonlyMap<string, string>>(() => new Map());
   useEffect(() => {
-    const created = new Map(files.map((file) => [file.name, URL.createObjectURL(file)] as const));
-    setUrls(created);
+    let active = true;
+    const created = new Map<string, string>();
+    const blobUrls: string[] = [];
+    const pending: Promise<void>[] = [];
+    for (const file of files) {
+      if (/\.svg$/i.test(file.name) || file.type.toLowerCase() === "image/svg+xml") {
+        pending.push(
+          readSvgUrl(file).then((url) => {
+            if (url) created.set(file.name, url);
+          }),
+        );
+      } else {
+        const type = imageMimeTypeForFileName(file.name);
+        if (!type) continue;
+        const url = URL.createObjectURL(new Blob([file], { type }));
+        blobUrls.push(url);
+        created.set(file.name, url);
+      }
+    }
+    // SVG の読み込みを待つあいだも、それ以外の画像は表示する
+    setUrls(new Map(created));
+    void Promise.all(pending).then(() => {
+      if (active) setUrls(new Map(created));
+    });
     return () => {
-      for (const url of created.values()) URL.revokeObjectURL(url);
+      active = false;
+      for (const url of blobUrls) URL.revokeObjectURL(url);
     };
   }, [files]);
   return urls;

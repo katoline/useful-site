@@ -20,7 +20,7 @@ import {
   sniffImage,
   TEXT_SNIFF_BYTES,
 } from "../lib/image-sniff";
-import { isAllowedCaller } from "../lib/origin-guard";
+import { isAllowedCaller, isLoopbackHost } from "../lib/origin-guard";
 import { rateLimitKey } from "../lib/rate-limit-key";
 import { ownHostSuffixes, parseAndCheckUrl, resolveRedirect } from "../lib/url-guard";
 
@@ -193,6 +193,8 @@ async function handle(c: Context<{ Bindings: Env }>, options: Required<FetchImag
   }
 
   const limiter = c.env?.FETCH_IMAGE_RATE_LIMITER;
+  // 開発・preview 以外では、回数制限の設定漏れがある状態で中継しない
+  if (!limiter && !isLoopbackHost(requestUrl.hostname)) return errorResponse("upstream_error");
   if (limiter) {
     // CF-Connecting-IP は Cloudflare が付ける（利用者は上書きできない）。無いのは開発環境だけ。
     // IPv6 は /64 に丸める（1 契約者が /64 を持つのが普通で、フルアドレスでは送信元を変えるだけで

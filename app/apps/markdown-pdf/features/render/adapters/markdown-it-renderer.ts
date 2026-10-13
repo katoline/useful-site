@@ -4,7 +4,7 @@
  * 安全対策（docs/markdown-pdf-plan.md §5）
  * - `html: false`：生の HTML はすべて文字として表示する
  * - validateLink：core の許可リスト（isAllowedUrl）。javascript: 等はリンク・画像にならず文字のまま残る
- * - 画像：core の規則（resolveImageSource）で、data: の画像と一緒に入れた画像（blob:）だけを表示する。
+ * - 画像：core の規則（resolveImageSource）で、data: の画像と一緒に入れた画像（blob:・data:）だけを表示する。
  *   外部 URL・見つからない画像は、代わりの文言を出す（読み込まない）
  * - リンク：ページ内（#…）以外は rel="noopener noreferrer" と target="_blank" を付ける
  *

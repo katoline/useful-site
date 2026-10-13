@@ -18,6 +18,9 @@ const HTML = new TextEncoder().encode("<!doctype html><html><script>alert(1)</sc
 
 const SITE_HOST = new URL(SITE_ORIGIN).host;
 const sameOrigin = { "Sec-Fetch-Site": "same-origin", Referer: `${SITE_ORIGIN}/image-adjust/` };
+const allowedLimiterEnv = {
+  FETCH_IMAGE_RATE_LIMITER: { limit: async () => ({ success: true }) },
+} satisfies Partial<Env>;
 
 type FetchMock = ReturnType<typeof vi.fn<typeof fetch>>;
 
@@ -31,7 +34,7 @@ function callApi(
   app: Hono<{ Bindings: Env }>,
   target: string,
   headers: Record<string, string> = sameOrigin,
-  env: Partial<Env> = {},
+  env: Partial<Env> = allowedLimiterEnv,
 ) {
   return app.request(
     `${SITE_ORIGIN}${API_BASE_PATH}/fetch-image?url=${encodeURIComponent(target)}`,
@@ -227,7 +230,7 @@ describe("fetch-image", () => {
     const res = await app.request(
       `https://custom.example.jp${API_BASE_PATH}/fetch-image?url=${encodeURIComponent("https://sub.custom.example.jp/a.png")}`,
       { headers: { "Sec-Fetch-Site": "same-origin" } },
-      {} as Env,
+      allowedLimiterEnv as unknown as Env,
     );
     expect(res.status).toBe(403);
     expect(await errorCode(res)).toBe("forbidden_host");
@@ -427,6 +430,30 @@ describe("fetch-image", () => {
   });
 
   describe("回数制限", () => {
+    it("本番ホストでバインディングが無ければ upstream_error にして中継しない", async () => {
+      const mock = vi.fn<typeof fetch>(async () => imageResponse(PNG, "image/png"));
+      const res = await callApi(makeApp(mock), "https://cdn.example.com/a.png", sameOrigin, {});
+      expect(res.status).toBe(502);
+      expect(await errorCode(res)).toBe("upstream_error");
+      expect(mock).not.toHaveBeenCalled();
+    });
+
+    it.each(["localhost", "127.0.0.1", "[::1]"])(
+      "loopback ホスト %s はバインディングが無くても中継する",
+      async (host) => {
+        const mock = vi.fn<typeof fetch>(async () => imageResponse(PNG, "image/png"));
+        const res = await makeApp(mock).request(
+          `http://${host}:4173${API_BASE_PATH}/fetch-image?url=${encodeURIComponent("https://cdn.example.com/a.png")}`,
+          { headers: { "Sec-Fetch-Site": "same-origin" } },
+          {} as Env,
+        );
+        expect(res.status).toBe(200);
+        expect(res.headers.get("content-type")).toBe("image/png");
+        expect(new Uint8Array(await res.arrayBuffer())).toEqual(PNG);
+        expect(mock).toHaveBeenCalledTimes(1);
+      },
+    );
+
     it("バインディングが拒否したら 429 rate_limited、キーは CF-Connecting-IP", async () => {
       const limit = vi.fn(async () => ({ success: false }));
       const mock = vi.fn<typeof fetch>();
@@ -499,7 +526,10 @@ describe("fetch-image", () => {
       "fetch",
       vi.fn<typeof fetch>(async () => imageResponse(PNG, "image/png")),
     );
-    const env = { ASSETS: { fetch: async () => new Response("asset") } } as unknown as Env;
+    const env = {
+      ...allowedLimiterEnv,
+      ASSETS: { fetch: async () => new Response("asset") },
+    } as unknown as Env;
     const res = await worker.fetch(
       new Request(
         `${SITE_ORIGIN}${API_BASE_PATH}/fetch-image?url=${encodeURIComponent("https://cdn.example.com/a.png")}`,

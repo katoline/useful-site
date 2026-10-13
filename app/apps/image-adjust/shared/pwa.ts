@@ -3,6 +3,7 @@
  * Service Worker（sw/sw.ts）・ページ側（features/pwa/）・ビルド（build/postbuild.ts）で共有する。
  * React に依存しないこと（SW にもバンドルされる）。
  */
+import { EXTENSION_TO_FORMAT, MIME_TO_FORMAT, ZIP_MIME_TYPES } from "../domain/format.ts";
 import type { Lang } from "../i18n/langs.ts";
 import { BASE_PATH, STORAGE_PREFIX } from "./config.ts";
 
@@ -38,11 +39,12 @@ export function manifestFileName(lang: Lang): string {
 }
 
 /** ファイルの関連付け（file_handlers）・共有受け取りで受け付ける形式 */
-export const ACCEPTED_FILE_TYPES: Record<string, string[]> = {
-  "image/png": [".png"],
-  "image/jpeg": [".jpg", ".jpeg"],
-  "image/webp": [".webp"],
-  "image/gif": [".gif"],
-  "image/svg+xml": [".svg"],
-  "application/zip": [".zip"],
-};
+export const ACCEPTED_FILE_TYPES: Record<string, string[]> = Object.fromEntries([
+  ...Object.entries(MIME_TO_FORMAT).map(([mime, format]) => [
+    mime,
+    Object.entries(EXTENSION_TO_FORMAT)
+      .filter(([, extensionFormat]) => extensionFormat === format)
+      .map(([extension]) => `.${extension}`),
+  ]),
+  ...ZIP_MIME_TYPES.map((mime) => [mime, [".zip"]]),
+]);

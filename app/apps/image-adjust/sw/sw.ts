@@ -14,6 +14,7 @@
  */
 import { cacheNames, clientsClaim, setCacheNameDetails } from "workbox-core";
 import { type PrecacheEntry, precacheAndRoute } from "workbox-precaching";
+import { formatFromExtension, formatFromMime, ZIP_MIME_TYPES } from "../domain/format.ts";
 import {
   SHARE_TARGET_CACHE,
   SHARE_TARGET_FIELD,
@@ -57,7 +58,16 @@ async function receiveShare(request: Request): Promise<Response> {
   }
   try {
     const form = await request.formData();
-    const files = form.getAll(SHARE_TARGET_FIELD).filter((v): v is File => v instanceof File);
+    const files = form
+      .getAll(SHARE_TARGET_FIELD)
+      .filter(
+        (v): v is File =>
+          v instanceof File &&
+          (formatFromExtension(v.name) !== null ||
+            formatFromMime(v.type) !== null ||
+            /\.zip$/i.test(v.name) ||
+            ZIP_MIME_TYPES.includes(v.type)),
+      );
     // 前回の取り残しは捨ててから置き直す
     await caches.delete(SHARE_TARGET_CACHE);
     const cache = await caches.open(SHARE_TARGET_CACHE);
