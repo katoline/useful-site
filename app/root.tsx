@@ -12,6 +12,7 @@ import {
   useLocation,
   useRouteError,
 } from "react-router";
+import { AdSenseScript } from "~/platform/ads/AdSenseScript";
 import { CloudflareAnalytics } from "~/platform/analytics/CloudflareAnalytics";
 import { SITE_NAME } from "~/platform/config";
 import { I18nProvider, langFromPathname, translate } from "~/platform/i18n";
@@ -48,6 +49,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <ScrollRestoration />
         <Scripts />
         <CloudflareAnalytics />
+        <AdSenseScript />
       </body>
     </html>
   );
