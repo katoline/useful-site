@@ -359,6 +359,9 @@ export const en = {
       white: "White",
       black: "Black",
       slider: "Compare position",
+      outputWidth: "Output width",
+      loading: "Loading the original image…",
+      loadFailed: "Could not load the original image",
     },
     faq: {
       title: "FAQ",

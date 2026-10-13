@@ -137,7 +137,7 @@ function ResultCard({
   const previewFormat = first?.format ?? result?.inputFormat ?? formatFromExtension(item.name);
   const previewUrl = usePreviewUrl(previewBlob, previewFormat, THUMBNAIL_MAX_EDGE);
   const hasVariants = !!result && result.outputs.some((o) => o.variantWidth);
-  const canCompare = !!first && !hasVariants && result?.inputFormat !== "gif";
+  const canCompare = !!first;
   const outputBytes = OUTPUT_BYTES(item);
 
   return (
@@ -264,7 +264,7 @@ function ResultCard({
             {canCompare && first && (
               <CompareDialog
                 item={item}
-                output={first}
+                outputs={result.outputs}
                 open={compareOpen}
                 onOpenChange={setCompareOpen}
               />
