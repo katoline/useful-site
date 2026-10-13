@@ -10,7 +10,7 @@
  * 結果カードのサムネイルは縮小した PNG にして、元画像をフルサイズでデコードしたまま持たない。
  */
 
-import type { ImageFormat } from "../../../domain/format";
+import { type ImageFormat, MIME_TYPE } from "../../../domain/format";
 import { readDimensions } from "../core/dimensions";
 
 /** プレビューに元の blob を直接使えない（ラスタライズが要る）形式か */
@@ -36,7 +36,12 @@ function fitWithin(
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
-  return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  return new Promise((resolve) =>
+    canvas.toBlob(
+      (blob) => resolve(blob ? new Blob([blob], { type: MIME_TYPE.png }) : null),
+      MIME_TYPE.png,
+    ),
+  );
 }
 
 /**
@@ -114,15 +119,18 @@ async function shrinkRaster(
 }
 
 /**
- * 画面に出してよい blob を返す。SVG はラスタライズした PNG、それ以外は元の blob
- * （maxEdge を渡すと、それに収めた縮小版）。ラスタライズに失敗したら null。
+ * 画面に出してよい blob を返す。SVG はラスタライズした PNG、それ以外は判定した形式の MIME
+ * （maxEdge を渡すと、それに収めた PNG）。形式が不明・ラスタライズに失敗したら null。
  */
 export async function toPreviewBlob(
   blob: Blob,
   format: ImageFormat | null,
   maxEdge?: number,
 ): Promise<Blob | null> {
-  if (needsRasterPreview(format, blob.type)) return rasterizeSvg(blob, maxEdge);
-  if (maxEdge && format) return (await shrinkRaster(blob, format, maxEdge)) ?? blob;
-  return blob;
+  if (!format) return null;
+  // 入力の MIME は信用せず、判定した形式にそろえてから blob: URL に渡す。
+  const preview = new Blob([blob], { type: MIME_TYPE[format] });
+  if (needsRasterPreview(format)) return rasterizeSvg(preview, maxEdge);
+  if (maxEdge) return (await shrinkRaster(preview, format, maxEdge)) ?? preview;
+  return preview;
 }
