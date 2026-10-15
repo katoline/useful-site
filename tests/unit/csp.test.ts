@@ -38,6 +38,21 @@ describe("CSP のハッシュ", () => {
     expect(inlineScriptHashes(`${html}<script>${THEME_INIT_SCRIPT}</script>`)).toHaveLength(3);
   });
 
+  it.each([
+    ["<!-- <script>comment()</script> --><script>run()</script>", ["run()"]],
+    ['<div title="<script>attribute()</script>"></div><script>run()</script>', ["run()"]],
+    ['<script data-note=">">run()</script>', ["run()"]],
+    ['<script data-note=" src=/ignored.js">run()</script>', ["run()"]],
+    ["<script-foo>unknown()</script-foo><script>run()</script>", ["run()"]],
+    ["<template><script>inert()</script></template><script>run()</script>", ["run()"]],
+    ["<style>/* <script>style()</script> */</style><script>run()</script>", ["run()"]],
+    ["<script src></script><script>run()</script>", ["run()"]],
+    ['<script type="text&#47;javascript">run()</script>', ["run()"]],
+    ["<script>first()\r\nsecond()\rthird()</script>", ["first()\nsecond()\nthird()"]],
+  ])("HTML の構造に従って抽出する: %s", (html, expected) => {
+    expect(extractInlineScripts(html as string)).toEqual(expected);
+  });
+
   it("ページの CSP に WASM・Worker の指定が入り、meta で無効なディレクティブは入らない", () => {
     const csp = buildCsp(["'sha256-abc'"]);
     expect(csp).toMatch(/script-src 'self' 'wasm-unsafe-eval' 'sha256-abc' /);
@@ -110,6 +125,17 @@ describe("CSP の meta", () => {
 
   it("二重には入れない", () => {
     expect(() => injectCspMeta(injectCspMeta(page))).toThrow();
+  });
+
+  it("コメントや属性に書かれた head・CSP meta は要素と取り違えない", () => {
+    const html =
+      '<!-- <head><meta http-equiv="Content-Security-Policy"> -->' +
+      '<html><head data-note=">"><meta charset="utf-8"><title>t</title></head></html>';
+    const result = injectCspMeta(html);
+    expect(result).toContain(
+      '<head data-note=">"><meta charset="utf-8"><meta http-equiv="Content-Security-Policy"',
+    );
+    expect(metaContent(result)).toBe(buildCsp([]));
   });
 });
 
