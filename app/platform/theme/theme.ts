@@ -3,6 +3,7 @@
  * 描画前の適用は THEME_INIT_SCRIPT（root.tsx の <head> 先頭でインライン実行）が担う。
  */
 import { useSyncExternalStore } from "react";
+import { serializeInlineJson } from "../serialization.ts";
 import { getItem, STORAGE_KEYS, setItem, storageKey } from "../storage/index.ts";
 
 export const THEME_PREFERENCES = ["light", "dark", "system"] as const;
@@ -58,13 +59,13 @@ export function applyTheme(pref: ThemePreference): ResolvedTheme {
  * <head> 先頭で実行するちらつき防止スクリプト。React より前に動くので依存なしで書く。
  * CSP でハッシュ許可する前提なので、内容を変えたらハッシュも更新すること。
  */
-export const THEME_INIT_SCRIPT = `(function(){try{var p=null;try{p=localStorage.getItem(${JSON.stringify(
+export const THEME_INIT_SCRIPT = `(function(){try{var p=null;try{p=localStorage.getItem(${serializeInlineJson(
   storageKey(STORAGE_KEYS.theme),
-)})}catch(e){}var d=window.matchMedia&&window.matchMedia(${JSON.stringify(
+)})}catch(e){}var d=window.matchMedia&&window.matchMedia(${serializeInlineJson(
   DARK_QUERY,
-)}).matches;var t=p==="light"||p==="dark"?p:(d?"dark":"light");var r=document.documentElement;r.setAttribute("data-theme",t);r.style.colorScheme=t;if(p==="light"||p==="dark"){var c=t==="dark"?${JSON.stringify(
+)}).matches;var t=p==="light"||p==="dark"?p:(d?"dark":"light");var r=document.documentElement;r.setAttribute("data-theme",t);r.style.colorScheme=t;if(p==="light"||p==="dark"){var c=t==="dark"?${serializeInlineJson(
   THEME_COLORS.dark,
-)}:${JSON.stringify(THEME_COLORS.light)};document.addEventListener("DOMContentLoaded",function(){var m=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<m.length;i++)m[i].setAttribute("content",c)})}}catch(e){}})();`;
+)}:${serializeInlineJson(THEME_COLORS.light)};document.addEventListener("DOMContentLoaded",function(){var m=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<m.length;i++)m[i].setAttribute("content",c)})}}catch(e){}})();`;
 
 // ---- 外部ストア（useSyncExternalStore 用）。タブ間の同期と OS 設定の追従もここで行う ----
 

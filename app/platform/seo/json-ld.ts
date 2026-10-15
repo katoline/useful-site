@@ -6,6 +6,7 @@ import { absoluteUrl, SITE_NAME } from "~/platform/config";
  */
 import type { Lang } from "~/platform/i18n";
 import { createAppPaths } from "../paths/app-paths";
+import { serializeInlineJson } from "../serialization.ts";
 
 export interface BreadcrumbItem {
   name: string;
@@ -94,8 +95,5 @@ export function faqJsonLd(items: { question: string; answer: string }[]) {
 
 /** JSON を <script> に安全に埋め込む（</script> での脱出を防ぐ） */
 export function serializeJsonLd(data: unknown): string {
-  return JSON.stringify(data)
-    .replace(/</g, "\\u003c")
-    .replace(/>/g, "\\u003e")
-    .replace(/&/g, "\\u0026");
+  return serializeInlineJson(data);
 }

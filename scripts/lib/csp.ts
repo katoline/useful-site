@@ -10,23 +10,34 @@
  *    ワイルドカード 1 本で付ける。複数の CSP はすべて強制されるので、両方の制限が効く。
  *    ページが増えても `_headers` のルール数は増えない
  *
- * Node の型除去で直接実行する（scripts/postbuild.ts から）ので、node: 以外を import しない。
+ * Node の型除去で直接実行する。HTML の解析には HTML5 パーサーの parse5 を使う。
  */
 import { createHash } from "node:crypto";
+import { type DefaultTreeAdapterTypes, parse } from "parse5";
 
 /** 実行されるスクリプトの type（これ以外の type はデータブロックとして CSP の対象外） */
 const EXECUTABLE_TYPES = new Set(["", "text/javascript", "application/javascript", "module"]);
 
+function* elements(node: DefaultTreeAdapterTypes.Node): Generator<DefaultTreeAdapterTypes.Element> {
+  if ("tagName" in node) yield node;
+  // template.content は走査しない（その中の script は実行されない）。
+  if ("childNodes" in node) {
+    for (const child of node.childNodes) yield* elements(child);
+  }
+}
+
+function attribute(element: DefaultTreeAdapterTypes.Element, name: string): string | undefined {
+  return element.attrs.find((attr) => attr.name === name)?.value;
+}
+
 /** HTML 内のインラインスクリプト（src なし・実行されるもの）の中身を出現順に返す */
 export function extractInlineScripts(html: string): string[] {
   const scripts: string[] = [];
-  const re = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
-  for (const m of html.matchAll(re)) {
-    const attrs = m[1] ?? "";
-    if (/\ssrc\s*=/i.test(` ${attrs}`)) continue;
-    const type = /\btype\s*=\s*["']?([^"'\s>]+)/i.exec(attrs)?.[1]?.toLowerCase() ?? "";
+  for (const element of elements(parse(html))) {
+    if (element.tagName !== "script" || attribute(element, "src") !== undefined) continue;
+    const type = attribute(element, "type")?.trim().toLowerCase() ?? "";
     if (!EXECUTABLE_TYPES.has(type)) continue;
-    scripts.push(m[2] ?? "");
+    scripts.push(element.childNodes.map((child) => ("value" in child ? child.value : "")).join(""));
   }
   return scripts;
 }
@@ -127,8 +138,6 @@ function escapeAttribute(value: string): string {
     .replace(/>/g, "&gt;");
 }
 
-const CSP_META_RE = /<meta\b[^>]*http-equiv\s*=\s*["']?content-security-policy/i;
-
 /**
  * HTML の head の先頭に、そのページのインラインスクリプトのハッシュ入りの CSP の meta を入れる。
  * meta の CSP はそれより後の要素にだけ効くので、テーマ初期化等のスクリプトより前に置く。
@@ -137,14 +146,31 @@ const CSP_META_RE = /<meta\b[^>]*http-equiv\s*=\s*["']?content-security-policy/i
  * meta を足すだけでスクリプトの中身は変えない（念のため前後でハッシュが同じことを確かめる）。
  */
 export function injectCspMeta(html: string): string {
-  if (CSP_META_RE.test(html)) throw new Error("CSP の meta が既にあります");
-  const head = /<head\b[^>]*>/i.exec(html);
-  if (!head) throw new Error("<head> がありません");
+  const nodes = [...elements(parse(html, { sourceCodeLocationInfo: true }))];
+  if (
+    nodes.some(
+      (node) =>
+        node.tagName === "meta" &&
+        attribute(node, "http-equiv")?.toLowerCase() === "content-security-policy",
+    )
+  ) {
+    throw new Error("CSP の meta が既にあります");
+  }
+  const head = nodes.find((node) => node.tagName === "head");
+  const headEnd = head?.sourceCodeLocation?.startTag?.endOffset;
+  if (!head || headEnd === undefined) throw new Error("<head> がありません");
   const hashes = inlineScriptHashes(html);
   const meta = `<meta http-equiv="Content-Security-Policy" content="${escapeAttribute(buildCsp(hashes))}"/>`;
-  let at = head.index + head[0].length;
-  const charset = /^<meta\s+charset\s*=\s*["']?[\w-]+["']?\s*\/?>/i.exec(html.slice(at));
-  if (charset) at += charset[0].length;
+  let at = headEnd;
+  const firstElement = head.childNodes.find((node) => "tagName" in node);
+  if (
+    firstElement &&
+    "tagName" in firstElement &&
+    firstElement.tagName === "meta" &&
+    attribute(firstElement, "charset") !== undefined
+  ) {
+    at = firstElement.sourceCodeLocation?.endOffset ?? at;
+  }
   const result = html.slice(0, at) + meta + html.slice(at);
   const after = inlineScriptHashes(result);
   if (after.length !== hashes.length || after.some((hash, i) => hash !== hashes[i])) {
