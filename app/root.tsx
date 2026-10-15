@@ -17,6 +17,7 @@ import { CloudflareAnalytics } from "~/platform/analytics/CloudflareAnalytics";
 import { SITE_NAME } from "~/platform/config";
 import { I18nProvider, langFromPathname, translate } from "~/platform/i18n";
 import { PageHeader } from "~/platform/shell/PageHeader";
+import { POINTER_ACTIVITY_SCRIPT } from "~/platform/shell/pointer-activity";
 import { Shell, ShellProviders } from "~/platform/shell/Shell";
 import { ToolSessionProvider } from "~/platform/state/ToolSessionProvider";
 import { THEME_COLORS, THEME_INIT_SCRIPT } from "~/platform/theme/theme";
@@ -31,6 +32,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         {/* ちらつき防止：最初に実行してテーマを決める（§8.2）。React は <script> の子をエスケープしない */}
         <script>{THEME_INIT_SCRIPT}</script>
+        {/* ハイドレーション前の pointerdown を拾う（画面下の通知の初回表示を操作中に出さないため） */}
+        <script>{POINTER_ACTIVITY_SCRIPT}</script>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="color-scheme" content="light dark" />

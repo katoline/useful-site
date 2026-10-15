@@ -7,6 +7,7 @@
 - **portal**（`/`）：アプリの一覧
 - **image-adjust**（`/image-adjust/`）：画像の変換・圧縮・最適化、ZIP の一括処理、Web 用アイコン一式の生成。画像はサーバーに送らず、WASM と Web Worker で処理します。PWA（インストール・オフライン動作）に対応しています
 - **markdown-pdf**（`/markdown-pdf/`）：Markdown を整えて、ブラウザの印刷で PDF にします
+- **qr-code**（`/qr-code/`）：URL から QR コードを生成します。中央に汎用アイコン・サービスロゴ・自分の画像（PNG・JPEG・WebP）を埋め込め、PNG と SVG で保存できます。処理はブラウザの中だけで完結します
 
 日本語と英語、ライトとダークに対応しています。
 
@@ -17,6 +18,7 @@
 - Hono（Cloudflare Worker。各アプリの API を集めて配信する。image-adjust の URL 入力のための画像取得の中継 API など）、Wrangler
 - 画像処理：jSquash（MozJPEG・libwebp・OxiPNG）、libimagequant-wasm、gifsicle-wasm-browser、SVGO、fflate、Comlink
 - Markdown：markdown-it
+- QR コード：qrcode（純 JavaScript。ブラウザ内で符号化する）、Simple Icons（サービスのロゴ）
 - PWA：Workbox（image-adjust の Service Worker を postbuild で生成）
 - テスト・品質：Biome、Vitest、Playwright
 - 開発環境：Nix の devShell（Node.js 22・pnpm・Playwright のブラウザ）と direnv
@@ -26,7 +28,7 @@
 ```
 app/
   platform/        土台（シェル・アプリの登録簿・i18n・広告枠・SEO・UI 部品）。どのアプリにも依存しない
-  apps/<id>/       アプリ（portal・image-adjust・markdown-pdf）。文言・ページ・ルート・API・テスト等を全部この中に置く
+  apps/<id>/       アプリ（portal・image-adjust・markdown-pdf・qr-code）。文言・ページ・ルート・API・テスト等を全部この中に置く
 worker/            Cloudflare Worker（Hono）。各アプリの api/ を集める
 scripts/           ビルド後の整形・依存の境界の検査・OGP 画像の生成・公開前の確認
 public/            favicon とサイト共通の OGP 画像

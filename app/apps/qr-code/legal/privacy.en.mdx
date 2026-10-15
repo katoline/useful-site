@@ -1,0 +1,24 @@
+### How We Handle URLs and Images
+
+All QR code creation, previewing, and PNG / SVG saving in QR Code Generator happens inside your browser.
+
+- The URL you enter is never sent to or stored on our servers.
+- We do not access the URL you enter to fetch its contents, and we do not fetch its favicon.
+- An image you load for the center of the QR code is never sent to or stored on our servers.
+
+### Information Stored on Your Device
+
+- **The URL, settings, icon choice, and image you are working with:** So they survive a language switch, they are kept only in this tab's memory. They are not written to your device (the browser's localStorage or IndexedDB) and are not kept on our servers. They are cleared when you reload the page.
+- An image you load is used only to convert it into the PNG that is embedded in the center, and is never saved as is.
+
+### Reading and Distributing the QR Code
+
+- Whether a QR code can be read depends on the device, the scanning app, the printing quality, and the size it is displayed at. We do not guarantee that it will be readable.
+- The center icon and the color affect readability. Before distributing or printing a QR code for others, check that it can be read with the device and app you actually plan to use.
+- You are responsible for the contents of the QR codes you create and for where you distribute them.
+
+### Bundled Icons and Logos
+
+- Some of the shapes you can choose (other than no icon) are bundled from [Lucide](https://lucide.dev/) (ISC License) and [Simple Icons](https://simpleicons.org/) (CC0 1.0 Universal). Nothing is fetched from the network while a QR code is being created.
+- Service names and logos are trademarks of their respective owners, and all rights belong to them. We are not affiliated with any of those companies, and none of them endorses this tool.
+- Brand logos included in Simple Icons remain trademarks of their respective owners even though they are covered by CC0 1.0 Universal. If you distribute a QR code that uses a logo, follow that company's brand guidelines.

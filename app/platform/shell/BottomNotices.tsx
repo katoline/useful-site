@@ -8,9 +8,13 @@
  * ハイドレーション後に出る通知をページの流れに入れるとレイアウトがずれる（CLS）ので、重ねて出す。
  * 代わりに、何か出ている間はコンテナの実際の高さを --bottom-notices-height に入れ、body の下に
  * 同じだけ余白を足してフッターを隠さない（app.css。末尾に足すだけなので表示中の要素は動かない）。
+ *
+ * 初回表示は、利用者がリンクを押してから離すまでの間に通知が現れて click を奪わないよう、進行中の
+ * ポインター操作が終わってから行う（pointer-activity.ts）。既に出ている通知は消さず操作できる。
  */
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useDeferredFirstShow } from "./pointer-activity";
 
 const HEIGHT_VAR = "--bottom-notices-height";
 
@@ -53,5 +57,6 @@ export function BottomNoticesProvider({ children }: { children: ReactNode }) {
 /** 画面下の通知のコンテナに出す。コンテナができるまで（プリレンダリング・ハイドレーション中）は何も出さない */
 export function BottomNotice({ children }: { children: ReactNode }) {
   const container = useContext(BottomNoticesContext);
-  return container ? createPortal(children, container) : null;
+  const ready = useDeferredFirstShow();
+  return container && ready ? createPortal(children, container) : null;
 }
