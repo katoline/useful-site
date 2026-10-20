@@ -31,7 +31,7 @@
 - E2E でビルドを省くときは `E2E_SKIP_BUILD=1 nix develop -c pnpm test:e2e`。E2E のポートは `E2E_PORT` で変えられる（既定 4173）
 - 開発サーバー：`nix develop -c pnpm dev`（http://localhost:5173/）。本番相当の確認は `pnpm build` の後に `nix develop -c pnpm preview`（http://localhost:4173/、workerd で配信）
 - `/image-adjust/api/health` は dev・preview の両方で応答する（E2E の起動確認もこの URL）
-- デプロイ（`wrangler deploy` / `pnpm run deploy`）と `wrangler login` はまだ行わない
+- デプロイは `pnpm run deploy`（公開前の確認 → ビルド → `wrangler deploy`）。`main` へのマージで CI が通ると、GitHub Actions（`.github/workflows/deploy.yml`）が同じ処理を自動で行う。ローカルの `wrangler login` はユーザーが行う（エージェントは代行しない）
 
 ## 構成と依存の決まり
 
@@ -147,6 +147,7 @@ Service Worker を持つアプリ（現状 Image Adjust）は、先に自分を 
 ### 公開先（暫定ドメイン）
 
 - 公開 URL は `https://t0n03k1.com/`。`wrangler.jsonc` の `routes` は `t0n03k1.com/*` の 1 本（`zone_name: t0n03k1.com`）で、サイト全体を 1 つの Worker が担当する。ドメイン直下（`/robots.txt`・`/ads.txt`・`/sitemap.xml`）もこのリポジトリが出す。dev・preview・E2E は routes を使わない（localhost で配信）
+- 自動デプロイ（`.github/workflows/deploy.yml`）は、`main` への push で CI の `verify` が成功したコミットを `pnpm run deploy` で出す。必要な設定は Actions の Secret `CLOUDFLARE_API_TOKEN` と Variable `CLOUDFLARE_ACCOUNT_ID`、有効化の Variable `DEPLOY_ENABLED=true`。デプロイ先は `CLOUDFLARE_ACCOUNT_ID` のアカウント（ローカルは `wrangler login` のアカウント）。`routes` を使うので、ゾーンが同じアカウントにあり、ネームサーバーが Cloudflare を向いている必要がある
 - `pnpm run deploy` は、公開オリジン（`VITE_SITE_ORIGIN`、未設定なら既定値）のホストが `routes[].pattern` のホストのどれとも一致しなければ止まる（canonical 等が配信していないホストを指すのを防ぐ。判定は `scripts/lib/site-origin.ts` の `checkOriginMatchesRoutes()`）。routes が無いとき（workers.dev だけで公開）は、`workers_dev` が有効で、オリジンが `*.workers.dev` のときだけ通す
 - `workers_dev: true` は明示している。wrangler は routes があると workers.dev を既定で無効にするため。独自ドメインでの確認が済むまで、workers.dev は確認用に残す
 - ドメインの準備（Cloudflare 側。デプロイ前に済ませる）：t0n03k1.com を Cloudflare のゾーンに追加し、ネームサーバーを切り替える。ルートの Worker はプロキシ（オレンジの雲）されたホスト名でしか動かないので、`t0n03k1.com` の DNS レコード（A / AAAA / CNAME。ドメイン直下を担当するものが無ければ `AAAA t0n03k1.com 100::` のプロキシ有効レコード）を置く
