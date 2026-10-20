@@ -76,3 +76,29 @@ nix develop -c pnpm install
 | --- | --- |
 | `build` | 本番ビルド（プリレンダリング・Worker・各アプリのビルド後フック） |
 | `run deploy` | 公開前の確認 → ビルド → `wrangler deploy`。公開オリジンが仮の値や Worker の routes と食い違うときは止まる |
+
+### 自動デプロイ
+
+`main` にマージ（push）して CI の `verify` が成功すると、`.github/workflows/deploy.yml` がそのコミットで `pnpm run deploy` を実行します。CI が失敗したコミットはデプロイしません。Actions の画面から手動で流すこともできます（`workflow_dispatch`）。
+
+初回だけ、リポジトリの Settings → Secrets and variables → Actions に次を登録します（値はデプロイ先の Cloudflare アカウントのもの）。
+
+| 種別 | 名前 | 内容 |
+| --- | --- | --- |
+| Secret | `CLOUDFLARE_API_TOKEN` | 「Edit Cloudflare Workers」テンプレートで作った API トークン |
+| Variable | `CLOUDFLARE_ACCOUNT_ID` | アカウント ID（`wrangler whoami` で確認） |
+| Variable | `DEPLOY_ENABLED` | `true` にすると自動デプロイが有効になる。準備が済むまでは未設定（skip） |
+| Variable | `VITE_ADSENSE_CLIENT` ほか `VITE_ADSENSE_SLOT_*` | 任意。広告を出すときだけ（`.env.example` を参照） |
+| Variable | `VITE_CF_ANALYTICS_TOKEN` | 任意。Cloudflare Web Analytics を使うときだけ |
+
+`CLOUDFLARE_API_TOKEN` は Account の `Workers Scripts: Edit`、Zone の `Workers Routes: Edit` と `Zone: Read` があれば足ります（「Edit Cloudflare Workers」テンプレートはこれを含みます）。`VITE_SITE_ORIGIN` は設定しないでください（未設定なら既定値が `wrangler.jsonc` の routes と一致します）。
+
+`wrangler.jsonc` の `routes` を使うため、ドメインのゾーンが同じ Cloudflare アカウントにあり、ネームサーバーが Cloudflare に向いている必要があります。ローカルからのデプロイ先は `wrangler login` したアカウント、CI からのデプロイ先は `CLOUDFLARE_ACCOUNT_ID` のアカウントです（両方を同じアカウントにそろえる）。
+
+初回は次の順で行います。
+
+1. `tonosaki.sub@gmail.com` のアカウントで API トークンを作り、アカウント ID を控える
+2. GitHub に `CLOUDFLARE_API_TOKEN`（Secret）・`CLOUDFLARE_ACCOUNT_ID`（Variable）を登録する
+3. `t0n03k1.com` のゾーンを同じアカウントに追加し、ネームサーバーを Cloudflare に向けて Active にする
+4. `deploy.yml` を main にマージする（`DEPLOY_ENABLED` が未設定なので、この時点ではデプロイは skip）
+5. `DEPLOY_ENABLED=true` を登録し、Actions → Deploy → Run workflow で 1 回流して確認する。以降は main へのマージで自動デプロイ
