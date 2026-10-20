@@ -149,11 +149,11 @@ Service Worker を持つアプリ（現状 Image Adjust）は、先に自分を 
 - 公開 URL は `https://t0n03k1.com/`。`wrangler.jsonc` の `routes` は `t0n03k1.com/*` の 1 本（`zone_name: t0n03k1.com`）で、サイト全体を 1 つの Worker が担当する。ドメイン直下（`/robots.txt`・`/ads.txt`・`/sitemap.xml`）もこのリポジトリが出す。dev・preview・E2E は routes を使わない（localhost で配信）
 - 自動デプロイ（`.github/workflows/deploy.yml`）は、`main` への push で CI の `verify` が成功したコミットを `pnpm run deploy` で出す。必要な設定は Actions の Secret `CLOUDFLARE_API_TOKEN` と Variable `CLOUDFLARE_ACCOUNT_ID`、有効化の Variable `DEPLOY_ENABLED=true`。デプロイ先は `CLOUDFLARE_ACCOUNT_ID` のアカウント（ローカルは `wrangler login` のアカウント）。`routes` を使うので、ゾーンが同じアカウントにあり、ネームサーバーが Cloudflare を向いている必要がある
 - `pnpm run deploy` は、公開オリジン（`VITE_SITE_ORIGIN`、未設定なら既定値）のホストが `routes[].pattern` のホストのどれとも一致しなければ止まる（canonical 等が配信していないホストを指すのを防ぐ。判定は `scripts/lib/site-origin.ts` の `checkOriginMatchesRoutes()`）。routes が無いとき（workers.dev だけで公開）は、`workers_dev` が有効で、オリジンが `*.workers.dev` のときだけ通す
-- `workers_dev: true` は明示している。wrangler は routes があると workers.dev を既定で無効にするため。独自ドメインでの確認が済むまで、workers.dev は確認用に残す
+- `workers_dev: false` を明示している（独自ドメインでの公開を確認済み）。wrangler は routes があると workers.dev を既定で無効にするが、明示しておく。ダッシュボード側の設定も次のデプロイでそろう
 - ドメインの準備（Cloudflare 側。デプロイ前に済ませる）：t0n03k1.com を Cloudflare のゾーンに追加し、ネームサーバーを切り替える。ルートの Worker はプロキシ（オレンジの雲）されたホスト名でしか動かないので、`t0n03k1.com` の DNS レコード（A / AAAA / CNAME。ドメイン直下を担当するものが無ければ `AAAA t0n03k1.com 100::` のプロキシ有効レコード）を置く
   - Rocket Loader・Bot Fight Mode の JavaScript detections・Email Obfuscation など、HTML を書き換えるゾーンの機能は無効にする（ハッシュ方式の meta CSP とぶつかる。有効にするならデプロイ後に CSP 違反を確かめる）。Always Use HTTPS を有効にする（HSTS は `_headers` で `Strict-Transport-Security: max-age=31536000` を付ける）
 - www 付き（`www.t0n03k1.com`）でも開けるよう、プロキシ有効の `www` の DNS レコード（例 `AAAA www 100::`）を置き、Cloudflare の Redirect Rule で `www.t0n03k1.com/*` を `https://t0n03k1.com/$1` へ 301 で転送する（コードでは扱わない。routes は www を含まない）
-- workers.dev から独自ドメインへの移行（Cloudflare 側で行う。コードでは行わない）：独自ドメインで全機能が動くのを確かめたら、ダッシュボードの Workers & Pages → useful-site → Settings → Domains & Routes で workers.dev を無効にし、`wrangler.jsonc` の `workers_dev` も `false` にそろえる（そろえないと次のデプロイで有効に戻る）。canonical は既に独自ドメインを指しているので、検索結果の重複はこれで解消する。workers.dev は自分のゾーンではないため、Redirect Rules・Bulk Redirects では 301 を返せない。301 が必須なら、Worker でホスト名を見てリダイレクトする実装（`run_worker_first` の範囲の見直しを含む）が別途要る
+- workers.dev から独自ドメインへの移行：独自ドメインで全機能が動くのを確認したので、`wrangler.jsonc` の `workers_dev` は `false` にしている（ダッシュボード側も次のデプロイでそろう）。canonical は既に独自ドメインを指しているので、検索結果の重複はこれで解消する。workers.dev は自分のゾーンではないため、Redirect Rules・Bulk Redirects では 301 を返せない。301 が必須なら、Worker でホスト名を見てリダイレクトする実装（`run_worker_first` の範囲の見直しを含む）が別途要る
 
 ## ディレクトリ
 

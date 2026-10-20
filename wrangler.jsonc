@@ -5,9 +5,9 @@
   "compatibility_date": "2026-10-01",
   // サイト全体を担当する。公開オリジンは platform/config とそろえる。
   "routes": [{ "pattern": "t0n03k1.com/*", "zone_name": "t0n03k1.com" }],
-  // workers.dev は独自ドメインの設定が済むまでの確認用に残す。wrangler は routes があると
-  // workers_dev の既定値を false にするので、明示して routes を足す前と同じ（有効）にしておく
-  "workers_dev": true,
+  // 独自ドメインでの公開を確認したので workers.dev は無効にする。routes があると wrangler は
+  // 既定で false にするが、明示しておく（ダッシュボード側の設定も次のデプロイでそろう）
+  "workers_dev": false,
   "assets": {
     "binding": "ASSETS",
     // API だけ Worker を先に通し、それ以外は静的アセット（プリレンダリング済み HTML 等）を返す
