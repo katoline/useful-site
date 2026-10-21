@@ -16,6 +16,7 @@ export function isMobile(page: Page): boolean {
 /** ヘッダー（PC）またはメニュー（スマホ）から英語版へ切り替える */
 export async function switchToEnglish(page: Page): Promise<void> {
   if (isMobile(page)) await page.getByTestId("mobile-menu-button").click();
+  else await page.getByTestId("lang-menu").click();
   await page.getByTestId("lang-en").filter({ visible: true }).click();
 }
 

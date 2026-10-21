@@ -7,6 +7,10 @@ export const manifest = {
     ja: "Markdown をブラウザ内で整えて PDF に保存",
     en: "Turn Markdown into a print-ready PDF in your browser",
   },
+  highlights: {
+    ja: ["書きながらプレビュー", "用紙・余白・文字サイズを指定", "画像入りの文書も OK"],
+    en: ["Live preview", "Paper, margin & font size", "Supports images"],
+  },
   category: "document",
   status: "public",
   icon: "file-text",

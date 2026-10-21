@@ -18,7 +18,11 @@ for (const lang of ["ja", "en"] as const) {
       await expect(page.locator("html")).toHaveAttribute("lang", lang);
       await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
       await expect(
-        page.getByRole("heading", { level: 2, name: "Image Adjust", exact: true }),
+        page.getByRole("heading", {
+          level: 2,
+          name: lang === "ja" ? "画像の変換・圧縮" : "Image Converter & Compressor",
+          exact: true,
+        }),
       ).toBeVisible();
       const specific = page.locator('[data-app-legal="image-adjust"]');
       await expect(specific).toContainText(lang === "ja" ? "画像" : "image");

@@ -1,3 +1,4 @@
+import { ArrowRight, Check } from "lucide-react";
 import { Link } from "react-router";
 import { AdSlot } from "~/platform/ads/AdSlot";
 import { absoluteUrl, SITE_NAME } from "~/platform/config";
@@ -62,14 +63,14 @@ export default function Home() {
   return (
     <Shell config={{ appPath: "", name: SITE_NAME, menu: [] }}>
       <h1 className="text-3xl font-bold">{SITE_NAME[lang]}</h1>
-      <p className="mt-3 text-muted-foreground">{dict.lead}</p>
-      <div className="mt-8 space-y-8">
+      <p className="mt-2 max-w-2xl text-muted-foreground">{dict.lead}</p>
+      <div className="mt-6 space-y-6">
         {(["image", "document", "other"] as AppCategory[]).map((category) => {
           const group = apps.filter((app) => app.category === category);
           if (!group.length) return null;
           return (
             <section key={category} aria-labelledby={`category-${category}`}>
-              <h2 id={`category-${category}`} className="mb-4 text-xl font-semibold">
+              <h2 id={`category-${category}`} className="mb-3 text-lg font-semibold">
                 {t(
                   category === "image"
                     ? "registry.categories.image"
@@ -78,25 +79,51 @@ export default function Home() {
                       : "registry.categories.other",
                 )}
               </h2>
-              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {group.map((app) => {
+                  const highlights = app.highlights?.[lang] ?? [];
                   const body = (
                     <>
-                      <div className="flex items-center gap-3">
-                        <AppIcon icon={app.icon} className="size-6" />
-                        <h3 className="font-semibold">{app.name[lang]}</h3>
-                        {app.status === "beta" && <Badge>{t("registry.beta")}</Badge>}
+                      <div className="flex items-start gap-3">
+                        <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+                          <AppIcon icon={app.icon} className="size-6" />
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="flex flex-wrap items-center gap-2 font-semibold leading-snug">
+                            {app.name[lang]}
+                            {app.status === "beta" && <Badge>{t("registry.beta")}</Badge>}
+                          </h3>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {app.description[lang]}
+                          </p>
+                        </div>
                       </div>
-                      <p className="mt-3 text-sm text-muted-foreground">{app.description[lang]}</p>
-                      {app.external && (
-                        <p className="mt-3 text-xs text-muted-foreground">{dict.external}</p>
+                      {highlights.length > 0 && (
+                        <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
+                          {highlights.map((highlight) => (
+                            <li key={highlight} className="flex items-start gap-2">
+                              <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />
+                              <span>{highlight}</span>
+                            </li>
+                          ))}
+                        </ul>
                       )}
+                      <div className="mt-auto flex items-center justify-end gap-3 pt-4 text-xs font-medium text-muted-foreground">
+                        {app.external && <span>{dict.external}</span>}
+                        <span className="inline-flex items-center gap-1 transition-colors group-hover:text-foreground">
+                          {dict.open}
+                          <ArrowRight
+                            aria-hidden
+                            className="size-3.5 transition-transform group-hover:translate-x-0.5"
+                          />
+                        </span>
+                      </div>
                     </>
                   );
                   const className =
-                    "block min-h-11 rounded-lg border border-border bg-card p-5 text-card-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+                    "group flex h-full min-h-11 flex-col rounded-lg border border-border bg-card p-4 text-card-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
                   return (
-                    <li key={app.id}>
+                    <li key={app.id} className="h-full">
                       {app.external ? (
                         <a
                           href={app.url}
@@ -119,7 +146,7 @@ export default function Home() {
           );
         })}
       </div>
-      <div className="mt-12">
+      <div className="mt-10">
         <AdSlot format="responsive" />
       </div>
     </Shell>
