@@ -1,4 +1,5 @@
 /** ツールページの下に置く FAQ（FAQPage の JSON-LD は route.tsx の meta() で出す） */
+import { FaqList } from "~/platform/ui/faq";
 import { type TFunction, useMdI18n } from "../../i18n";
 
 const FAQ_KEYS = [
@@ -19,14 +20,7 @@ export function Faq() {
       <h2 id="md-faq-title" className="mb-3 text-xl font-semibold">
         {t("faq.title")}
       </h2>
-      <dl className="divide-y divide-border">
-        {faqItems(t).map((item) => (
-          <div key={item.question} className="py-3">
-            <dt className="font-medium">{item.question}</dt>
-            <dd className="mt-1 text-sm text-muted-foreground">{item.answer}</dd>
-          </div>
-        ))}
-      </dl>
+      <FaqList items={faqItems(t)} />
     </section>
   );
 }

@@ -1,6 +1,7 @@
 /**
  * 余白・背景・角丸と、マニフェスト・HTML の設定。
  */
+import { ChevronDown } from "lucide-react";
 import { useId } from "react";
 import { useToolSession } from "~/platform/state/ToolSessionProvider";
 import { Input } from "~/platform/ui/input";
@@ -124,93 +125,105 @@ export function IconSettingsPanel({
 
       <hr className="border-border" />
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor={ids.name}>{t("icons.settings.name")}</Label>
-        <Input
-          id={ids.name}
-          value={settings.name}
-          maxLength={100}
-          placeholder="My Site"
-          onChange={(e) => onChange({ name: e.target.value })}
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor={ids.shortName}>{t("icons.settings.shortName")}</Label>
-        <Input
-          id={ids.shortName}
-          value={settings.shortName}
-          maxLength={40}
-          placeholder={settings.name || "My Site"}
-          aria-describedby={ids.shortNameHint}
-          onChange={(e) => onChange({ shortName: e.target.value })}
-        />
-        <p id={ids.shortNameHint} className="text-xs text-muted-foreground">
-          {t("icons.settings.shortNameHint")}
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-6">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor={ids.theme}>{t("icons.settings.themeColor")}</Label>
-          <input
-            id={ids.theme}
-            type="color"
-            className={colorInputClass}
-            value={settings.themeColor}
-            onChange={(e) => onChange({ themeColor: e.target.value })}
+      {/* サイト情報（マニフェスト・HTML）。既定は閉じる */}
+      <details className="group rounded-md border border-border" data-testid="icons-site-info">
+        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3 text-sm font-medium select-none">
+          {t("icons.settings.siteInfo")}
+          <ChevronDown
+            aria-hidden
+            className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
           />
+        </summary>
+        <div className="flex flex-col gap-5 border-t border-border p-3">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={ids.name}>{t("icons.settings.name")}</Label>
+            <Input
+              id={ids.name}
+              value={settings.name}
+              maxLength={100}
+              placeholder="My Site"
+              onChange={(e) => onChange({ name: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={ids.shortName}>{t("icons.settings.shortName")}</Label>
+            <Input
+              id={ids.shortName}
+              value={settings.shortName}
+              maxLength={40}
+              placeholder={settings.name || "My Site"}
+              aria-describedby={ids.shortNameHint}
+              onChange={(e) => onChange({ shortName: e.target.value })}
+            />
+            <p id={ids.shortNameHint} className="text-xs text-muted-foreground">
+              {t("icons.settings.shortNameHint")}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-6">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={ids.theme}>{t("icons.settings.themeColor")}</Label>
+              <input
+                id={ids.theme}
+                type="color"
+                className={colorInputClass}
+                value={settings.themeColor}
+                onChange={(e) => onChange({ themeColor: e.target.value })}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={ids.manifestBg}>{t("icons.settings.backgroundColor")}</Label>
+              <input
+                id={ids.manifestBg}
+                type="color"
+                className={colorInputClass}
+                value={settings.backgroundColor}
+                aria-describedby={ids.manifestBgHint}
+                onChange={(e) => onChange({ backgroundColor: e.target.value })}
+              />
+            </div>
+          </div>
+          <p id={ids.manifestBgHint} className="-mt-3 text-xs text-muted-foreground">
+            {t("icons.settings.backgroundColorHint")}
+          </p>
+          <div className="flex items-center gap-2">
+            <Switch
+              id={ids.og}
+              checked={settings.includeOg}
+              data-testid="icons-include-og"
+              onCheckedChange={(includeOg) => onChange({ includeOg })}
+            />
+            <Label htmlFor={ids.og}>{t("icons.settings.includeOg")}</Label>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={ids.basePath}>{t("icons.settings.basePath")}</Label>
+            <Input
+              id={ids.basePath}
+              value={basePathInput}
+              maxLength={500}
+              aria-describedby={`${ids.basePathHint} ${ids.basePathError}`}
+              aria-invalid={!basePathValid}
+              data-testid="icons-base-path"
+              onChange={(e) => {
+                const value = e.target.value;
+                setBasePathInput(value);
+                // スニペット・マニフェストに反映するのは正しい値になってから
+                if (isValidBasePath(value)) onChange({ basePath: value });
+              }}
+            />
+            <p
+              id={ids.basePathError}
+              role="alert"
+              className="text-xs text-destructive empty:hidden"
+              data-testid="icons-base-path-error"
+            >
+              {basePathValid ? "" : t("icons.settings.basePathInvalid")}
+            </p>
+            <p id={ids.basePathHint} className="text-xs text-muted-foreground">
+              {t("icons.settings.basePathHint")}
+            </p>
+          </div>
         </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor={ids.manifestBg}>{t("icons.settings.backgroundColor")}</Label>
-          <input
-            id={ids.manifestBg}
-            type="color"
-            className={colorInputClass}
-            value={settings.backgroundColor}
-            aria-describedby={ids.manifestBgHint}
-            onChange={(e) => onChange({ backgroundColor: e.target.value })}
-          />
-        </div>
-      </div>
-      <p id={ids.manifestBgHint} className="-mt-3 text-xs text-muted-foreground">
-        {t("icons.settings.backgroundColorHint")}
-      </p>
-      <div className="flex items-center gap-2">
-        <Switch
-          id={ids.og}
-          checked={settings.includeOg}
-          data-testid="icons-include-og"
-          onCheckedChange={(includeOg) => onChange({ includeOg })}
-        />
-        <Label htmlFor={ids.og}>{t("icons.settings.includeOg")}</Label>
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor={ids.basePath}>{t("icons.settings.basePath")}</Label>
-        <Input
-          id={ids.basePath}
-          value={basePathInput}
-          maxLength={500}
-          aria-describedby={`${ids.basePathHint} ${ids.basePathError}`}
-          aria-invalid={!basePathValid}
-          data-testid="icons-base-path"
-          onChange={(e) => {
-            const value = e.target.value;
-            setBasePathInput(value);
-            // スニペット・マニフェストに反映するのは正しい値になってから
-            if (isValidBasePath(value)) onChange({ basePath: value });
-          }}
-        />
-        <p
-          id={ids.basePathError}
-          role="alert"
-          className="text-xs text-destructive empty:hidden"
-          data-testid="icons-base-path-error"
-        >
-          {basePathValid ? "" : t("icons.settings.basePathInvalid")}
-        </p>
-        <p id={ids.basePathHint} className="text-xs text-muted-foreground">
-          {t("icons.settings.basePathHint")}
-        </p>
-      </div>
+      </details>
     </div>
   );
 }

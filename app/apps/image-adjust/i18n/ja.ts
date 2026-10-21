@@ -55,6 +55,7 @@ export const ja = {
         "ファイルを置く場所のパスか URL（例 / や https://example.com/）。HTML のパスに使います。",
       basePathInvalid:
         "/ か https:// で始めてください（./ や ../ も使えます）。直すまで HTML には前の値を使います。",
+      siteInfo: "サイト情報（マニフェスト・HTML）",
     },
     preview: {
       title: "プレビュー",
@@ -191,6 +192,7 @@ export const ja = {
       urlLabel: "画像の URL",
       urlPlaceholder: "https://example.com/image.png",
       urlAdd: "URL から追加",
+      urlSubmit: "追加",
       urlLoading: "取得中…",
       urlOffline: "オフラインのため URL からは取得できません",
       urlErrors: {

@@ -2,7 +2,7 @@
  * 入力エリア（§2.3・§6.2）。
  * - スマホ：「写真を選ぶ」（accept="image/*"）を大きく。ドロップエリアは出さない
  * - PC：ドラッグ＆ドロップ（フォルダ可）＋ ファイル / フォルダ / ZIP の選択
- * - 共通：URL 入力欄
+ * - 共通：URL 入力（「URL から追加」を押したときだけ開く）
  */
 import { FolderOpen, Images, Link as LinkIcon, LoaderCircle, Upload } from "lucide-react";
 import { type DragEvent, type FormEvent, useId, useRef, useState } from "react";
@@ -24,17 +24,21 @@ export interface FileInputProps {
   onUrl: (url: string) => Promise<void>;
   urlBusy: boolean;
   urlError: string | null;
+  /** 「この端末の上限：…」の注記（対応形式の注記のすぐ下に出す） */
+  limitNote: string;
 }
 
-export function FileInput({ onFiles, onUrl, urlBusy, urlError }: FileInputProps) {
+export function FileInput({ onFiles, onUrl, urlBusy, urlError, limitNote }: FileInputProps) {
   const { t } = useI18n();
   const online = useOnline();
   const [dragging, setDragging] = useState(false);
+  const [urlOpen, setUrlOpen] = useState(false);
   const [url, setUrl] = useState("");
   const photoRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const folderRef = useRef<HTMLInputElement>(null);
   const urlId = useId();
+  const urlFormId = `${urlId}-form`;
 
   const handleInput = (input: HTMLInputElement) => {
     onFiles(filesFromInput(input.files));
@@ -136,42 +140,63 @@ export function FileInput({ onFiles, onUrl, urlBusy, urlError }: FileInputProps)
             {t("tool.input.chooseZip")}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">{t("tool.input.acceptNote")}</p>
       </section>
-      <p className="text-xs text-muted-foreground md:hidden">{t("tool.input.acceptNote")}</p>
 
-      {/* URL 入力 */}
-      <form onSubmit={submitUrl} className="flex flex-col gap-2">
-        <Label htmlFor={urlId}>{t("tool.input.urlLabel")}</Label>
-        <div className="flex gap-2">
-          <Input
-            id={urlId}
-            type="url"
-            inputMode="url"
-            placeholder={t("tool.input.urlPlaceholder")}
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            disabled={urlBusy || !online}
-            data-testid="url-input"
-          />
-          <Button type="submit" variant="outline" disabled={urlBusy || !online || !url.trim()}>
-            {urlBusy ? (
-              <LoaderCircle className="animate-spin" aria-hidden />
-            ) : (
-              <LinkIcon aria-hidden />
+      <div className="flex flex-col gap-1">
+        <p className="text-xs text-muted-foreground">{t("tool.input.acceptNote")}</p>
+        <p className="text-xs text-muted-foreground" data-testid="device-limits">
+          {limitNote}
+        </p>
+      </div>
+
+      {/* URL 入力（既定は閉じる） */}
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          variant="link"
+          className="h-11 self-start px-0"
+          aria-expanded={urlOpen}
+          aria-controls={urlOpen ? urlFormId : undefined}
+          onClick={() => setUrlOpen((open) => !open)}
+          data-testid="url-toggle"
+        >
+          <LinkIcon aria-hidden />
+          {t("tool.input.urlAdd")}
+        </Button>
+        {urlOpen && (
+          <form id={urlFormId} onSubmit={submitUrl} className="flex flex-col gap-2">
+            <Label htmlFor={urlId}>{t("tool.input.urlLabel")}</Label>
+            <div className="flex gap-2">
+              <Input
+                id={urlId}
+                type="url"
+                inputMode="url"
+                placeholder={t("tool.input.urlPlaceholder")}
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                disabled={urlBusy || !online}
+                data-testid="url-input"
+              />
+              <Button type="submit" variant="outline" disabled={urlBusy || !online || !url.trim()}>
+                {urlBusy ? (
+                  <LoaderCircle className="animate-spin" aria-hidden />
+                ) : (
+                  <LinkIcon aria-hidden />
+                )}
+                {urlBusy ? t("tool.input.urlLoading") : t("tool.input.urlSubmit")}
+              </Button>
+            </div>
+            {!online && (
+              <p className="text-xs text-muted-foreground">{t("tool.input.urlOffline")}</p>
             )}
-            <span className="hidden sm:inline">
-              {urlBusy ? t("tool.input.urlLoading") : t("tool.input.urlAdd")}
-            </span>
-          </Button>
-        </div>
-        {!online && <p className="text-xs text-muted-foreground">{t("tool.input.urlOffline")}</p>}
-        {urlError && (
-          <p className="text-sm text-destructive" role="alert">
-            {urlError}
-          </p>
+            {urlError && (
+              <p className="text-sm text-destructive" role="alert">
+                {urlError}
+              </p>
+            )}
+          </form>
         )}
-      </form>
+      </div>
     </div>
   );
 }
