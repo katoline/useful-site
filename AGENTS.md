@@ -152,8 +152,28 @@ Service Worker を持つアプリ（現状 Image Adjust）は、先に自分を 
 - `workers_dev: false` を明示している（独自ドメインでの公開を確認済み）。wrangler は routes があると workers.dev を既定で無効にするが、明示しておく。ダッシュボード側の設定も次のデプロイでそろう
 - ドメインの準備（Cloudflare 側。デプロイ前に済ませる）：t0n03k1.com を Cloudflare のゾーンに追加し、ネームサーバーを切り替える。ルートの Worker はプロキシ（オレンジの雲）されたホスト名でしか動かないので、`t0n03k1.com` の DNS レコード（A / AAAA / CNAME。ドメイン直下を担当するものが無ければ `AAAA t0n03k1.com 100::` のプロキシ有効レコード）を置く
   - Rocket Loader・Bot Fight Mode の JavaScript detections・Email Obfuscation など、HTML を書き換えるゾーンの機能は無効にする（ハッシュ方式の meta CSP とぶつかる。有効にするならデプロイ後に CSP 違反を確かめる）。Always Use HTTPS を有効にする（HSTS は `_headers` で `Strict-Transport-Security: max-age=31536000` を付ける）
-- www 付き（`www.t0n03k1.com`）でも開けるよう、プロキシ有効の `www` の DNS レコード（例 `AAAA www 100::`）を置き、Cloudflare の Redirect Rule で `www.t0n03k1.com/*` を `https://t0n03k1.com/$1` へ 301 で転送する（コードでは扱わない。routes は www を含まない）
+- www（`www.t0n03k1.com`）は**未設定**（現状は apex のみ。`www` の DNS レコードも Redirect Rule も無い）。設定する場合は、プロキシ有効の `www` の DNS レコード（例 `AAAA www 100::`）を置き、Cloudflare の Redirect Rule で `www.t0n03k1.com/*` を `https://t0n03k1.com/$1` へ 301 で転送する（コードでは扱わない。routes は www を含まない）
 - workers.dev から独自ドメインへの移行：独自ドメインで全機能が動くのを確認したので、`wrangler.jsonc` の `workers_dev` は `false` にしている（ダッシュボード側も次のデプロイでそろう）。canonical は既に独自ドメインを指しているので、検索結果の重複はこれで解消する。workers.dev は自分のゾーンではないため、Redirect Rules・Bulk Redirects では 301 を返せない。301 が必須なら、Worker でホスト名を見てリダイレクトする実装（`run_worker_first` の範囲の見直しを含む）が別途要る
+
+#### 現在の状態（2026-10-21）
+
+- 公開: `https://t0n03k1.com/`（Cloudflare、apex のみ。www は未設定）
+- Worker: `useful-site`、route `t0n03k1.com/*`、workers.dev は無効
+- 自動デプロイ: 有効（`DEPLOY_ENABLED=true`）
+- AdSense: `VITE_ADSENSE_CLIENT` 設定済み・`/ads.txt` 公開済み・審査中。`VITE_ADSENSE_SLOT_*` は未設定、CMP は未確認
+- 未設定: www、監視・アラート、Cloudflare Web Analytics
+- Search Console: サイトマップ送信済み、インデックス反映待ち
+
+#### 公開後の TODO
+
+詳細な手順は README の「公開後の TODO」にまとめている。新しいセッションで「残タスクは？」と聞かれたら、この節と README を読む。
+
+- [ ] www（`www.t0n03k1.com`）の DNS レコードと Redirect Rule
+- [ ] 監視・アラート（Cloudflare Alerts・外部 uptime 監視）
+- [ ] Cloudflare Web Analytics（`VITE_CF_ANALYTICS_TOKEN` または自動設定）
+- [ ] AdSense の広告ユニット（`VITE_ADSENSE_SLOT_*`）と CMP
+- [ ] AdSense 承認後の表示確認（1ページ3枠以内、入力・ダウンロード・保存の近くに置かない）
+- [ ] Search Console のインデックス確認（サイトマップは送信済み）
 
 ## ディレクトリ
 
@@ -309,3 +329,6 @@ Markdown をブラウザ内で整え、**ブラウザの印刷で PDF にする*
 - お問い合わせは GitHub の Issue（`https://github.com/katoline/useful-site/issues`）で受け付ける。Issue は公開されるので、規約・about に「個人情報を書かない」旨を書いてある（`app/platform/content/{ja,en}/privacy.mdx` の「個人情報の取り扱い」）
 - サイト名（`SITE_NAME`）は仮。決まったら `app/platform/config/index.ts` を変える
 - Android 実機の共有受け取りの `Sec-Fetch-Site` は未確認（Image Adjust の PWA の項）
+- 監視・アラートは未設定（Cloudflare の Alerts も外部の uptime 監視も入れていない）。必要になったら `https://t0n03k1.com/` と `/image-adjust/api/health` を対象にする
+- Cloudflare Web Analytics は未設定（`VITE_CF_ANALYTICS_TOKEN` 未登録。自動設定も未確認）
+- 広告（AdSense）は申請中（`VITE_ADSENSE_CLIENT` は設定済みで `/ads.txt` は公開済み。`VITE_ADSENSE_SLOT_*` は未登録、CMP も未確認）。承認後に広告ユニットを作り、slot ID を Variables に追加する。手順は README の「公開後の TODO」と「広告（AdSense）」を参照
