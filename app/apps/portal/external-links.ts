@@ -5,6 +5,8 @@ export interface ExternalLink {
   url: string;
   name: Record<Lang, string>;
   description: Record<Lang, string>;
+  /** ポータルのカードに出す「できること」。各言語 2〜4 個の短い語句。 */
+  highlights?: Record<Lang, string[]>;
   category: AppCategory;
   icon: AppIconKey;
   status: AppStatus;

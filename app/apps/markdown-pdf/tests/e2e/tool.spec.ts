@@ -214,6 +214,7 @@ test("言語を切り替えても再読み込みしても、入力と設定が�
   await page.getByRole("option", { name: "Letter" }).click();
   await page.evaluate(() => ((window as { __marker?: number }).__marker = 1));
   if (isMobile(page)) await page.getByTestId("mobile-menu-button").click();
+  else await page.getByTestId("lang-menu").click();
   await page.getByTestId("lang-en").filter({ visible: true }).click();
   await expect(page).toHaveURL(/\/markdown-pdf\/en\/$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Convert Markdown to PDF");
@@ -256,27 +257,37 @@ test("「PDF を保存」で iframe の print() が最初の h1 をタイトル�
     .toEqual(["請求書 2026 10"]);
 });
 
-test("ハンバーガーメニューからポータル・Image Adjust と行き来できる", async ({ page }) => {
+test("共通メニューからポータル・画像ツールと行き来できる", async ({ page }) => {
+  // スマホはハンバーガーのシート、PC はヘッダーの「ツール一覧」
+  const openMenu = async () => {
+    if (isMobile(page)) await page.getByTestId("mobile-menu-button").click();
+    else await page.getByTestId("apps-menu").click();
+  };
+  const menuItem = (name: string) =>
+    page
+      .getByRole(isMobile(page) ? "dialog" : "menu")
+      .getByRole(isMobile(page) ? "link" : "menuitem", { name, exact: true });
+
   await page.goto("/");
-  await page.getByTestId("mobile-menu-button").click();
-  await page.getByRole("dialog").getByRole("link", { name: "Markdown → PDF" }).click();
+  await openMenu();
+  await menuItem("Markdown → PDF").click();
   await expect(page).toHaveURL("/markdown-pdf/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Markdown を PDF に変換");
 
-  await page.getByTestId("mobile-menu-button").click();
-  const menu = page.getByRole("dialog");
-  await expect(menu.getByRole("link", { name: "Markdown → PDF" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
-  await menu.getByRole("link", { name: "Image Adjust", exact: true }).click();
+  await openMenu();
+  await expect(menuItem("Markdown → PDF")).toHaveAttribute("aria-current", "page");
+  await menuItem("画像の変換・圧縮").click();
   await expect(page).toHaveURL("/image-adjust/");
 
-  await page.getByTestId("mobile-menu-button").click();
-  await page.getByRole("dialog").getByRole("link", { name: "Markdown → PDF" }).click();
+  await openMenu();
+  await menuItem("Markdown → PDF").click();
   await expect(page).toHaveURL("/markdown-pdf/");
-  await page.getByTestId("mobile-menu-button").click();
-  await page.getByRole("dialog").getByRole("link", { name: "便利ツール集", exact: true }).click();
+  if (isMobile(page)) {
+    await openMenu();
+    await menuItem("便利ツール集").click();
+  } else {
+    await page.getByTestId("site-home").click();
+  }
   await expect(page).toHaveURL("/");
   // ポータルの一覧にも載る
   await expect(

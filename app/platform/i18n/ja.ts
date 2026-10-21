@@ -34,6 +34,7 @@ export const ja = {
     closeMenu: "メニューを閉じる",
     skipToContent: "本文へスキップ",
     home: "ホーム",
+    tools: "ツール一覧",
   },
   registry: {
     apps: "アプリ一覧",

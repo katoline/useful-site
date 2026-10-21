@@ -1,4 +1,5 @@
 import { PageHeader } from "~/platform/shell/PageHeader";
+import { FaqList } from "~/platform/ui/faq";
 import { IconTool } from "../../features/icon-generator";
 import { type TFunction, useI18n } from "../../i18n";
 import { faqJsonLd, webApplicationJsonLd } from "../../shared/seo/json-ld";
@@ -53,14 +54,7 @@ export default function Icons() {
           <h2 id="icons-faq" className="text-xl font-semibold">
             {t("icons.faq.title")}
           </h2>
-          <dl className="flex flex-col gap-4">
-            {faqItems(t).map((item) => (
-              <div key={item.question} className="flex flex-col gap-1">
-                <dt className="font-medium">{item.question}</dt>
-                <dd className="text-muted-foreground">{item.answer}</dd>
-              </div>
-            ))}
-          </dl>
+          <FaqList items={faqItems(t)} />
         </section>
       </IconTool>
     </>

@@ -2,6 +2,7 @@
  * 設定パネル（§2.2・§2.5）。PC ではカード、スマホでは下から出るシートの中に置く。
  * 入力に含まれる形式に関係する項目だけを出す（何も入っていなければ全部出す）。
  */
+import { ChevronDown } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { Checkbox } from "~/platform/ui/checkbox";
 import { Input } from "~/platform/ui/input";
@@ -289,154 +290,164 @@ export function SettingsPanel({
         </Tabs>
       )}
 
-      {/* リサイズ */}
-      {(hasRaster || has("gif")) && (
-        <Field label={t("tool.settings.resize")}>
-          <ToggleGroup
-            type="single"
-            value={resize.mode}
-            onValueChange={(v) => v && setResize({ mode: v as ProcessSettings["resize"]["mode"] })}
-            aria-label={t("tool.settings.resize")}
-            data-testid="resize-mode"
-          >
-            <ToggleGroupItem value="none">{t("tool.settings.resizeNone")}</ToggleGroupItem>
-            <ToggleGroupItem value="px">{t("tool.settings.resizePx")}</ToggleGroupItem>
-            <ToggleGroupItem value="percent">{t("tool.settings.resizePercent")}</ToggleGroupItem>
-          </ToggleGroup>
-          {resize.mode === "px" && (
-            <div className="flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-2">
-                <PxInput
-                  id={`${id}-w`}
-                  label={t("tool.settings.width")}
-                  value={resize.width}
-                  onChange={(width) => setResize({ width })}
-                  testId="resize-width"
-                />
-                <PxInput
-                  id={`${id}-h`}
-                  label={t("tool.settings.height")}
-                  value={resize.height}
-                  onChange={(height) => setResize({ height })}
-                />
-              </div>
-              <SwitchRow
-                id={`${id}-aspect`}
-                label={t("tool.settings.keepAspect")}
-                checked={resize.keepAspect}
-                onCheckedChange={(keepAspect) => setResize({ keepAspect })}
-              />
-              <SwitchRow
-                id={`${id}-noenlarge`}
-                label={t("tool.settings.noEnlarge")}
-                checked={resize.noEnlarge}
-                onCheckedChange={(noEnlarge) => setResize({ noEnlarge })}
-              />
-            </div>
-          )}
-          {resize.mode === "percent" && (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor={`${id}-pct`}>{t("tool.settings.percent")}</Label>
-                <span className="text-sm tabular-nums">{resize.percent}%</span>
-              </div>
-              <Slider
-                id={`${id}-pct`}
-                min={1}
-                max={100}
-                step={1}
-                value={[resize.percent]}
-                onValueChange={([v]) => v !== undefined && setResize({ percent: v })}
-                aria-label={t("tool.settings.percent")}
-              />
-            </div>
-          )}
-        </Field>
-      )}
-
-      {/* SVG */}
-      {has("svg") && (
-        <Field label={t("tool.settings.svgLevel")}>
-          <ToggleGroup
-            type="single"
-            value={settings.svgLevel}
-            onValueChange={(v) => v && onChange({ svgLevel: v as SvgLevel })}
-            aria-label={t("tool.settings.svgLevel")}
-            data-testid="svg-level"
-          >
-            {SVG_LEVELS.map((level) => (
-              <ToggleGroupItem key={level} value={level}>
-                {t(`tool.settings.${SVG_LEVEL_LABEL[level]}`)}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-          <p className="text-xs text-muted-foreground">{t("tool.settings.svgNote")}</p>
-        </Field>
-      )}
-
-      {/* GIF */}
-      {has("gif") && (
-        <div className="flex flex-col gap-4">
-          <Field label={t("tool.settings.gifLevel")}>
-            <ToggleGroup
-              type="single"
-              value={String(settings.gif.level)}
-              onValueChange={(v) =>
-                v && onChange({ gif: { ...settings.gif, level: Number(v) as 1 | 2 | 3 } })
-              }
-              aria-label={t("tool.settings.gifLevel")}
-            >
-              <ToggleGroupItem value="1">1</ToggleGroupItem>
-              <ToggleGroupItem value="2">2</ToggleGroupItem>
-              <ToggleGroupItem value="3">3</ToggleGroupItem>
-            </ToggleGroup>
-          </Field>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor={`${id}-lossy`}>{t("tool.settings.gifLossy")}</Label>
-              <span className="text-sm tabular-nums">{settings.gif.lossy}</span>
-            </div>
-            <Slider
-              id={`${id}-lossy`}
-              min={0}
-              max={200}
-              step={5}
-              value={[settings.gif.lossy]}
-              onValueChange={([v]) =>
-                v !== undefined && onChange({ gif: { ...settings.gif, lossy: v } })
-              }
-              aria-label={t("tool.settings.gifLossy")}
-            />
-          </div>
-          <Field label={t("tool.settings.gifColors")} htmlFor={`${id}-gifcolors`}>
-            <Select
-              value={settings.gif.colors == null ? "keep" : String(settings.gif.colors)}
-              onValueChange={(v) =>
-                onChange({ gif: { ...settings.gif, colors: v === "keep" ? null : Number(v) } })
-              }
-            >
-              <SelectTrigger id={`${id}-gifcolors`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="keep">{t("tool.settings.gifColorsKeep")}</SelectItem>
-                {[256, 128, 64, 32, 16].map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    {n}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-        </div>
-      )}
-
-      {/* 詳細設定 */}
-      <details className="group rounded-md border border-border">
-        <summary className="flex min-h-11 cursor-pointer items-center px-3 text-sm font-medium select-none">
+      {/* 詳細設定（リサイズ・SVG・GIF の最適化もここに入れる。既定は閉じる） */}
+      <details className="group rounded-md border border-border" data-testid="advanced-settings">
+        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3 text-sm font-medium select-none">
           {t("tool.settings.advanced")}
+          <ChevronDown
+            aria-hidden
+            className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+          />
         </summary>
         <div className="flex flex-col gap-4 border-t border-border p-3">
+          {/* リサイズ */}
+          {(hasRaster || has("gif")) && (
+            <Field label={t("tool.settings.resize")}>
+              <ToggleGroup
+                type="single"
+                value={resize.mode}
+                onValueChange={(v) =>
+                  v && setResize({ mode: v as ProcessSettings["resize"]["mode"] })
+                }
+                aria-label={t("tool.settings.resize")}
+                data-testid="resize-mode"
+              >
+                <ToggleGroupItem value="none">{t("tool.settings.resizeNone")}</ToggleGroupItem>
+                <ToggleGroupItem value="px">{t("tool.settings.resizePx")}</ToggleGroupItem>
+                <ToggleGroupItem value="percent">
+                  {t("tool.settings.resizePercent")}
+                </ToggleGroupItem>
+              </ToggleGroup>
+              {resize.mode === "px" && (
+                <div className="flex flex-col gap-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <PxInput
+                      id={`${id}-w`}
+                      label={t("tool.settings.width")}
+                      value={resize.width}
+                      onChange={(width) => setResize({ width })}
+                      testId="resize-width"
+                    />
+                    <PxInput
+                      id={`${id}-h`}
+                      label={t("tool.settings.height")}
+                      value={resize.height}
+                      onChange={(height) => setResize({ height })}
+                    />
+                  </div>
+                  <SwitchRow
+                    id={`${id}-aspect`}
+                    label={t("tool.settings.keepAspect")}
+                    checked={resize.keepAspect}
+                    onCheckedChange={(keepAspect) => setResize({ keepAspect })}
+                  />
+                  <SwitchRow
+                    id={`${id}-noenlarge`}
+                    label={t("tool.settings.noEnlarge")}
+                    checked={resize.noEnlarge}
+                    onCheckedChange={(noEnlarge) => setResize({ noEnlarge })}
+                  />
+                </div>
+              )}
+              {resize.mode === "percent" && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor={`${id}-pct`}>{t("tool.settings.percent")}</Label>
+                    <span className="text-sm tabular-nums">{resize.percent}%</span>
+                  </div>
+                  <Slider
+                    id={`${id}-pct`}
+                    min={1}
+                    max={100}
+                    step={1}
+                    value={[resize.percent]}
+                    onValueChange={([v]) => v !== undefined && setResize({ percent: v })}
+                    aria-label={t("tool.settings.percent")}
+                  />
+                </div>
+              )}
+            </Field>
+          )}
+
+          {/* SVG（入力に SVG があるときだけ） */}
+          {inputFormats.has("svg") && (
+            <Field label={t("tool.settings.svgLevel")}>
+              <ToggleGroup
+                type="single"
+                value={settings.svgLevel}
+                onValueChange={(v) => v && onChange({ svgLevel: v as SvgLevel })}
+                aria-label={t("tool.settings.svgLevel")}
+                data-testid="svg-level"
+              >
+                {SVG_LEVELS.map((level) => (
+                  <ToggleGroupItem key={level} value={level}>
+                    {t(`tool.settings.${SVG_LEVEL_LABEL[level]}`)}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+              <p className="text-xs text-muted-foreground">{t("tool.settings.svgNote")}</p>
+            </Field>
+          )}
+
+          {/* GIF（入力に GIF があるときだけ） */}
+          {inputFormats.has("gif") && (
+            <div className="flex flex-col gap-4">
+              <Field label={t("tool.settings.gifLevel")}>
+                <ToggleGroup
+                  type="single"
+                  value={String(settings.gif.level)}
+                  onValueChange={(v) =>
+                    v && onChange({ gif: { ...settings.gif, level: Number(v) as 1 | 2 | 3 } })
+                  }
+                  aria-label={t("tool.settings.gifLevel")}
+                >
+                  <ToggleGroupItem value="1">1</ToggleGroupItem>
+                  <ToggleGroupItem value="2">2</ToggleGroupItem>
+                  <ToggleGroupItem value="3">3</ToggleGroupItem>
+                </ToggleGroup>
+              </Field>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor={`${id}-lossy`}>{t("tool.settings.gifLossy")}</Label>
+                  <span className="text-sm tabular-nums">{settings.gif.lossy}</span>
+                </div>
+                <Slider
+                  id={`${id}-lossy`}
+                  min={0}
+                  max={200}
+                  step={5}
+                  value={[settings.gif.lossy]}
+                  onValueChange={([v]) =>
+                    v !== undefined && onChange({ gif: { ...settings.gif, lossy: v } })
+                  }
+                  aria-label={t("tool.settings.gifLossy")}
+                />
+              </div>
+              <Field label={t("tool.settings.gifColors")} htmlFor={`${id}-gifcolors`}>
+                <Select
+                  value={settings.gif.colors == null ? "keep" : String(settings.gif.colors)}
+                  onValueChange={(v) =>
+                    onChange({
+                      gif: { ...settings.gif, colors: v === "keep" ? null : Number(v) },
+                    })
+                  }
+                >
+                  <SelectTrigger id={`${id}-gifcolors`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="keep">{t("tool.settings.gifColorsKeep")}</SelectItem>
+                    {[256, 128, 64, 32, 16].map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        {n}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+          )}
+
           {outputsJpeg && (
             <>
               <div className="flex items-center justify-between gap-3">

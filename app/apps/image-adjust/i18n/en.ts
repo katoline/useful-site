@@ -54,6 +54,7 @@ export const en = {
         "Path or URL where you'll put the files (e.g. / or https://example.com/). Used in the HTML.",
       basePathInvalid:
         "Start with / or https:// (./ and ../ also work). The HTML keeps the previous value until this is fixed.",
+      siteInfo: "Site info (manifest and HTML)",
     },
     preview: {
       title: "Preview",
@@ -193,6 +194,7 @@ export const en = {
       urlLabel: "Image URL",
       urlPlaceholder: "https://example.com/image.png",
       urlAdd: "Add from URL",
+      urlSubmit: "Add",
       urlLoading: "Fetching…",
       urlOffline: "You are offline, so images cannot be fetched from a URL",
       urlErrors: {

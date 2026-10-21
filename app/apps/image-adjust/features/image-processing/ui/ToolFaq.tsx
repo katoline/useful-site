@@ -1,6 +1,7 @@
 /**
  * ツールページの下に置く「使い方」と FAQ（§2.6）。FAQPage の JSON-LD は各ルートの meta() で出す。
  */
+import { FaqList } from "~/platform/ui/faq";
 import { type DictKey, useI18n } from "../../../i18n";
 
 export interface FaqItem {
@@ -38,14 +39,7 @@ export function ToolFaq({ intro, faq }: { intro?: string; faq: FaqItem[] }) {
       </div>
       <div>
         <h2 className="mb-3 text-xl font-semibold">{t("tool.faq.title")}</h2>
-        <dl className="divide-y divide-border">
-          {faq.map((item) => (
-            <div key={item.question} className="py-3">
-              <dt className="font-medium">{item.question}</dt>
-              <dd className="mt-1 text-sm text-muted-foreground">{item.answer}</dd>
-            </div>
-          ))}
-        </dl>
+        <FaqList items={faq} />
       </div>
     </section>
   );

@@ -1,4 +1,4 @@
-import { Menu } from "lucide-react";
+import { ChevronDown, ChevronRight, Grid2X2, Menu } from "lucide-react";
 import { type MouseEvent, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { SITE_NAME } from "../config";
@@ -8,10 +8,16 @@ import { listedApps } from "../registry";
 import { AppIcon } from "../registry/icons";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
 import { cn } from "../utils";
 import { handleAppNavigation } from "./app-navigation";
-import { LanguageSwitcher } from "./LanguageSwitcher";
+import { LanguageMenu, LanguageSwitcher } from "./LanguageSwitcher";
 import { LocalizedLink, LocalizedNavLink } from "./LocalizedLink";
 import type { ShellConfig } from "./Shell";
 import { ThemeMenu, ThemeToggleGroup } from "./ThemeSwitcher";
@@ -21,6 +27,53 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     "inline-flex min-h-11 items-center rounded-md px-3 text-sm transition-colors",
     isActive ? "font-semibold text-foreground" : "text-muted-foreground hover:text-foreground",
   );
+
+/** ヘッダー（PC）のアプリ一覧。現在のアプリには aria-current を付ける */
+function AppsMenu({ config }: { config: ShellConfig }) {
+  const { t, lang } = useI18n();
+  const navigate = (event: MouseEvent<HTMLAnchorElement>) =>
+    handleAppNavigation(event, config.appPath);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-11 px-2.5"
+          aria-label={t("nav.tools")}
+          data-testid="apps-menu"
+        >
+          <Grid2X2 aria-hidden />
+          <span>{t("nav.tools")}</span>
+          <ChevronDown aria-hidden className="size-3.5 text-muted-foreground" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[12rem]">
+        {listedApps.map((app) => {
+          const current = config.appPath === app.path;
+          return (
+            <DropdownMenuItem key={app.id} asChild>
+              <Link
+                to={createAppPaths(app.path).localizedPath(lang, "")}
+                onClick={navigate}
+                aria-current={current ? "page" : undefined}
+                className={cn(
+                  "cursor-pointer",
+                  current && "bg-muted font-semibold text-foreground",
+                )}
+              >
+                <AppIcon icon={app.icon} />
+                <span>{app.name[lang]}</span>
+                {app.status === "beta" && <Badge>{t("registry.beta")}</Badge>}
+              </Link>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function SiteHeader({ config }: { config: ShellConfig }) {
   const { t, lang } = useI18n();
   const location = useLocation();
@@ -45,50 +98,41 @@ export function SiteHeader({ config }: { config: ShellConfig }) {
       >
         {t("nav.skipToContent")}
       </a>
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-1 px-3 sm:px-4">
         <Link
           to={sitePath.localizedPath(lang, "")}
           data-testid="site-home"
           onClick={navigate}
-          className="inline-flex min-h-11 shrink-0 items-center text-sm font-bold"
+          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md px-2 text-sm font-bold sm:justify-start"
         >
-          {SITE_NAME[lang]}
+          {/* スマホではアプリ名が切れないよう、サイト名の代わりにアイコンだけを出す */}
+          <Grid2X2 aria-hidden className="size-5 sm:hidden" />
+          <span className="sr-only sm:not-sr-only">{SITE_NAME[lang]}</span>
         </Link>
         {config.appPath && (
           <>
-            <span aria-hidden className="text-muted-foreground">
-              /
-            </span>
+            <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
             <LocalizedLink
               page=""
               data-testid="logo"
-              className="inline-flex min-h-11 items-center gap-2 text-sm font-bold"
+              className="inline-flex min-h-11 min-w-0 items-center gap-2 text-sm font-bold"
             >
               {config.logo}
-              {config.name[lang]}
+              <span className="truncate">{config.name[lang]}</span>
             </LocalizedLink>
           </>
         )}
-        <nav
-          aria-label={t("registry.currentApp")}
-          className="hidden flex-1 items-center gap-1 md:flex"
-        >
-          {config.menu.map((item) => (
-            <LocalizedNavLink key={item.page} page={item.page} className={navLinkClass}>
-              {item.label[lang]}
-            </LocalizedNavLink>
-          ))}
-        </nav>
-        <div className="ml-auto hidden items-center gap-1 md:flex">
-          <LanguageSwitcher />
+        <div className="ml-auto hidden shrink-0 items-center gap-1 md:flex">
+          <LanguageMenu />
           <ThemeMenu />
+          <AppsMenu config={config} />
         </div>
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="ml-auto shrink-0 md:ml-0"
+              className="ml-auto shrink-0 md:hidden"
               aria-label={t("nav.openMenu")}
               data-testid="mobile-menu-button"
             >

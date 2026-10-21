@@ -88,6 +88,7 @@ test("言語切り替えは同じページの他言語版へクライアント�
   // ページ全体の再読み込みが起きないこと（＝ツールの状態を失わない）を目印で確かめる
   await page.evaluate(() => ((window as { __marker?: number }).__marker = 1));
   if (isMobile(page)) await page.getByTestId("mobile-menu-button").click();
+  else await page.getByTestId("lang-menu").click();
   await page.getByTestId("lang-en").filter({ visible: true }).click();
   await expect(page).toHaveURL(/\/image-adjust\/en\/about\/$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
@@ -101,7 +102,7 @@ test("ヘッダーのロゴのマークは読み上げず、テーマで白黒�
   await page.goto("/image-adjust/");
   const logo = page.getByTestId("logo");
   // リンク名はサイト名だけ（マークは読み上げない）
-  await expect(logo).toHaveAccessibleName("Image Adjust");
+  await expect(logo).toHaveAccessibleName("画像の変換・圧縮");
   const mark = logo.getByTestId("logo-mark");
   await expect(mark).toHaveAttribute("aria-hidden", "true");
   const box = await mark.boundingBox();
@@ -128,7 +129,10 @@ test("ヘッダーのリンクとフッターのリンクがある", async ({ pa
     await expect(menu.getByRole("link", { name: "Icon Generator" })).toBeVisible();
     await menu.getByRole("link", { name: "Guides" }).click();
   } else {
-    await page.getByRole("banner").getByRole("link", { name: "Guides" }).click();
+    // アプリ内のページはヘッダーの直下のタブにある
+    const tabs = page.getByRole("navigation", { name: "Pages in this app" });
+    await expect(tabs.getByRole("link", { name: "Guides" })).toBeVisible();
+    await tabs.getByRole("link", { name: "Guides" }).click();
   }
   await expect(page).toHaveURL(/\/image-adjust\/en\/guide\/$/);
   const footer = page.getByRole("contentinfo");
@@ -201,6 +205,7 @@ test("変換の入口ページが表示され、ハイドレーションでエ�
   );
   // 言語切り替えも同じ変換方向の英語版に行く
   if (isMobile(page)) await page.getByTestId("mobile-menu-button").click();
+  else await page.getByTestId("lang-menu").click();
   await page.getByTestId("lang-en").filter({ visible: true }).click();
   await expect(page).toHaveURL(/\/image-adjust\/en\/convert\/png-to-webp\/$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Convert PNG to WebP");

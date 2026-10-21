@@ -35,6 +35,7 @@ export const en = {
     closeMenu: "Close menu",
     skipToContent: "Skip to content",
     home: "Home",
+    tools: "Tools",
   },
   registry: {
     apps: "Apps",

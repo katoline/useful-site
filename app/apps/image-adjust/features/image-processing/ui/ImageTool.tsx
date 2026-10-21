@@ -84,13 +84,11 @@ export function ImageTool({
           onUrl={state.addUrl}
           urlBusy={state.urlBusy}
           urlError={state.urlError}
-        />
-        <p className="text-xs text-muted-foreground" data-testid="device-limits">
-          {t("tool.device.limitNote", {
+          limitNote={t("tool.device.limitNote", {
             pixels: Math.round(state.limits.maxPixels / 1_000_000),
             file: formatBytes(lang, state.limits.maxFileBytes),
           })}
-        </p>
+        />
 
         {/* PC：設定カード */}
         <Card className="hidden md:block">

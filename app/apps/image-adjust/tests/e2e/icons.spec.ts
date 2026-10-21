@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { deflateSync } from "node:zlib";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { strFromU8, unzipSync } from "fflate";
 
 const isMobile = (page: Page) => (page.viewportSize()?.width ?? 1280) < 768;
@@ -60,6 +60,11 @@ async function closeSettings(page: Page) {
   if (isMobile(page)) await page.keyboard.press("Escape");
 }
 
+/** 「サイト情報（マニフェスト・HTML）」の折りたたみを開く（既定は閉じている） */
+async function openSiteInfo(settings: Locator) {
+  await settings.getByTestId("icons-site-info").locator("summary").click();
+}
+
 const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><!-- comment --><circle cx="32" cy="32" r="28" fill="#e11d48"/></svg>`;
 
 async function downloadZip(page: Page): Promise<Record<string, Uint8Array>> {
@@ -83,7 +88,9 @@ test("PNG からアイコン一式を ZIP で保存でき、favicon.ico がブ�
   });
   await expect(page.getByTestId("icons-source-info")).toContainText("logo.png");
   await expect(page.getByTestId("icons-preview-16")).toBeVisible();
-  await (await openSettings(page)).getByTestId("icons-include-og").click();
+  const settings = await openSettings(page);
+  await openSiteInfo(settings);
+  await settings.getByTestId("icons-include-og").click();
   await closeSettings(page);
 
   const files = await downloadZip(page);
@@ -194,16 +201,21 @@ test("言語を切り替えても元画像と設定が残る", async ({ page }) 
     mimeType: "image/png",
     buffer: makePng(64),
   });
-  await (await openSettings(page)).getByLabel("サイト名").fill("Keep Me");
+  const settings = await openSettings(page);
+  await openSiteInfo(settings);
+  await settings.getByLabel("サイト名").fill("Keep Me");
   await closeSettings(page);
   await expect(downloadButton(page)).toBeEnabled({ timeout: 20_000 });
 
   if (isMobile(page)) await page.getByTestId("mobile-menu-button").click();
+  else await page.getByTestId("lang-menu").click();
   await page.getByTestId("lang-en").filter({ visible: true }).click();
   await expect(page).toHaveURL(/\/image-adjust\/en\/icons\/$/);
   await expect(page.getByTestId("icons-source-info")).toContainText("logo.png");
   await expect(downloadButton(page)).toBeEnabled();
-  await expect((await openSettings(page)).getByLabel("Site name")).toHaveValue("Keep Me");
+  const enSettings = await openSettings(page);
+  await openSiteInfo(enSettings);
+  await expect(enSettings.getByLabel("Site name")).toHaveValue("Keep Me");
 });
 
 test("ページに FAQ の構造化データと使い方がある", async ({ page }) => {
@@ -286,6 +298,7 @@ test("設置先にスキームの無いドメインを入れると注意を出�
 }) => {
   await page.goto("/image-adjust/icons/");
   const settings = await openSettings(page);
+  await openSiteInfo(settings);
   await settings.getByTestId("icons-base-path").fill("example.com");
   await expect(settings.getByTestId("icons-base-path-error")).toContainText("https://");
   await settings.getByTestId("icons-base-path").fill("https://example.com/");

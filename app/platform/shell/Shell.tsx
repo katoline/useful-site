@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { AdSlot } from "../ads/AdSlot";
 import type { Lang } from "../i18n";
 import { TooltipProvider } from "../ui/tooltip";
+import { AppTabs } from "./AppTabs";
 import { BottomNoticesProvider } from "./BottomNotices";
 import { LangSuggestion } from "./LangSuggestion";
 import { SiteFooter } from "./SiteFooter";
@@ -30,6 +31,7 @@ export function Shell({ children, config }: { children: ReactNode; config: Shell
   return (
     <ShellPathContext.Provider value={{ appPath: config.appPath, pathname: config.pathname }}>
       <SiteHeader config={config} />
+      <AppTabs config={config} />
       <div className="mx-auto hidden max-w-6xl px-4 md:block">
         <AdSlot format="banner" />
       </div>

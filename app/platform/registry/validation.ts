@@ -30,6 +30,15 @@ export function validateManifests(manifests: readonly AppManifest[]): void {
     for (const lang of ["ja", "en"] as const) {
       if (!manifest.name[lang]?.trim() || !manifest.description[lang]?.trim())
         throw new Error(`Missing ${lang} app text: ${manifest.id}`);
+      if (manifest.highlights) {
+        const highlights = manifest.highlights[lang];
+        if (
+          !Array.isArray(highlights) ||
+          highlights.length === 0 ||
+          highlights.some((item) => typeof item !== "string" || !item.trim())
+        )
+          throw new Error(`Invalid ${lang} app highlights: ${manifest.id}`);
+      }
     }
     if (!(APP_CATEGORIES as readonly string[]).includes(manifest.category))
       throw new Error(`Invalid app category: ${manifest.id}`);
