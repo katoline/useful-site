@@ -22,6 +22,7 @@ jobs:
       - name: 固定した公式ソースからWASMをビルド
         run: |
           set -euo pipefail
+          exec > >(tee "$RUNNER_TEMP/gif-build.log") 2>&1
           build_root="$RUNNER_TEMP/gif-codec"
           patched_node_binary=$(command -v node)
           mkdir -p "$build_root/emsdk" "$build_root/gifsicle"
@@ -46,6 +47,18 @@ jobs:
           python3 scripts/package-gif-security.py "$build_root/upstream-package.tgz" \
             "$build_root/gifsicle/src/gifsicle.js" "$build_root/gifsicle.tar.gz" \
             vendor/gifsicle-wasm-browser-1.5.19-security.1.tgz
+      - name: コンパイラーの診断だけを表示
+        if: failure()
+        shell: python
+        run: |
+          import os, re
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP'], 'gif-build.log')
+          lines = path.read_text(errors='replace').splitlines() if path.exists() else []
+          diagnostics = [line for line in lines if re.search(r'error:|Error:|Error [0-9]|No such file|cannot (?:run|find)|not found', line, re.I)]
+          for line in diagnostics[-8:]:
+              safe = line[-600:].replace('%', '%25').replace('\r', '').replace('\n', '%0A')
+              print('::error title=GIF compiler diagnostic::' + safe)
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: gif-security-package
