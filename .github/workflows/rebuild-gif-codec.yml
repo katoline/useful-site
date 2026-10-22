@@ -39,8 +39,16 @@ jobs:
           export EM_NODE_JS="$patched_node_binary"
           pushd "$build_root/gifsicle"
           autoreconf -fi
+          # wasm32のサイズをコンパイル時に検査し、実行不能なconfigure試験は同じ値で補う。
+          emcc -x c -c -o "$build_root/wasm-sizes.o" - <<'C'
+          _Static_assert(sizeof(float) == 4, "float");
+          _Static_assert(sizeof(unsigned int) == 4, "unsigned int");
+          _Static_assert(sizeof(unsigned long) == 4, "unsigned long");
+          _Static_assert(sizeof(void*) == 4, "pointer");
+          C
           emconfigure ./configure --host=wasm32-unknown-emscripten --disable-gifview --disable-gifdiff \
-            CFLAGS='-O3' \
+            ac_cv_sizeof_float=4 ac_cv_sizeof_unsigned_int=4 ac_cv_sizeof_unsigned_long=4 ac_cv_sizeof_void_p=4 \
+            CFLAGS='-O3 -std=c11' \
             LDFLAGS='-O3 -sSINGLE_FILE=1 -sMODULARIZE=1 -sEXPORT_NAME=GifsicleModule -sENVIRONMENT=web,worker -sDYNAMIC_EXECUTION=0 -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_RUNTIME_METHODS=FS,callMain -sEXIT_RUNTIME=0'
           make -j2
           popd
