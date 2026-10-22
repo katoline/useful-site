@@ -87,6 +87,7 @@ test("修正版WebPで可逆圧縮し、同じ画像をPNGへ戻せる", async (
   await page.goto("/image-adjust/");
   await chooseOutput(page, "webp");
   await openSettingsIfMobile(page);
+  await page.locator('[data-testid="advanced-settings"]:visible > summary').click();
   await page.locator('[id$="-webplossless"]:visible').click();
   await closeSettingsIfMobile(page);
   await addFiles(page, "sample.png");
