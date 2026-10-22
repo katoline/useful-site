@@ -26,9 +26,10 @@ jobs:
     name: deploy
     # main への push で成功した CI のときだけ。PR の CI・失敗した CI では動かさない
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
       (github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.conclusion == 'success' &&
       vars.DEPLOY_ENABLED == 'true')
     runs-on: ubuntu-latest
@@ -76,12 +77,12 @@ jobs:
             exit 1
           fi
 
-      # check-deploy-env（公開オリジンと routes の突き合わせ）→ build → wrangler deploy
-      - name: 公開する
-        run: nix develop -c pnpm run deploy
+      # ビルドプラグインには公開用トークンを渡さない。公開変数だけで検証・ビルドする。
+      - name: 公開前の検証とビルド
+        run: |
+          nix develop -c node scripts/check-deploy-env.ts
+          nix develop -c pnpm build
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           # 未設定なら空文字になり、広告は本番で非表示・ads.txt は出ない・解析のビーコンも入らない
           VITE_ADSENSE_CLIENT: ${{ vars.VITE_ADSENSE_CLIENT }}
           VITE_ADSENSE_SLOT_BANNER: ${{ vars.VITE_ADSENSE_SLOT_BANNER }}
@@ -89,3 +90,9 @@ jobs:
           VITE_ADSENSE_SLOT_IN_ARTICLE: ${{ vars.VITE_ADSENSE_SLOT_IN_ARTICLE }}
           VITE_ADSENSE_SLOT_SIDEBAR: ${{ vars.VITE_ADSENSE_SLOT_SIDEBAR }}
           VITE_CF_ANALYTICS_TOKEN: ${{ vars.VITE_CF_ANALYTICS_TOKEN }}
+
+      - name: 公開する
+        run: nix develop -c pnpm exec wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
