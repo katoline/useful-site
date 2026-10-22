@@ -102,3 +102,9 @@ nix develop -c pnpm install
 3. `t0n03k1.com` のゾーンを同じアカウントに追加し、ネームサーバーを Cloudflare に向けて Active にする
 4. `deploy.yml` を main にマージする（`DEPLOY_ENABLED` が未設定なので、この時点ではデプロイは skip）
 5. `DEPLOY_ENABLED=true` を登録し、Actions → Deploy → Run workflow で 1 回流して確認する。以降は main へのマージで自動デプロイ
+
+## Node.js のセキュリティ更新（2026年10月）
+
+[Node.js公式の2026年10月セキュリティ告知](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases)に対応し、22系は22.23.4、24系は24.22.1、26系は26.12.1以上を必要とする。EOLの系列は使用しない。
+
+Nixの`nodejs-nixpkgs`入力は、Node.jsと共有ライブラリ（Brotli等）の修正を含む公式`nixos-unstable-small`を固定する。他の開発ツールは既存の`nixpkgs`入力に固定したまま、Node.jsとpnpmが使うNode.jsだけを差し替えている。更新時は`nix flake update nodejs-nixpkgs`を使い、CIを確認する。バージョン番号だけを書き換えたり、`knownVulnerabilities`やハッシュ検証を無効化して通したりしない。

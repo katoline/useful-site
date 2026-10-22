@@ -24,3 +24,9 @@ updates:
     ignore:
       # Nix の playwright-driver（flake.lock）と同じ版に固定している。上げるときは flake.lock と揃える
       - dependency-name: "@playwright/test"
+
+  # Node.js の修正版を含む Nix 入力も更新対象にする。
+  - package-ecosystem: nix
+    directory: /
+    schedule:
+      interval: weekly
