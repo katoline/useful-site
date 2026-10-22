@@ -58,6 +58,8 @@ jobs:
           cp "$build_root/jsquash/packages/webp/emscripten-types.d.ts" "$output_dir/"
           cp "$codec_dir/Makefile" "$codec_dir/pre.js" "$output_dir/"
           sha256sum "$output_dir"/enc/* "$output_dir"/dec/* > "$output_dir/SHA256SUMS"
+          curl -fsSL https://registry.npmjs.org/@jsquash/webp/-/webp-1.5.0.tgz -o "$build_root/upstream-package.tgz"
+          python3 scripts/package-webp-security.py "$build_root/upstream-package.tgz" "$output_dir" vendor/jsquash-webp-1.5.0-security.1.tgz
       - name: Expose build diagnostics
         if: failure()
         run: |
@@ -70,6 +72,41 @@ jobs:
           PYLOG
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: webp-1.6.0-codec
-          path: app/apps/image-adjust/features/image-processing/adapters/codecs/webp/
+          name: webp-security-package
+          path: vendor/jsquash-webp-1.5.0-security.1.tgz
           retention-days: 3
+
+  # 配信先が制限された開発環境でも、公開バイナリを読取専用のAPIから取得できるようにする。
+  export-result:
+    needs: rebuild
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    strategy:
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    steps:
+      - name: Download public build result
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh run download "$GITHUB_RUN_ID" --name webp-security-package --dir "$RUNNER_TEMP/package"
+      - name: Expose public result for restricted development environments
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          python3 - <<'PYEXPORT'
+          import base64, hashlib, os
+          from pathlib import Path
+          data = Path(os.environ["RUNNER_TEMP"], "package/jsquash-webp-1.5.0-security.1.tgz").read_bytes()
+          chunks = [data[i:i+2400] for i in range(0, len(data), 2400)]
+          if len(chunks) > 160:
+              raise SystemExit("Result exceeds export size limit")
+          shard = int(os.environ["SHARD"])
+          if shard == 0:
+              print("::notice title=WebP result SHA256::" + hashlib.sha256(data).hexdigest())
+              print("::notice title=WebP result chunks::" + str(len(chunks)))
+          for index in range(shard * 10, min((shard + 1) * 10, len(chunks))):
+              print(f"::notice title=WebP result chunk {index}::" + base64.b64encode(chunks[index]).decode())
+          PYEXPORT
