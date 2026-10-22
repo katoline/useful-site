@@ -39,6 +39,12 @@ jobs:
           tar xzf "$build_root/libwebp.tar.gz" --strip-components=1 -C "$codec_dir/node_modules/libwebp"
           # 上流の古いlibwebp固定だけを公式1.6.0へ置き換える。
           sed -i 's/d2e245ea9e959a5a79e1db0ed2085206947e98f2/4fa21912338357f89e4fd51cf2368325b59e9bd9/' "$codec_dir/Makefile"
+          python3 - "$codec_dir/Makefile" <<'PYMAKE'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          p.write_text(p.read_text().replace('\t\t$+', '\t\t$+ $(dir $(lastword $+))libsharpyuv.a'))
+          PYMAKE
           rm "$codec_dir"/enc/*.js "$codec_dir"/enc/*.wasm "$codec_dir"/dec/*.js "$codec_dir"/dec/*.wasm
           make -C "$codec_dir" -j2 enc/webp_enc.js dec/webp_dec.js \
             CXX=em++ LD=em++ CXXFLAGS='-O3 -std=c++17' \
