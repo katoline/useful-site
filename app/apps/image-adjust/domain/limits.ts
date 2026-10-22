@@ -14,7 +14,7 @@ export interface Limits {
   maxZipBytes: number;
   /** ZIP 展開後の合計（バイト） */
   maxZipTotalBytes: number;
-  /** ZIP 展開後の件数 */
+  /** ZIP 内のエントリ数（画像以外・ディレクトリも含む） */
   maxZipEntries: number;
   /** URL 入力（Worker 経由。§3.5） */
   maxUrlBytes: number;
