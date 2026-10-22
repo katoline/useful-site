@@ -1,0 +1,50 @@
+name: Export verified GIF build
+on:
+  push:
+    branches: [audit/export-gif-build]
+permissions:
+  actions: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    steps:
+      - name: Read the immutable, verified public-source build artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PART: ${{ matrix.part }}
+        run: |
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/katoline/useful-site/actions/artifacts/12440665489/zip -o "$RUNNER_TEMP/gif-build.zip"
+          python3 - <<'PY_EXPORT'
+          import gzip, hashlib, io, json, os, tarfile, zipfile
+          from pathlib import Path
+          archive = Path(os.environ['RUNNER_TEMP'], 'gif-build.zip').read_bytes()
+          assert hashlib.sha256(archive).hexdigest() == '5ae963d261839a777d4cb85805f778da42af88e2be4d2ed4069200d593b49502'
+          with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
+              package = bundle.read('gifsicle-wasm-browser-1.5.19-security.1.tgz')
+          with tarfile.open(fileobj=io.BytesIO(package)) as bundle:
+              source = bundle.extractfile('package/dist/gifsicle.min.js').read().decode()
+          marker = 'workerLocalUrl:'
+          worker, _ = json.JSONDecoder().raw_decode(source[source.index(marker) + len(marker):])
+          runtime = worker.rsplit('\nself.onmessage = async', 1)[0].encode()
+          compressed = gzip.compress(runtime, mtime=0)
+          assert len(compressed) <= 480000
+          Path(os.environ['RUNNER_TEMP'], 'runtime.gz').write_bytes(compressed)
+          if os.environ['PART'] == '0':
+              print('::notice title=GIF build metadata::' + json.dumps({'compressed_bytes': len(compressed), 'compressed_sha256': hashlib.sha256(compressed).hexdigest(), 'runtime_sha256': hashlib.sha256(runtime).hexdigest(), 'package_sha256': hashlib.sha256(package).hexdigest()}))
+          PY_EXPORT
+      - name: Export only compiled public-source runtime bytes
+        env:
+          PART: ${{ matrix.part }}
+        shell: python
+        run: |
+          import base64, os
+          from pathlib import Path
+          data = Path(os.environ['RUNNER_TEMP'], 'runtime.gz').read_bytes()
+          begin = int(os.environ['PART']) * 24000
+          for offset in range(begin, min(begin + 24000, len(data)), 2400):
+              print(f'::notice title=GIF runtime chunk {offset}::' + base64.b64encode(data[offset:offset + 2400]).decode())
