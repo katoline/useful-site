@@ -16,7 +16,7 @@ on:
 permissions:
   contents: read
 
-# 本番への反映は 1 つずつ。実行中に次のマージが来ても打ち切らず、順番に出す（最後は最新が残る）
+# 本番への反映は1つずつ。CIの完了順は前後し得るため、公開直前にも最新mainか確認する。
 concurrency:
   group: deploy-production
   cancel-in-progress: false
@@ -92,7 +92,17 @@ jobs:
           VITE_CF_ANALYTICS_TOKEN: ${{ vars.VITE_CF_ANALYTICS_TOKEN }}
 
       - name: 公開する
-        run: nix develop -c pnpm exec wrangler deploy
+        run: |
+          deployment_sha=$(git rev-parse HEAD)
+          current_main_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [ "$deployment_sha" != "$current_main_sha" ]; then
+            echo "::notice::mainが更新されたため、古いコミットの公開をスキップします"
+            echo "Skipped stale deployment: $deployment_sha (main: $current_main_sha)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          nix develop -c pnpm exec wrangler deploy
+          echo "Published verified main commit: $deployment_sha" >> "$GITHUB_STEP_SUMMARY"
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
