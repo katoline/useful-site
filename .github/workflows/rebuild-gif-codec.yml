@@ -1,0 +1,53 @@
+name: Rebuild GIF codec
+
+on:
+  push:
+    branches: [build/gifsicle-security]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.4
+      - name: 固定した公式ソースからWASMをビルド
+        run: |
+          set -euo pipefail
+          build_root="$RUNNER_TEMP/gif-codec"
+          patched_node_binary=$(command -v node)
+          mkdir -p "$build_root/emsdk" "$build_root/gifsicle"
+          curl -fsSL https://github.com/emscripten-core/emsdk/archive/c8dcb45665fec5e743336703f1d22a191810f2a8.tar.gz -o "$build_root/emsdk.tar.gz"
+          curl -fsSL https://github.com/kohler/gifsicle/archive/8ff3057b736141b406be621830b851fdf4285689.tar.gz -o "$build_root/gifsicle.tar.gz"
+          curl -fsSL https://registry.npmjs.org/gifsicle-wasm-browser/-/gifsicle-wasm-browser-1.5.19.tgz -o "$build_root/upstream-package.tgz"
+          echo "55d930c9daead98d27afab71e0389756371cbf3df5dfa2d5dc2805ab4e43d921  $build_root/emsdk.tar.gz" | sha256sum -c -
+          echo "8620d29336b555a4c122d8c736c41900706d61e77ecade2d9051d114a92d0626  $build_root/gifsicle.tar.gz" | sha256sum -c -
+          tar xzf "$build_root/emsdk.tar.gz" --strip-components=1 -C "$build_root/emsdk"
+          tar xzf "$build_root/gifsicle.tar.gz" --strip-components=1 -C "$build_root/gifsicle"
+          "$build_root/emsdk/emsdk" install 3.1.45
+          "$build_root/emsdk/emsdk" activate 3.1.45
+          source "$build_root/emsdk/emsdk_env.sh"
+          export EM_NODE_JS="$patched_node_binary"
+          pushd "$build_root/gifsicle"
+          autoreconf -fi
+          emconfigure ./configure --host=wasm32-unknown-emscripten --disable-gifview --disable-gifdiff \
+            CFLAGS='-O3' \
+            LDFLAGS='-O3 -sSINGLE_FILE=1 -sMODULARIZE=1 -sEXPORT_NAME=GifsicleModule -sENVIRONMENT=web,worker -sDYNAMIC_EXECUTION=0 -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_RUNTIME_METHODS=FS,callMain -sEXIT_RUNTIME=0'
+          make -j2
+          popd
+          python3 scripts/package-gif-security.py "$build_root/upstream-package.tgz" \
+            "$build_root/gifsicle/src/gifsicle.js" "$build_root/gifsicle.tar.gz" \
+            vendor/gifsicle-wasm-browser-1.5.19-security.1.tgz
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gif-security-package
+          path: vendor/gifsicle-wasm-browser-1.5.19-security.1.tgz
+          retention-days: 3
