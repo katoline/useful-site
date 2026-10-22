@@ -17,6 +17,9 @@
         inherit system;
         overlays = [
           (_: prev: {
+            # Git等が使うTLSライブラリとCA証明書も修正版へそろえる。
+            openssl = nodejsPkgs.openssl;
+            cacert = nodejsPkgs.cacert;
             nodejs_22 = secureNode;
             pnpm = prev.pnpm.override { nodejs-slim = secureNode; };
           })
