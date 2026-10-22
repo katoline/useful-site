@@ -59,7 +59,8 @@ jobs:
           import base64, os
           from pathlib import Path
           data = Path(os.environ["RUNNER_TEMP"], "webp-build.log").read_bytes()[-12000:]
-          print("::notice title=WebP build diagnostic::" + base64.b64encode(data).decode())
+          for index in range(0, len(data), 2000):
+              print(f"::notice title=WebP build diagnostic {index // 2000}::" + base64.b64encode(data[index:index+2000]).decode())
           PYLOG
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
