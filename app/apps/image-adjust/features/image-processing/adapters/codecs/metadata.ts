@@ -5,8 +5,9 @@
  * - extractIcc / embedIcc：入力の ICC を出力の形式に合わせて埋め込み直す（再エンコードで落ちるため）
  * 依存は fflate（PNG の iCCP の zlib）だけ。Worker・Node のどちらでも動く。
  */
-import { unzlibSync, zlibSync } from "fflate";
+import { Unzlib, zlibSync } from "fflate";
 import type { ImageFormat, RasterFormat } from "../../../../domain/format";
+import { MAX_COLOR_PROFILE_BYTES } from "../../../../domain/limits";
 import { readDimensions } from "../../core/dimensions";
 
 const ICC_PROFILE_SIG = "ICC_PROFILE\0";
@@ -73,6 +74,33 @@ function isJpeg(bytes: Uint8Array): boolean {
   return bytes[0] === 0xff && bytes[1] === 0xd8;
 }
 
+/**
+ * jSquashのEXIFパーサーへ渡す前に、TIFFの相対オフセットをAPP1内で検査する。
+ * TIFFの先頭はExifヘッダーから6バイト後なので、その分も参照範囲に含める。
+ */
+export function assertJpegExifBounds(input: ArrayBuffer): void {
+  const bytes = new Uint8Array(input);
+  if (!isJpeg(bytes)) return;
+  for (const segment of jpegSegments(bytes).segments) {
+    if (segment.marker !== 0xe1) continue;
+    const data = bytes.subarray(segment.start + 4, segment.start + segment.length);
+    if (asciiAt(data, 0, 6) !== "Exif\0\0") continue;
+    const invalid = () => new Error("Invalid JPEG EXIF");
+    if (data.length < 14) throw invalid();
+    const order = asciiAt(data, 6, 2);
+    if (order !== "II" && order !== "MM") throw invalid();
+    const little = order === "II";
+    const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+    if (view.getUint16(8, little) !== 42) throw invalid();
+    const relative = view.getUint32(10, little);
+    if (relative === 0) continue; // IFDなし
+    if (relative < 8 || relative > data.length - 8) throw invalid();
+    const countOffset = 6 + relative;
+    const count = view.getUint16(countOffset, little);
+    if (count > Math.floor((data.length - countOffset - 2) / 12)) throw invalid();
+  }
+}
+
 /** APP1（EXIF / XMP）・APP13（IPTC）・COM を取り除く。APP2（ICC）は残す */
 function stripJpeg(bytes: Uint8Array): ArrayBuffer {
   if (!isJpeg(bytes)) return bytes.slice().buffer as ArrayBuffer;
@@ -90,13 +118,17 @@ function extractIccJpeg(bytes: Uint8Array): Uint8Array | null {
   if (!isJpeg(bytes)) return null;
   const { segments } = jpegSegments(bytes);
   const chunks: { seq: number; data: Uint8Array }[] = [];
+  let size = 0;
   for (const s of segments) {
     if (s.marker !== 0xe2 || s.length < 4 + 14) continue;
     const dataStart = s.start + 4;
     if (asciiAt(bytes, dataStart, 12) !== ICC_PROFILE_SIG) continue;
+    const data = bytes.subarray(dataStart + 14, s.start + s.length);
+    size += data.byteLength;
+    if (size > MAX_COLOR_PROFILE_BYTES) return null;
     chunks.push({
       seq: bytes[dataStart + 12] ?? 0,
-      data: bytes.subarray(dataStart + 14, s.start + s.length),
+      data,
     });
   }
   if (chunks.length === 0) return null;
@@ -224,8 +256,25 @@ function extractIccPng(bytes: Uint8Array): Uint8Array | null {
   const data = bytes.subarray(iccp.dataStart, iccp.dataStart + iccp.dataLength);
   const nul = data.indexOf(0);
   if (nul < 0 || data[nul + 1] !== 0) return null; // 圧縮方式 0（zlib）だけ
+  const compressed = data.subarray(nul + 2);
+  if (compressed.byteLength > MAX_COLOR_PROFILE_BYTES) return null;
   try {
-    return unzlibSync(data.subarray(nul + 2));
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    let complete = false;
+    const stream = new Unzlib((chunk, final) => {
+      total += chunk.byteLength;
+      if (total > MAX_COLOR_PROFILE_BYTES) throw new Error("ICC profile exceeds size limit");
+      chunks.push(chunk);
+      complete = final;
+    });
+    // 全量を一度にpushすると、コールバックより先に巨大な展開先を確保してしまう。
+    // 小さい圧縮チャンクごとに検査し、上限を超えた時点で以降の展開を止める。
+    for (let offset = 0; offset < compressed.length; offset += 1024) {
+      const end = Math.min(offset + 1024, compressed.length);
+      stream.push(compressed.subarray(offset, end), end === compressed.length);
+    }
+    return complete ? new Uint8Array(toArrayBuffer(chunks)) : null;
   } catch {
     return null;
   }
@@ -325,6 +374,7 @@ function stripWebp(bytes: Uint8Array): ArrayBuffer {
 function extractIccWebp(bytes: Uint8Array): Uint8Array | null {
   if (!isWebp(bytes)) return null;
   const iccp = webpChunks(bytes).find((c) => c.fourcc === "ICCP");
+  if (iccp && iccp.dataLength > MAX_COLOR_PROFILE_BYTES) return null;
   return iccp ? bytes.slice(iccp.dataStart, iccp.dataStart + iccp.dataLength) : null;
 }
 
