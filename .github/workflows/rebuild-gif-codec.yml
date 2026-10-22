@@ -1,8 +1,6 @@
 name: Rebuild GIF codec
 
 on:
-  push:
-    branches: [build/gifsicle-security]
   workflow_dispatch:
 
 permissions:

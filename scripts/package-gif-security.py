@@ -90,12 +90,13 @@ with tempfile.TemporaryDirectory() as temporary:
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("wb") as output:
-        with gzip.GzipFile(filename="", mode="wb", fileobj=output, mtime=0) as compressed:
+        with gzip.GzipFile(filename="", mode="wb", fileobj=output, mtime=0, compresslevel=9) as compressed:
             with tarfile.open(fileobj=compressed, mode="w") as archive:
                 for path in sorted(package.rglob("*")):
                     info = archive.gettarinfo(str(path), str(path.relative_to(root)))
                     info.uid = info.gid = info.mtime = 0
                     info.uname = info.gname = ""
+                    info.mode = 0o755 if path.is_dir() else 0o644
                     if path.is_file():
                         with path.open("rb") as source:
                             archive.addfile(info, source)

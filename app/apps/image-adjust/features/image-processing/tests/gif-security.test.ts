@@ -93,4 +93,18 @@ describe("GIF WASMのセキュリティ更新", () => {
     const bytes = Uint8Array.from(file ?? []).buffer;
     expect(readGifInfo(bytes)?.frames).toBe(readGifInfo(input)?.frames);
   });
+
+  it("リサイズと減色を併用してもフレームを維持する", async () => {
+    const input = readFixture("animated.gif");
+    const { outputs } = await runGif(
+      "-O2 --lossy=30 --colors 64 --resize 80x60 --no-comments --no-names in.gif -o /out/out.gif",
+      input,
+    );
+    const file = outputs?.[0]?.file;
+    expect(file).toBeDefined();
+    const info = readGifInfo(Uint8Array.from(file ?? []).buffer);
+    expect(info?.width).toBe(80);
+    expect(info?.height).toBe(60);
+    expect(info?.frames).toBe(readGifInfo(input)?.frames);
+  });
 });
