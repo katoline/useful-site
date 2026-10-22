@@ -20,6 +20,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          exec > >(tee "$RUNNER_TEMP/webp-build.log") 2>&1
           build_root="$RUNNER_TEMP/webp-codec"
           mkdir -p "$build_root/emsdk" "$build_root/jsquash"
           curl -fsSL https://github.com/emscripten-core/emsdk/archive/c8dcb45665fec5e743336703f1d22a191810f2a8.tar.gz -o "$build_root/emsdk.tar.gz"
@@ -51,6 +52,15 @@ jobs:
           cp "$build_root/jsquash/packages/webp/emscripten-types.d.ts" "$output_dir/"
           cp "$codec_dir/Makefile" "$codec_dir/pre.js" "$output_dir/"
           sha256sum "$output_dir"/enc/* "$output_dir"/dec/* > "$output_dir/SHA256SUMS"
+      - name: Expose build diagnostics
+        if: failure()
+        run: |
+          python3 - <<'PYLOG'
+          import base64, os
+          from pathlib import Path
+          data = Path(os.environ["RUNNER_TEMP"], "webp-build.log").read_bytes()[-12000:]
+          print("::notice title=WebP build diagnostic::" + base64.b64encode(data).decode())
+          PYLOG
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: webp-1.6.0-codec
