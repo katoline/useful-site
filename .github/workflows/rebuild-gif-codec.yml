@@ -52,8 +52,10 @@ jobs:
             LDFLAGS='-O3 -sSINGLE_FILE=1 -sMODULARIZE=1 -sEXPORT_NAME=GifsicleModule -sENVIRONMENT=web,worker -sDYNAMIC_EXECUTION=0 -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_RUNTIME_METHODS=FS,callMain -sEXIT_RUNTIME=0'
           make -j2
           popd
+          runtime="$build_root/gifsicle/src/gifsicle.js"
+          if [ ! -f "$runtime" ]; then runtime="$build_root/gifsicle/src/gifsicle"; fi
           python3 scripts/package-gif-security.py "$build_root/upstream-package.tgz" \
-            "$build_root/gifsicle/src/gifsicle.js" "$build_root/gifsicle.tar.gz" \
+            "$runtime" "$build_root/gifsicle.tar.gz" \
             vendor/gifsicle-wasm-browser-1.5.19-security.1.tgz
       - name: コンパイラーの診断だけを表示
         if: failure()
@@ -63,7 +65,7 @@ jobs:
           from pathlib import Path
           path = Path(os.environ['RUNNER_TEMP'], 'gif-build.log')
           lines = path.read_text(errors='replace').splitlines() if path.exists() else []
-          diagnostics = [line for line in lines if re.search(r'error:|Error:|Error [0-9]|No such file|cannot (?:run|find)|not found', line, re.I)]
+          diagnostics = [line for line in lines if re.search(r'error:|Error:|Error [0-9]|No such file|cannot (?:run|find)|not found|mismatch|Unexpected|Traceback', line, re.I)]
           for line in diagnostics[-8:]:
               safe = line[-600:].replace('%', '%25').replace('\r', '').replace('\n', '%0A')
               print('::error title=GIF compiler diagnostic::' + safe)
