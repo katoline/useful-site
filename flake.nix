@@ -2,12 +2,26 @@
   description = "画像調整サイト（Vite + React Router v7 + Hono on Cloudflare Workers）";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+  # Playwright 等の固定は保ち、Node.js と共有ライブラリの修正だけを取り込む。
+  inputs.nodejs-nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable-small";
 
   outputs =
-    { nixpkgs, ... }:
+    { nixpkgs, nodejs-nixpkgs, ... }:
     let
       system = "x86_64-linux";
-      pkgs = import nixpkgs { inherit system; };
+      nodejsPkgs = import nodejs-nixpkgs { inherit system; };
+      secureNode =
+        assert nodejsPkgs.lib.versionAtLeast nodejsPkgs.nodejs_22.version "22.23.4";
+        nodejsPkgs.nodejs_22;
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [
+          (_: prev: {
+            nodejs_22 = secureNode;
+            pnpm = prev.pnpm.override { nodejs-slim = secureNode; };
+          })
+        ];
+      };
     in
     {
       devShells.${system}.default = pkgs.mkShell {
