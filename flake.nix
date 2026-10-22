@@ -2,20 +2,21 @@
   description = "画像調整サイト（Vite + React Router v7 + Hono on Cloudflare Workers）";
 
   # Playwrightは固定した旧入力を使い、それ以外の開発ツールは修正版入力へ統一する。
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+  inputs.nixpkgs.follows = "nodejs-nixpkgs";
+  inputs.playwright-nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   # Playwright 等の固定は保ち、Node.js と共有ライブラリの修正だけを取り込む。
   inputs.nodejs-nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable-small";
 
   outputs =
-    { nixpkgs, nodejs-nixpkgs, ... }:
+    { nixpkgs, nodejs-nixpkgs, playwright-nixpkgs, ... }:
     let
       system = "x86_64-linux";
+      playwrightPkgs = import playwright-nixpkgs { inherit system; };
       nodejsPkgs = import nodejs-nixpkgs { inherit system; };
       secureNode =
         assert nodejsPkgs.lib.versionAtLeast nodejsPkgs.nodejs_22.version "22.23.4";
         nodejsPkgs.nodejs_22;
-      playwrightPkgs = import nixpkgs { inherit system; };
-      pkgs = import nodejs-nixpkgs {
+      pkgs = import nixpkgs {
         inherit system;
         overlays = [
           (_: prev: {
