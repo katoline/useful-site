@@ -6,7 +6,7 @@
  */
 import { Unzip, UnzipInflate } from "fflate";
 import { detectFormat, formatFromExtension, type ImageFormat } from "../../../../domain/format";
-import type { Limits } from "../../../../domain/limits";
+import { LIMITS, type Limits } from "../../../../domain/limits";
 import { isIgnorableZipEntry, normalizeZipPath } from "../../core/zip-path";
 
 export interface ZipImageEntry {
@@ -19,7 +19,7 @@ export interface ZipImageEntry {
   bytes: ArrayBuffer;
 }
 
-export type ZipLimitCode = "zip_total_too_large" | "zip_too_many_entries";
+export type ZipLimitCode = "zip_total_too_large" | "zip_too_many_entries" | "file_too_large";
 
 export class ZipLimitError extends Error {
   readonly code: ZipLimitCode;
@@ -45,13 +45,29 @@ interface Pending {
   size: number;
 }
 
+/** 高圧縮データを一度に展開しない。早期停止・失敗時は入力ストリームも閉じる。 */
+async function* zipChunks(file: Blob): AsyncGenerator<Uint8Array> {
+  const reader = file.stream().getReader();
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      for (let offset = 0; offset < value.length; offset += 16 * 1024) {
+        yield value.subarray(offset, offset + 16 * 1024);
+      }
+    }
+  } finally {
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
+
 /** ZIP 内の画像を 1 件ずつ取り出す。上限を超えたら ZipLimitError を投げて止める */
 export async function readZipImages(file: Blob, options: ReadZipOptions): Promise<void> {
   const { limits, onEntry, onSkip, signal } = options;
   const completed: ZipImageEntry[] = [];
   // コールバックの中で書き換えるので、let の絞り込みに引っかからないようオブジェクトに持つ
-  const state: { failure: Error | null; totalBytes: number; entries: number } = {
-    failure: null,
+  const state = {
     totalBytes: 0,
     entries: 0,
   };
@@ -59,15 +75,13 @@ export async function readZipImages(file: Blob, options: ReadZipOptions): Promis
   const unzip = new Unzip();
   unzip.register(UnzipInflate);
   unzip.onfile = (f) => {
+    // 画像以外・ディレクトリもヘッダーを解析するコストがあるため数える。
+    if (++state.entries > limits.maxZipEntries) throw new ZipLimitError("zip_too_many_entries");
     if (f.name.endsWith("/")) return; // ディレクトリ
     const path = normalizeZipPath(f.name);
     if (!path || isIgnorableZipEntry(path)) return;
     if (!formatFromExtension(path)) {
       onSkip?.(path, "not_image");
-      return;
-    }
-    if (++state.entries > limits.maxZipEntries) {
-      state.failure = new ZipLimitError("zip_too_many_entries");
       return;
     }
     // 展開後のサイズが分かる（データ記述子なし）なら読む前に飛ばす
@@ -76,27 +90,25 @@ export async function readZipImages(file: Blob, options: ReadZipOptions): Promis
       return;
     }
     const pending: Pending = { path, chunks: [], size: 0 };
+    let skipped = false;
     f.ondata = (err, data, final) => {
-      if (state.failure) return;
-      if (err) {
-        state.failure = err;
-        return;
+      if (err) throw err;
+      // 読み飛ばすファイルや画像を装ったファイルも、実際の展開量に含める。
+      state.totalBytes += data.length;
+      if (state.totalBytes > limits.maxZipTotalBytes) {
+        throw new ZipLimitError("zip_total_too_large");
       }
-      pending.chunks.push(data);
+      if (skipped) return;
       pending.size += data.length;
       if (pending.size > limits.maxFileBytes) {
         // 大きすぎる：この 1 件だけ飛ばす（読み終わるまでデータは捨てる）
         pending.chunks = [];
-        f.ondata = () => {};
+        skipped = true;
         onSkip?.(path, "file_too_large");
         return;
       }
+      pending.chunks.push(data);
       if (!final) return;
-      state.totalBytes += pending.size;
-      if (state.totalBytes > limits.maxZipTotalBytes) {
-        state.failure = new ZipLimitError("zip_total_too_large");
-        return;
-      }
       const bytes = concat(pending.chunks, pending.size);
       pending.chunks = [];
       const format = detectFormat(bytes);
@@ -115,27 +127,17 @@ export async function readZipImages(file: Blob, options: ReadZipOptions): Promis
     f.start();
   };
 
-  const reader = file.stream().getReader();
-  try {
-    for (;;) {
-      if (signal?.aborted) throw new DOMException("aborted", "AbortError");
-      const { value, done } = await reader.read();
-      if (done) {
-        unzip.push(new Uint8Array(0), true);
-      } else {
-        unzip.push(value, false);
-      }
-      if (state.failure) throw state.failure;
-      // 取り出せた分を処理してから次のチャンクを読む（全件をメモリに抱えない）
-      while (completed.length > 0) {
-        const entry = completed.shift();
-        if (entry) await onEntry(entry);
-      }
-      if (done) break;
+  for await (const value of zipChunks(file)) {
+    if (signal?.aborted) throw new DOMException("aborted", "AbortError");
+    unzip.push(value, false);
+    // 取り出せた分を処理してから次のチャンクを読む（全件をメモリに抱えない）
+    while (completed.length > 0) {
+      const entry = completed.shift();
+      if (entry) await onEntry(entry);
     }
-  } finally {
-    reader.releaseLock();
   }
+  unzip.push(new Uint8Array(0), true);
+  for (const entry of completed) await onEntry(entry);
 }
 
 /** 余分な領域を持たない ArrayBuffer にする（postMessage の transfer 用） */
@@ -161,23 +163,30 @@ function concat(chunks: Uint8Array[], size: number): Uint8Array {
  * ZIP から 1 エントリだけ読み直す（処理後に解放した元データを、比較表示や再処理で使うとき）。
  * 見つかった時点で読むのをやめる。無ければ null
  */
-export async function readZipEntry(file: Blob, entryName: string): Promise<Uint8Array | null> {
+export async function readZipEntry(
+  file: Blob,
+  entryName: string,
+  maxBytes: number,
+): Promise<Uint8Array | null> {
   let found: Uint8Array | null = null;
   let done = false;
-  let failure: Error | null = null;
+  let entries = 0;
   const unzip = new Unzip();
   unzip.register(UnzipInflate);
   unzip.onfile = (f) => {
+    if (done) return;
+    if (++entries > LIMITS.desktop.maxZipEntries) throw new ZipLimitError("zip_too_many_entries");
     if (f.name !== entryName) return;
+    if (typeof f.originalSize === "number" && f.originalSize > maxBytes) {
+      throw new ZipLimitError("file_too_large");
+    }
     const chunks: Uint8Array[] = [];
     let size = 0;
     f.ondata = (err, data, final) => {
-      if (err) {
-        failure = err;
-        return;
-      }
-      chunks.push(data);
+      if (err) throw err;
       size += data.length;
+      if (size > maxBytes) throw new ZipLimitError("file_too_large");
+      chunks.push(data);
       if (final) {
         found = concat(chunks, size);
         done = true;
@@ -185,17 +194,11 @@ export async function readZipEntry(file: Blob, entryName: string): Promise<Uint8
     };
     f.start();
   };
-  const reader = file.stream().getReader();
-  try {
-    for (;;) {
-      const { value, done: eof } = await reader.read();
-      unzip.push(value ?? new Uint8Array(0), eof);
-      if (failure) throw failure;
-      if (done || eof) break;
-    }
-  } finally {
-    await reader.cancel().catch(() => {});
+  for await (const value of zipChunks(file)) {
+    unzip.push(value, false);
+    if (done) break;
   }
+  if (!done) unzip.push(new Uint8Array(0), true);
   return found;
 }
 

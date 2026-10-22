@@ -1,8 +1,13 @@
-import { zipSync } from "fflate";
+import { Zip, ZipDeflate, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { detectFormat } from "~/apps/image-adjust/domain/format";
 import { LIMITS } from "~/apps/image-adjust/domain/limits";
-import { readZipImages, type ZipImageEntry, ZipLimitError } from "../adapters/archive/zip-read";
+import {
+  readZipEntry,
+  readZipImages,
+  type ZipImageEntry,
+  ZipLimitError,
+} from "../adapters/archive/zip-read";
 import { BlobSink, SplitZipWriter, ZipWriter } from "../adapters/archive/zip-write";
 import { isIgnorableZipEntry, normalizeZipPath } from "../core/zip-path";
 import { readFixture } from "./helpers/codecs-node";
@@ -12,6 +17,20 @@ const jpg = new Uint8Array(readFixture("sample.jpg"));
 
 function zipBlob(files: Record<string, Uint8Array>): Blob {
   return new Blob([zipSync(files, { level: 0 }) as BlobPart], { type: "application/zip" });
+}
+
+/** データ記述子を使い、ローカルヘッダーに展開サイズを持たない ZIP。 */
+function streamingZip(name: string, bytes: Uint8Array): Blob {
+  const chunks: BlobPart[] = [];
+  const zip = new Zip((error, chunk) => {
+    if (error) throw error;
+    chunks.push(chunk as BlobPart);
+  });
+  const entry = new ZipDeflate(name);
+  zip.add(entry);
+  entry.push(bytes, true);
+  zip.end();
+  return new Blob(chunks, { type: "application/zip" });
 }
 
 async function collect(blob: Blob, limits = LIMITS.desktop) {
@@ -97,6 +116,41 @@ describe("ZIP の展開", () => {
     });
     expect(entries.map((e) => e.path)).toEqual(["small.jpg"]);
     expect(skipped).toEqual(["big.png"]);
+  });
+
+  it("画像以外のエントリも件数制限に数える", async () => {
+    const files = Object.fromEntries(
+      Array.from({ length: 5 }, (_, i) => [`note${i}.txt`, new Uint8Array(1)]),
+    );
+    await expect(
+      collect(zipBlob(files), { ...LIMITS.desktop, maxZipEntries: 3 }),
+    ).rejects.toMatchObject({ code: "zip_too_many_entries" });
+  });
+
+  it("サイズ不明の過大ファイルを飛ばす場合も展開量の合計上限で停止する", async () => {
+    await expect(
+      collect(streamingZip("large.png", new Uint8Array(4096)), {
+        ...LIMITS.desktop,
+        maxFileBytes: 16,
+        maxZipTotalBytes: 32,
+      }),
+    ).rejects.toMatchObject({ code: "zip_total_too_large" });
+  });
+
+  it("ZIP の再読み込みでも実際の展開サイズを制限する", async () => {
+    await expect(
+      readZipEntry(streamingZip("large.png", new Uint8Array(4096)), "large.png", 32),
+    ).rejects.toMatchObject({ code: "file_too_large" });
+  });
+
+  it("ZIP の再読み込みで宣言サイズが上限を超える場合は展開しない", async () => {
+    await expect(readZipEntry(zipBlob({ "a.png": png }), "a.png", 1)).rejects.toMatchObject({
+      code: "file_too_large",
+    });
+  });
+
+  it("ZIP の再読み込みは上限内なら元の画像を返す", async () => {
+    expect(await readZipEntry(zipBlob({ "a.png": png }), "a.png", png.length)).toEqual(png);
   });
 });
 

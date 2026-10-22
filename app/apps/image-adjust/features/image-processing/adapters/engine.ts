@@ -137,7 +137,7 @@ function toToolResult(r: ProcessResult): ToolResult {
 export async function loadSource(item: ToolItem): Promise<Blob | null> {
   if (item.source) return item.source;
   if (!item.origin) return null;
-  const bytes = await readZipEntry(item.origin.zip, item.origin.entryName);
+  const bytes = await readZipEntry(item.origin.zip, item.origin.entryName, item.size);
   return bytes ? new Blob([bytes as BlobPart], { type: item.type }) : null;
 }
 
