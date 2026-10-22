@@ -8,6 +8,7 @@ import { readGifInfo } from "../../../tests/helpers/gif-info";
 import { embedIcc, extractIcc, hasExif, isAnimatedWebp } from "../adapters/codecs/metadata";
 import {
   decodeRaster,
+  encodeWebp,
   flattenOnColor,
   hasTransparency,
   parseHexColor,
@@ -59,6 +60,14 @@ describe("形式の判定", () => {
     expect(readDimensions("webp", readFixture("sample.webp"))).toEqual({ width: 160, height: 120 });
     expect(readDimensions("gif", readFixture("animated.gif"))).toEqual({ width: 48, height: 32 });
   });
+});
+
+it("WebPの可逆エンコードで半透明を含むRGBA値を維持する", async () => {
+  const image = makeImage(8, 8);
+  const bytes = await encodeWebp(image, { quality: 100, lossless: true });
+  const decoded = await decodeRaster("webp", bytes);
+  expect([decoded.width, decoded.height]).toEqual([8, 8]);
+  expect(decoded.data).toEqual(image.data);
 });
 
 describe("相互変換（PNG / JPEG / WebP）", () => {

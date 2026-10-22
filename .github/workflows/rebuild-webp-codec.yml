@@ -1,0 +1,75 @@
+name: Rebuild WebP codec
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build from pinned upstream sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          exec > >(tee "$RUNNER_TEMP/webp-build.log") 2>&1
+          build_root="$RUNNER_TEMP/webp-codec"
+          mkdir -p "$build_root/emsdk" "$build_root/jsquash"
+          curl -fsSL https://github.com/emscripten-core/emsdk/archive/c8dcb45665fec5e743336703f1d22a191810f2a8.tar.gz -o "$build_root/emsdk.tar.gz"
+          curl -fsSL https://github.com/jamsinclair/jSquash/archive/641dcc6b853382d57450466bd61b76f9d022242e.tar.gz -o "$build_root/jsquash.tar.gz"
+          curl -fsSL https://github.com/webmproject/libwebp/archive/4fa21912338357f89e4fd51cf2368325b59e9bd9.tar.gz -o "$build_root/libwebp.tar.gz"
+          echo "55d930c9daead98d27afab71e0389756371cbf3df5dfa2d5dc2805ab4e43d921  $build_root/emsdk.tar.gz" | sha256sum -c -
+          echo "d4b3744ab89017ff36dccb1d8255d7f910db3646dccfb415c38eff94f0edb45b  $build_root/jsquash.tar.gz" | sha256sum -c -
+          echo "923f3382a47a2af185c3240c954cf004428b237bd7317413a95146d01eb4b94b  $build_root/libwebp.tar.gz" | sha256sum -c -
+          tar xzf "$build_root/emsdk.tar.gz" --strip-components=1 -C "$build_root/emsdk"
+          tar xzf "$build_root/jsquash.tar.gz" --strip-components=1 -C "$build_root/jsquash"
+          "$build_root/emsdk/emsdk" install 3.1.45
+          "$build_root/emsdk/emsdk" activate 3.1.45
+          source "$build_root/emsdk/emsdk_env.sh"
+          codec_dir="$build_root/jsquash/packages/webp/codec"
+          mkdir -p "$codec_dir/node_modules/libwebp"
+          tar xzf "$build_root/libwebp.tar.gz" --strip-components=1 -C "$codec_dir/node_modules/libwebp"
+          # 上流の古いlibwebp固定だけを公式1.6.0へ置き換える。
+          sed -i 's/d2e245ea9e959a5a79e1db0ed2085206947e98f2/4fa21912338357f89e4fd51cf2368325b59e9bd9/' "$codec_dir/Makefile"
+          python3 - "$codec_dir/Makefile" <<'PYMAKE'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          p.write_text(p.read_text().replace('\t\t$+', '\t\t$+ $(dir $(lastword $+))libsharpyuv.a'))
+          PYMAKE
+          rm "$codec_dir"/enc/*.js "$codec_dir"/enc/*.wasm "$codec_dir"/dec/*.js "$codec_dir"/dec/*.wasm
+          make -C "$codec_dir" -j2 enc/webp_enc.js dec/webp_dec.js \
+            CXX=em++ LD=em++ CXXFLAGS='-O3 -std=c++17' \
+            LDFLAGS='-O3 -s ALLOW_MEMORY_GROWTH=1 -s FILESYSTEM=0' \
+            CMAKE_FLAGS='-DCMAKE_BUILD_TYPE=Release'
+          output_dir=app/apps/image-adjust/features/image-processing/adapters/codecs/webp
+          mkdir -p "$output_dir/enc" "$output_dir/dec"
+          cp "$codec_dir"/enc/webp_enc.{js,wasm,d.ts,cpp} "$output_dir/enc/"
+          cp "$codec_dir"/dec/webp_dec.{js,wasm,d.ts,cpp} "$output_dir/dec/"
+          cp "$codec_dir/LICENSE.codec.md" "$output_dir/"
+          cp "$build_root/jsquash/packages/webp/emscripten-types.d.ts" "$output_dir/"
+          cp "$codec_dir/Makefile" "$codec_dir/pre.js" "$output_dir/"
+          sha256sum "$output_dir"/enc/* "$output_dir"/dec/* > "$output_dir/SHA256SUMS"
+          curl -fsSL https://registry.npmjs.org/@jsquash/webp/-/webp-1.5.0.tgz -o "$build_root/upstream-package.tgz"
+          python3 scripts/package-webp-security.py "$build_root/upstream-package.tgz" "$output_dir" vendor/jsquash-webp-1.5.0-security.1.tgz
+      - name: Expose build diagnostics
+        if: failure()
+        run: |
+          python3 - <<'PYLOG'
+          import base64, os
+          from pathlib import Path
+          data = Path(os.environ["RUNNER_TEMP"], "webp-build.log").read_bytes()[-12000:]
+          for index in range(0, len(data), 2000):
+              print(f"::notice title=WebP build diagnostic {index // 2000}::" + base64.b64encode(data[index:index+2000]).decode())
+          PYLOG
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: webp-security-package
+          path: vendor/jsquash-webp-1.5.0-security.1.tgz
+          retention-days: 3

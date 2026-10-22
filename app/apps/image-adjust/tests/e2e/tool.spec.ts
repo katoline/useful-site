@@ -83,6 +83,39 @@ test("トップで PNG を入れて WebP に変換・保存できる", async ({ 
   expect(bytes.byteLength).toBeLessThan(readFileSync(fixture("sample.png")).byteLength);
 });
 
+test("修正版WebPで可逆圧縮し、同じ画像をPNGへ戻せる", async ({ page }) => {
+  await page.goto("/image-adjust/");
+  await chooseOutput(page, "webp");
+  await openSettingsIfMobile(page);
+  await page.locator('[data-testid="advanced-settings"]:visible > summary').click();
+  await page.locator('[id$="-webplossless"]:visible').click();
+  await closeSettingsIfMobile(page);
+  await addFiles(page, "sample.png");
+  const card = page.getByTestId("result-card").first();
+  await expectDone(card);
+  const webpDownload = page.waitForEvent("download");
+  await card.getByTestId("result-save").first().click();
+  const webp = await downloadBytes(await webpDownload);
+  expect(detectFormat(webp)).toBe("webp");
+  expect(new TextDecoder().decode(webp.subarray(12, 16))).toBe("VP8L");
+
+  await page.reload();
+  await chooseOutput(page, "png");
+  await page.getByTestId("file-input").setInputFiles({
+    name: "roundtrip.webp",
+    mimeType: "image/webp",
+    buffer: Buffer.from(webp),
+  });
+  const restored = page.getByTestId("result-card").first();
+  await expectDone(restored);
+  const pngDownload = page.waitForEvent("download");
+  await restored.getByTestId("result-save").first().click();
+  const png = await downloadBytes(await pngDownload);
+  expect(detectFormat(png)).toBe("png");
+  const header = new DataView(png.buffer, png.byteOffset, png.byteLength);
+  expect([header.getUint32(16), header.getUint32(20)]).toEqual([160, 120]);
+});
+
 test("ZIP を入れると構成を保って全件変換され、ZIP で保存できる", async ({ page }) => {
   await page.goto("/image-adjust/en/");
   await chooseOutput(page, "webp");
