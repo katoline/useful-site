@@ -48,7 +48,7 @@ jobs:
           C
           emconfigure ./configure --host=wasm32-unknown-emscripten --disable-gifview --disable-gifdiff \
             ac_cv_sizeof_float=4 ac_cv_sizeof_unsigned_int=4 ac_cv_sizeof_unsigned_long=4 ac_cv_sizeof_void_p=4 \
-            CFLAGS='-O3 -std=c11' \
+            CFLAGS='-O3 -std=gnu11' \
             LDFLAGS='-O3 -sSINGLE_FILE=1 -sMODULARIZE=1 -sEXPORT_NAME=GifsicleModule -sENVIRONMENT=web,worker -sDYNAMIC_EXECUTION=0 -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_RUNTIME_METHODS=FS,callMain -sEXIT_RUNTIME=0'
           make -j2
           popd
