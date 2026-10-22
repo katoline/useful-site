@@ -23,7 +23,7 @@ jobs:
   verify:
     name: verify
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 180
     steps:
       # action はタグではなくコミット SHA で固定する（タグの付け替えによる差し替えを防ぐ）
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -35,7 +35,7 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: devShell を用意する
-        run: nix develop -c node --version
+        run: nix develop -c node scripts/check-node-security.mjs
 
       - name: pnpm のストアの場所を調べる
         id: pnpm-store
