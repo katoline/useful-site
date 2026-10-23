@@ -147,6 +147,7 @@ Service Worker を持つアプリ（現状 Image Adjust）は、先に自分を 
 ### 公開先（暫定ドメイン）
 
 - 公開 URL は `https://t0n03k1.com/`。`wrangler.jsonc` の `routes` は `t0n03k1.com/*` の 1 本（`zone_name: t0n03k1.com`）で、サイト全体を 1 つの Worker が担当する。ドメイン直下（`/robots.txt`・`/ads.txt`・`/sitemap.xml`）もこのリポジトリが出す。dev・preview・E2E は routes を使わない（localhost で配信）
+- CI（`ci.yml`）とデプロイ（`deploy.yml`）は Nix のストアを `nix-community/cache-nix-action` でキャッシュする（キーは `flake.nix`・`flake.lock` のハッシュ）。セキュリティ修正版の Node.js は公式のバイナリキャッシュに無くソースからビルドするので、キャッシュが無いと devShell の用意だけで 2 時間近くかかる。`flake.nix`・`flake.lock` を変えた PR と、その後の最初の `main` の CI はこの時間がかかる（PR で保存したキャッシュはその PR の中でしか使えない）
 - 自動デプロイ（`.github/workflows/deploy.yml`）は、`main` への push で CI の `verify` が成功したコミットを `pnpm run deploy` で出す。必要な設定は Actions の Secret `CLOUDFLARE_API_TOKEN` と Variable `CLOUDFLARE_ACCOUNT_ID`、有効化の Variable `DEPLOY_ENABLED=true`。デプロイ先は `CLOUDFLARE_ACCOUNT_ID` のアカウント（ローカルは `wrangler login` のアカウント）。`routes` を使うので、ゾーンが同じアカウントにあり、ネームサーバーが Cloudflare を向いている必要がある
 - `pnpm run deploy` は、公開オリジン（`VITE_SITE_ORIGIN`、未設定なら既定値）のホストが `routes[].pattern` のホストのどれとも一致しなければ止まる（canonical 等が配信していないホストを指すのを防ぐ。判定は `scripts/lib/site-origin.ts` の `checkOriginMatchesRoutes()`）。routes が無いとき（workers.dev だけで公開）は、`workers_dev` が有効で、オリジンが `*.workers.dev` のときだけ通す
 - `workers_dev: false` を明示している（独自ドメインでの公開を確認済み）。wrangler は routes があると workers.dev を既定で無効にするが、明示しておく。ダッシュボード側の設定も次のデプロイでそろう
