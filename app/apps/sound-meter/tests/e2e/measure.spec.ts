@@ -1,9 +1,48 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { expect, test } from "@playwright/test";
 
-// Chromium の偽のマイク（ビープ音を出す）を使い、許可の確認も自動で通す
+/** 偽のマイクに入れる音：440Hz の正弦波（-12dBFS、1 秒をくり返す）のモノラル 16bit WAV */
+function writeToneWav(): string {
+  const sampleRate = 48000;
+  const samples = sampleRate;
+  const data = Buffer.alloc(samples * 2);
+  for (let i = 0; i < samples; i++) {
+    data.writeInt16LE(
+      Math.round(0.25 * 32767 * Math.sin((2 * Math.PI * 440 * i) / sampleRate)),
+      i * 2,
+    );
+  }
+  const header = Buffer.alloc(44);
+  header.write("RIFF", 0);
+  header.writeUInt32LE(36 + data.length, 4);
+  header.write("WAVEfmt ", 8);
+  header.writeUInt32LE(16, 16);
+  header.writeUInt16LE(1, 20); // PCM
+  header.writeUInt16LE(1, 22); // モノラル
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(sampleRate * 2, 28);
+  header.writeUInt16LE(2, 32);
+  header.writeUInt16LE(16, 34);
+  header.write("data", 36);
+  header.writeUInt32LE(data.length, 40);
+  const dir = path.join(tmpdir(), "sound-meter-e2e");
+  mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, "tone-440.wav");
+  writeFileSync(file, Buffer.concat([header, data]));
+  return file;
+}
+
+// Chromium の偽のマイクを使い、許可の確認も自動で通す。既定のビープは鳴り始めるまでに数秒かかり、
+// 遅い CI では待っている間に一度も鳴らないことがあるので、鳴り続ける音のファイルを入れる
 test.use({
   launchOptions: {
-    args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],
+    args: [
+      "--use-fake-ui-for-media-stream",
+      "--use-fake-device-for-media-stream",
+      `--use-file-for-fake-audio-capture=${writeToneWav()}`,
+    ],
   },
   permissions: ["microphone"],
 });
@@ -11,7 +50,7 @@ test.use({
 test("ボタンで計測し、停止すると結果を数値で表示する", async ({ page }) => {
   await page.goto("/sound-meter/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("音響解析");
-  // 偽のマイクはビープの合間が無音なので、数値が出るまで待っても終わらない長さにする
+  // 遅い環境でも数値が出る前に終わらない長さにする
   await page.getByTestId("setting-duration").getByRole("radio", { name: "30 秒" }).click();
   await page.getByTestId("start").click();
   await expect(page.getByTestId("stop")).toBeVisible();
@@ -23,6 +62,8 @@ test("ボタンで計測し、停止すると結果を数値で表示する", as
   await expect(result).toBeVisible();
   await expect(page.getByTestId("result-leq")).toHaveText(/\d+\.\d\s*dB\(A\)/);
   await expect(page.getByTestId("result-max")).toHaveText(/\d+\.\d/);
+  // 入れた音は 440Hz（A4）
+  await expect(page.getByTestId("result-dominant")).toHaveText(/^4[34]\d Hz/);
   await expect(page.getByTestId("result-bands").getByRole("listitem")).toHaveCount(4);
   await expect(page.getByTestId("start")).toHaveText(/もう一度計測/);
 
