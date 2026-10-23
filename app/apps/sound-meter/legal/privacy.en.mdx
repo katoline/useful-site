@@ -1,0 +1,7 @@
+### How We Handle Microphone Audio
+
+Sound Analyzer uses your microphone through the browser only after you press the measure button. The audio is turned into numbers (loudness, frequency, and so on) inside your browser. It is never recorded, and never sent to or stored on our servers. Microphone use ends when the measurement finishes or you stop it.
+
+### Information Stored on Your Device
+
+- **Measurement settings:** The duration and calibration offset are kept in localStorage so they can be used next time. Measurement results are not stored (they are cleared when you close or reload the tab).
