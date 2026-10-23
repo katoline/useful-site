@@ -4,7 +4,14 @@ export const APP_STATUSES = ["public", "beta", "hidden"] as const;
 export type AppStatus = (typeof APP_STATUSES)[number];
 export const APP_CATEGORIES = ["image", "document", "other"] as const;
 export type AppCategory = (typeof APP_CATEGORIES)[number];
-export const APP_ICON_KEYS = ["image", "file-text", "wrench", "grid", "qr-code"] as const;
+export const APP_ICON_KEYS = [
+  "image",
+  "file-text",
+  "wrench",
+  "grid",
+  "qr-code",
+  "audio-lines",
+] as const;
 export type AppIconKey = (typeof APP_ICON_KEYS)[number];
 
 export interface AppManifest {
