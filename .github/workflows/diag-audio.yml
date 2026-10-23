@@ -1,0 +1,34 @@
+# 一時的な調査用（調べ終わったらブランチごと消す）
+name: diag-audio
+on:
+  push:
+    branches: [diag/audio-ci]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: env
+        run: |
+          ls -la /dev/snd || true
+          pactl info 2>&1 | head -5 || true
+          aplay -l 2>&1 | head -5 || true
+          nproc; node --version
+      - name: playwright
+        run: |
+          mkdir -p /tmp/p && cd /tmp/p && npm init -y >/dev/null && npm i playwright@1.63.0 >/dev/null
+          cp "$GITHUB_WORKSPACE/diag/probe.mjs" /tmp/p/
+      - name: probe (Playwright の Chromium)
+        run: cd /tmp/p && npx playwright install chromium >/dev/null && node probe.mjs
+      - name: probe (Nix の Chromium)
+        run: |
+          nix-store -r /nix/store/9ibf73nllmrcqx4w7x5jayfxanv2gyfq-playwright-browsers
+          cd /tmp/p && PLAYWRIGHT_BROWSERS_PATH=/nix/store/9ibf73nllmrcqx4w7x5jayfxanv2gyfq-playwright-browsers PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true node probe.mjs
