@@ -27,6 +27,9 @@ export interface Limits {
 const MB = 1024 * 1024;
 const GB = 1024 * MB;
 
+/** 色プロファイルの保持・展開上限。圧縮メタデータによるメモリ枯渇を防ぐ。 */
+export const MAX_COLOR_PROFILE_BYTES = 16 * MB;
+
 export const LIMITS: Record<DeviceClass, Limits> = {
   desktop: {
     maxPixels: 100_000_000,

@@ -1,4 +1,5 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { Unzlib } from "fflate";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { readGifInfo } from "../../../tests/helpers/gif-info";
 import {
   embedIcc,
@@ -7,7 +8,7 @@ import {
   isAnimatedWebp,
   stripMetadata,
 } from "../adapters/codecs/metadata";
-import { decodeRaster } from "../adapters/codecs/raster";
+import { decodeRaster, encodePng } from "../adapters/codecs/raster";
 import { initCodecsForNode, readFixture } from "./helpers/codecs-node";
 
 /** generate-fixtures.ts の DUMMY_ICC と同じ */
@@ -18,6 +19,20 @@ beforeAll(async () => {
 }, 60_000);
 
 describe("JPEG", () => {
+  it.each([12, 14])("EXIFのIFDが%dバイトの領域を超えるJPEGをWASMの前で拒否する", async (size) => {
+    const jpeg = new Uint8Array(readFixture("sample.jpg"));
+    const exif = new Uint8Array(size);
+    exif.set([0x45, 0x78, 0x69, 0x66, 0, 0, 0x49, 0x49, 0x2a, 0, 8, 0]);
+    const app1 = new Uint8Array(4 + exif.length);
+    app1.set([0xff, 0xe1, 0, exif.length + 2]);
+    app1.set(exif, 4);
+    const image = new Uint8Array(jpeg.length + app1.length);
+    image.set(jpeg.subarray(0, 2));
+    image.set(app1, 2);
+    image.set(jpeg.subarray(2), 2 + app1.length);
+    await expect(decodeRaster("jpeg", image.buffer)).rejects.toThrow("Invalid JPEG EXIF");
+  });
+
   it("EXIF（GPS 付き）を取り除き、ICC は残す。画像としても壊れない", async () => {
     const original = readFixture("exif.jpg");
     expect(hasExif("jpeg", original)).toBe(true);
@@ -48,6 +63,34 @@ describe("JPEG", () => {
 });
 
 describe("PNG", () => {
+  it("小さいPNGに圧縮された巨大ICCを入れても展開結果を保持しない", async () => {
+    const profile = new Uint8Array(32 * 1024 * 1024);
+    const pixel = await encodePng(new ImageData(new Uint8ClampedArray([255, 0, 0, 255]), 1, 1));
+    const png = embedIcc("png", pixel, profile);
+    // ファイルと画像のピクセル数の上限だけでは圧縮メタデータの展開量を制限できない。
+    expect(png.byteLength).toBeLessThan(64 * 1024);
+    const push = vi.spyOn(Unzlib.prototype, "push");
+    try {
+      expect(extractIcc("png", png) === null).toBe(true);
+      // 圧縮入力を最後まで処理せず、展開上限に達した段階で中断する。
+      expect(push.mock.calls.length).toBeLessThan(Math.ceil(png.byteLength / 1024));
+    } finally {
+      push.mockRestore();
+    }
+  });
+
+  it("複数チャンクになる通常のICCは内容を変えずに取り出す", () => {
+    let state = 0x12345678;
+    const profile = Uint8Array.from({ length: 8192 }, () => {
+      state ^= state << 13;
+      state ^= state >>> 17;
+      state ^= state << 5;
+      return state & 0xff;
+    });
+    const png = embedIcc("png", readFixture("sample.png"), profile);
+    expect(extractIcc("png", png)).toEqual(profile);
+  });
+
   it("iCCP の埋め込みと取り出し", () => {
     const png = readFixture("sample.png");
     expect(extractIcc("png", png)).toBeNull();

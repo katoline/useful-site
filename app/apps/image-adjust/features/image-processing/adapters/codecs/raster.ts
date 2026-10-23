@@ -4,6 +4,7 @@
  * Web Worker・メインスレッド・Node（テスト）のどこでも動く純粋な関数だけを置く。
  */
 import type { RasterFormat } from "../../../../domain/format";
+import { assertJpegExifBounds } from "./metadata";
 import { quantizeToPng } from "./quantize";
 
 /** ImageData 互換（Node のテストでは ImageData が無いので構造だけ合わせる） */
@@ -48,6 +49,7 @@ export async function decodeRaster(format: RasterFormat, buffer: ArrayBuffer): P
       return decode(buffer);
     }
     case "jpeg": {
+      assertJpegExifBounds(buffer);
       const { decode } = await import("@jsquash/jpeg");
       // EXIF の向き（Orientation）をピクセルに反映して受け取る（メタデータは再エンコードで落ちるため）。
       // jSquash の preserveOrientation: true は「向きの情報どおりに回転する」の意味
