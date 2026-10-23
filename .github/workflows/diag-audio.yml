@@ -26,9 +26,10 @@ jobs:
         run: |
           mkdir -p /tmp/p && cd /tmp/p && npm init -y >/dev/null && npm i playwright@1.63.0 >/dev/null
           cp "$GITHUB_WORKSPACE/diag/probe.mjs" /tmp/p/
-      - name: probe (Playwright の Chromium)
-        run: cd /tmp/p && npx playwright install chromium >/dev/null && node probe.mjs
       - name: probe (Nix の Chromium)
         run: |
           nix-store -r /nix/store/9ibf73nllmrcqx4w7x5jayfxanv2gyfq-playwright-browsers
-          cd /tmp/p && PLAYWRIGHT_BROWSERS_PATH=/nix/store/9ibf73nllmrcqx4w7x5jayfxanv2gyfq-playwright-browsers PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true node probe.mjs
+          cd /tmp/p
+          export PLAYWRIGHT_BROWSERS_PATH=/nix/store/9ibf73nllmrcqx4w7x5jayfxanv2gyfq-playwright-browsers PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+          echo "== beep"; node probe.mjs
+          echo "== wav"; WAV=1 node probe.mjs
