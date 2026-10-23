@@ -40,7 +40,7 @@
     "clsx": "^2.1.1",
     "comlink": "^4.4.2",
     "fflate": "^0.8.3",
-    "gifsicle-wasm-browser": "^1.5.19",
+    "gifsicle-wasm-browser": "file:vendor/gifsicle-wasm-browser-1.5.19-security.1.tgz",
     "hono": "^4.13.13",
     "image-q": "^4.0.0",
     "isbot": "^5",

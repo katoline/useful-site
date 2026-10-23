@@ -30,3 +30,18 @@ Emscripten 3.1.45でビルドして `scripts/package-webp-security.py` で再パ
 `webp-security.test.ts` はエンコーダー・デコーダー両方の実バージョンを検査します。
 
 現在のtarballのSHA-256: `6333a6eea2cff706f464b3ddd00c7b9382c90d8eac8816f157aa6952bcde7b90`。
+
+## GIF（Gifsicle 1.98）
+
+`gifsicle-wasm-browser-1.5.19-security.1.tgz`は上流npm版1.5.19に含まれるGifsicle 1.92のWASMとglueを、公式1.98で再ビルドしたものへ交換したローカル配布物です。既存の`run` APIを維持し、上流のメモリ安全性修正を取り込みます。
+
+- Gifsicle: `8ff3057b736141b406be621830b851fdf4285689`（v1.98）
+- 公式ソースSHA-256: `8620d29336b555a4c122d8c736c41900706d61e77ecade2d9051d114a92d0626`
+- Emscripten: 3.1.45（SDKソースのコミット・SHA-256もワークフローで固定）
+- パッケージSHA-256: `17896fd8868ae2c1a9d68e79e1e851e6413d70ac4b46723bb0c3a7a67d080c8c`
+
+再生成はGitHub Actionsの`Rebuild GIF codec`を手動実行します。`.github/workflows/rebuild-gif-codec.yml`が公式ソースを検証してビルドし、`scripts/package-gif-security.py`が元のnpm配布物のSHA-512を検証して再梱包します。時刻・所有者・ファイルモード・gzip圧縮レベルを固定し、CI成果物とクラウドでの再梱包が同じSHA-256になることを確認しています。対応する公式ソース一式とGifsicleのライセンスはパッケージ内にも同梱しています。
+
+`gif-security.test.ts`は配布するWorker/WASMで実際に`--version`を実行し、表示上のnpmバージョンだけでは判断しません。アニメーションのフレーム保持、リサイズ、減色も検証します。1.96以降では上流の非可逆圧縮アルゴリズムが変わっているため、同じlossy値でも旧版と出力サイズが異なる場合があります。
+
+このローカルtarballはDependabotでは更新されません。Gifsicleとラッパーの公式更新・アドバイザリを確認し、修正版を含む上流npm版が出たら通常依存へ戻すか、固定ソースを更新して再ビルドしてください。参考: https://github.com/kohler/gifsicle/blob/v1.98/NEWS.md

@@ -1,0 +1,74 @@
+name: Rebuild GIF codec
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.4
+      - name: 固定した公式ソースからWASMをビルド
+        run: |
+          set -euo pipefail
+          exec > >(tee "$RUNNER_TEMP/gif-build.log") 2>&1
+          build_root="$RUNNER_TEMP/gif-codec"
+          patched_node_binary=$(command -v node)
+          mkdir -p "$build_root/emsdk" "$build_root/gifsicle"
+          curl -fsSL https://github.com/emscripten-core/emsdk/archive/c8dcb45665fec5e743336703f1d22a191810f2a8.tar.gz -o "$build_root/emsdk.tar.gz"
+          curl -fsSL https://github.com/kohler/gifsicle/archive/8ff3057b736141b406be621830b851fdf4285689.tar.gz -o "$build_root/gifsicle.tar.gz"
+          curl -fsSL https://registry.npmjs.org/gifsicle-wasm-browser/-/gifsicle-wasm-browser-1.5.19.tgz -o "$build_root/upstream-package.tgz"
+          echo "55d930c9daead98d27afab71e0389756371cbf3df5dfa2d5dc2805ab4e43d921  $build_root/emsdk.tar.gz" | sha256sum -c -
+          echo "8620d29336b555a4c122d8c736c41900706d61e77ecade2d9051d114a92d0626  $build_root/gifsicle.tar.gz" | sha256sum -c -
+          tar xzf "$build_root/emsdk.tar.gz" --strip-components=1 -C "$build_root/emsdk"
+          tar xzf "$build_root/gifsicle.tar.gz" --strip-components=1 -C "$build_root/gifsicle"
+          "$build_root/emsdk/emsdk" install 3.1.45
+          "$build_root/emsdk/emsdk" activate 3.1.45
+          source "$build_root/emsdk/emsdk_env.sh"
+          export EM_NODE_JS="$patched_node_binary"
+          pushd "$build_root/gifsicle"
+          autoreconf -fi
+          # wasm32のサイズをコンパイル時に検査し、実行不能なconfigure試験は同じ値で補う。
+          emcc -x c -c -o "$build_root/wasm-sizes.o" - <<'C'
+          _Static_assert(sizeof(float) == 4, "float");
+          _Static_assert(sizeof(unsigned int) == 4, "unsigned int");
+          _Static_assert(sizeof(unsigned long) == 4, "unsigned long");
+          _Static_assert(sizeof(void*) == 4, "pointer");
+          C
+          emconfigure ./configure --host=wasm32-unknown-emscripten --disable-gifview --disable-gifdiff \
+            ac_cv_sizeof_float=4 ac_cv_sizeof_unsigned_int=4 ac_cv_sizeof_unsigned_long=4 ac_cv_sizeof_void_p=4 \
+            CFLAGS='-O3 -std=gnu11' \
+            LDFLAGS='-O3 -sSINGLE_FILE=1 -sMODULARIZE=1 -sEXPORT_NAME=GifsicleModule -sENVIRONMENT=web,worker -sDYNAMIC_EXECUTION=0 -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_RUNTIME_METHODS=FS,callMain -sEXIT_RUNTIME=0'
+          make -j2
+          popd
+          runtime="$build_root/gifsicle/src/gifsicle.js"
+          if [ ! -f "$runtime" ]; then runtime="$build_root/gifsicle/src/gifsicle"; fi
+          python3 scripts/package-gif-security.py "$build_root/upstream-package.tgz" \
+            "$runtime" "$build_root/gifsicle.tar.gz" \
+            vendor/gifsicle-wasm-browser-1.5.19-security.1.tgz
+      - name: コンパイラーの診断だけを表示
+        if: failure()
+        shell: python
+        run: |
+          import os, re
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP'], 'gif-build.log')
+          lines = path.read_text(errors='replace').splitlines() if path.exists() else []
+          diagnostics = [line for line in lines if re.search(r'error:|Error:|Error [0-9]|No such file|cannot (?:run|find)|not found|mismatch|Unexpected|Traceback', line, re.I)]
+          for line in diagnostics[-8:]:
+              safe = line[-600:].replace('%', '%25').replace('\r', '').replace('\n', '%0A')
+              print('::error title=GIF compiler diagnostic::' + safe)
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gif-security-package
+          path: vendor/gifsicle-wasm-browser-1.5.19-security.1.tgz
+          retention-days: 3
