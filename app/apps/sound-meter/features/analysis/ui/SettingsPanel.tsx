@@ -1,5 +1,5 @@
 /** 設定：計測時間・補正値 */
-import { useId } from "react";
+import { useId, useState } from "react";
 import { Button } from "~/platform/ui/button";
 import { Input } from "~/platform/ui/input";
 import { Label } from "~/platform/ui/label";
@@ -26,6 +26,8 @@ export function SettingsPanel({
   const { t } = useSoundI18n();
   const durationId = useId();
   const calibrationId = useId();
+  /** 入力欄の編集中の文字（編集していなければ null） */
+  const [draft, setDraft] = useState<string | null>(null);
   const setCalibration = (value: number) =>
     onChange({ ...settings, calibrationDb: clampCalibration(value) });
   return (
@@ -64,9 +66,28 @@ export function SettingsPanel({
             min={CALIBRATION_MIN_DB}
             max={CALIBRATION_MAX_DB}
             step={1}
-            value={settings.calibrationDb}
+            // 入力中は文字のまま持つ（1 桁目で範囲に丸めると「95」が打てない）。範囲内の整数なら即反映し、
+            // 欄を離れたら範囲に丸めて確定する
+            value={draft ?? String(settings.calibrationDb)}
             onChange={(event) => {
-              if (event.target.value !== "") setCalibration(Number(event.target.value));
+              const text = event.target.value;
+              setDraft(text);
+              const value = Number(text);
+              if (
+                text !== "" &&
+                Number.isInteger(value) &&
+                value >= CALIBRATION_MIN_DB &&
+                value <= CALIBRATION_MAX_DB
+              ) {
+                setCalibration(value);
+              }
+            }}
+            onBlur={() => {
+              if (draft !== null && draft !== "") setCalibration(Number(draft));
+              setDraft(null);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
             }}
             className="w-24"
             data-testid="setting-calibration"
@@ -78,13 +99,17 @@ export function SettingsPanel({
             step={1}
             value={[settings.calibrationDb]}
             onValueChange={([value]) => {
+              setDraft(null);
               if (value !== undefined) setCalibration(value);
             }}
             className="flex-1"
           />
           <Button
             variant="ghost"
-            onClick={() => setCalibration(DEFAULT_CALIBRATION_DB)}
+            onClick={() => {
+              setDraft(null);
+              setCalibration(DEFAULT_CALIBRATION_DB);
+            }}
             disabled={settings.calibrationDb === DEFAULT_CALIBRATION_DB}
           >
             {t("settings.reset")}

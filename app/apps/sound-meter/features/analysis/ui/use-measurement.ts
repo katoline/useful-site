@@ -52,6 +52,8 @@ export function useMeasurement({
   const framesRef = useRef<FrameAnalysis[]>([]);
   const elapsedRef = useRef(0);
   const mountedRef = useRef(true);
+  /** 開始の処理中（マイクを開くまでの間）。ボタンの連打で 2 回開かないようにする */
+  const startingRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
@@ -74,18 +76,21 @@ export function useMeasurement({
   }, [release]);
 
   const start = useCallback(async () => {
-    if (inputRef.current || timerRef.current !== null) return;
+    if (startingRef.current || inputRef.current || timerRef.current !== null) return;
+    startingRef.current = true;
     setError(null);
     setStatus("starting");
     let input: AudioInput;
     try {
       input = await openInput();
     } catch (cause) {
+      startingRef.current = false;
       if (!mountedRef.current) return;
       setStatus("idle");
       setError(cause instanceof AudioInputError ? cause.kind : "unknown");
       return;
     }
+    startingRef.current = false;
     if (!mountedRef.current) {
       input.close();
       return;
@@ -115,7 +120,8 @@ export function useMeasurement({
           BAR_FLOOR_DB,
         ),
       });
-      if (timeMs >= durationMs) finish();
+      // 時間が来たか、マイクが途中で切れたら（以降は無音しか来ない）そこで集計する
+      if (timeMs >= durationMs || !input.isActive()) finish();
     }, FRAME_INTERVAL_MS);
   }, [openInput, durationMs, finish]);
 

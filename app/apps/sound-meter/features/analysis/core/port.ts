@@ -11,6 +11,8 @@ export interface AudioFrame {
 export interface AudioInput {
   /** その時点の波形とスペクトルを読む */
   read(): AudioFrame;
+  /** 入力が続いているか（マイクが外された等で途中で終わると false） */
+  isActive(): boolean;
   /** マイクを止めて後始末する（何度呼んでもよい） */
   close(): void;
 }

@@ -54,3 +54,61 @@ test("マイクが許可されないときは案内を出す", async ({ browser 
   await expect(page.getByTestId("measure-error")).toContainText("許可されていません");
   await context.close();
 });
+
+test("補正値は入力の途中で丸めず、欄を離れたら範囲に収める", async ({ page }) => {
+  await page.goto("/sound-meter/");
+  const input = page.getByTestId("setting-calibration");
+  await input.fill("95");
+  await expect(input).toHaveValue("95");
+  await input.fill("");
+  await input.blur();
+  await expect(input).toHaveValue("95");
+  await input.fill("200");
+  await input.press("Enter");
+  await expect(input).toHaveValue("140");
+  await page.reload();
+  await expect(page.getByTestId("setting-calibration")).toHaveValue("140");
+});
+
+test.describe("マイクの扱い", () => {
+  test.beforeEach(async ({ page }) => {
+    // 開いたストリームを数えられるようにする
+    await page.addInitScript(() => {
+      const original = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+      const streams: MediaStream[] = [];
+      Object.assign(window, { __streams: streams });
+      navigator.mediaDevices.getUserMedia = async (constraints) => {
+        const stream = await original(constraints);
+        streams.push(stream);
+        return stream;
+      };
+    });
+  });
+  const streamCount = () => window.__streams.length;
+
+  test("ボタンを連打してもマイクは 1 回だけ開く", async ({ page }) => {
+    await page.goto("/sound-meter/");
+    await page.getByTestId("start").dblclick();
+    await expect(page.getByTestId("stop")).toBeVisible();
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(streamCount)).toBe(1);
+  });
+
+  test("マイクが途中で切れたら、そこで計測を終える", async ({ page }) => {
+    await page.goto("/sound-meter/");
+    await page.getByTestId("setting-duration").getByRole("radio", { name: "60 秒" }).click();
+    await page.getByTestId("start").click();
+    await expect(page.getByTestId("stop")).toBeVisible();
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => {
+      for (const stream of window.__streams) for (const track of stream.getTracks()) track.stop();
+    });
+    await expect(page.getByTestId("result")).toBeVisible({ timeout: 5_000 });
+  });
+});
+
+declare global {
+  interface Window {
+    __streams: MediaStream[];
+  }
+}
