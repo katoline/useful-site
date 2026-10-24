@@ -23,7 +23,11 @@ export const appPath = manifest.path;
 export const api = new Hono<{ Bindings: Env }>();
 
 const NO_STORE = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
-const CHUNK_BYTES = 64 * 1024;
+/**
+ * 返す乱数のかたまり。中身を書き換えないので、同じものを何度も送ってよい（コピーしない）。
+ * 1 回の要求ごとにコピーすると 1MB あたり 1ms ほどの CPU を使い、無料プランの上限（1 回 10ms）を超えるため
+ */
+const CHUNK_BYTES = 1024 * 1024;
 
 // Workers はグローバルの範囲で乱数を作れないので、最初の要求で作る
 let randomChunk: Uint8Array | undefined;
@@ -31,7 +35,9 @@ function chunk(): Uint8Array {
   if (!randomChunk) {
     randomChunk = new Uint8Array(CHUNK_BYTES);
     // getRandomValues は 1 回 65536 バイトまで
-    crypto.getRandomValues(randomChunk);
+    for (let offset = 0; offset < CHUNK_BYTES; offset += 65536) {
+      crypto.getRandomValues(randomChunk.subarray(offset, offset + 65536));
+    }
   }
   return randomChunk;
 }
@@ -93,8 +99,8 @@ api.get("/down", (c) => {
         return;
       }
       const size = Math.min(remaining, source.byteLength);
-      // 同じバッファを渡し続けると、読み手の実装によっては使い回しで壊れるので写す
-      controller.enqueue(source.slice(0, size));
+      // 写さずに渡す（subarray は同じメモリを指すだけ）
+      controller.enqueue(size === source.byteLength ? source : source.subarray(0, size));
       remaining -= size;
     },
   });

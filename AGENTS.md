@@ -323,7 +323,7 @@ Markdown をブラウザ内で整え、**ブラウザの印刷で PDF にする*
 
 このサイトの Worker（いちばん近い Cloudflare のデータセンター）との間で、Ping・ジッター・ダウンロード・アップロードを測る。名前は日本語「回線速度テスト」、英語「Internet Speed Test」（見出しと title に「スピードテスト」を添える）。外部の測定サービスは使わない。
 
-- API（`api/index.ts`、`/speed-test/api/*`）：`GET /ping`（空の 204）・`GET /info`（`request.cf` の colo・country・asOrganization）・`GET /down?bytes=N`（乱数を返す。64MiB まで）・`POST /up`（本文を数えて捨てる。32MiB まで）。どれも `Cache-Control: no-store`。測定のデータは保存も記録もしない
+- API（`api/index.ts`、`/speed-test/api/*`）：`GET /ping`（空の 204）・`GET /info`（`request.cf` の colo・country・asOrganization）・`GET /down?bytes=N`（乱数を返す。64MiB まで）・`POST /up`（本文を数えて捨てる。32MiB まで）。どれも `Cache-Control: no-store`。測定のデータは保存も記録もしない。`/down` は 1MiB の乱数を書き換えずに繰り返し流す（要求ごとにコピーすると 1MB あたり約 1ms の CPU を使い、無料プランの上限 1 回 10ms を超える）
 - 呼び出し元は `platform/api/origin-guard.ts` で自サイトだけ通す。回数制限は `wrangler.jsonc` の `ratelimits` の 2 本：開始（`/info`）は `SPEED_TEST_START_LIMITER`（IP あたり 1 分 10 回 ＝ 測定 10 回）、転送は `SPEED_TEST_TRANSFER_LIMITER`（1 分 1200 回。速い回線の 1 回の測定で 200〜300 回使う）。開発・preview の loopback では制限しない（利用者ごとの IP が無く、並行して流す E2E が 1 つのキーに数えられて 429 になる）。loopback 以外でバインディングが無ければ 503
 - 手順（`features/speed-test/core/runner.ts`）：情報 → Ping（最初の 1 回を捨てて 20 回。中央値とジッター）→ ダウンロード 8 秒 → アップロード 8 秒。転送は 4 本の接続を同時に使い、1 回の大きさはすぐ終われば倍々に大きくする。結果は始めの 1.5 秒を除いた平均（`core/stats.ts`）。上限・時間は `domain/limits.ts`
 - 通信（`features/speed-test/adapters/http-transport.ts`）：Ping は Resource Timing（requestStart → responseStart）、ダウンロードは fetch の本文を読みながら数え、アップロードは送った量を知るため XMLHttpRequest の `upload.onprogress` で数える。転送中の一時的な通信エラーは 1 本の接続で 2 回まで続けてやり直す（429 はすぐ止める）
