@@ -1,6 +1,6 @@
-/** スペクトル（ビンごとの dB）から読み取る値：A 特性・主な周波数・重心・帯域・表示用の棒 */
+/** スペクトル（ビンごとの dB）から読み取る値：主な周波数・重心・帯域・表示用の棒 */
 import type { Band, BandId } from "../../../domain/measurement";
-import { dbToPower, powerToDb } from "./levels";
+import { dbToPower } from "./levels";
 
 function binHz(index: number, sampleRate: number, binCount: number): number {
   return (index * sampleRate) / (binCount * 2);
@@ -13,32 +13,6 @@ function binDb(spectrumDb: ArrayLike<number>, index: number): number {
 
 function binPower(db: number): number {
   return Number.isFinite(db) ? dbToPower(db) : 0;
-}
-
-/** A 特性の補正量（dB）。IEC 61672 の近似式。1kHz で 0 */
-export function aWeightingDb(hz: number): number {
-  if (hz <= 0) return Number.NEGATIVE_INFINITY;
-  const f2 = hz * hz;
-  const ra =
-    (12194 ** 2 * f2 * f2) /
-    ((f2 + 20.6 ** 2) * Math.sqrt((f2 + 107.7 ** 2) * (f2 + 737.9 ** 2)) * (f2 + 12194 ** 2));
-  return 20 * Math.log10(ra) + 2.0;
-}
-
-/**
- * A 特性をかけると全体のエネルギーが何 dB 変わるか。
- * 波形から求めたレベルに足すと A 特性のレベルになる（スペクトルの絶対値の尺度に依らない）
- */
-export function aWeightingOffsetDb(spectrumDb: ArrayLike<number>, sampleRate: number): number {
-  let total = 0;
-  let weighted = 0;
-  for (let i = 1; i < spectrumDb.length; i++) {
-    const power = binPower(binDb(spectrumDb, i));
-    total += power;
-    weighted += power * dbToPower(aWeightingDb(binHz(i, sampleRate, spectrumDb.length)));
-  }
-  if (total === 0) return 0;
-  return powerToDb(weighted) - powerToDb(total);
 }
 
 /** 範囲の中でいちばん強い周波数（Hz）。前後のビンで放物線補間する */

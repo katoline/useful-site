@@ -3,22 +3,27 @@
  * 流れ：ボタン → マイクを開く → 0.1 秒ごとに解析（いまの音）→ 時間が来るか停止で集計（計測結果）
  *
  * 結果と設定は useToolSession（言語切り替えで消えない）に置き、設定は localStorage にも置く。
+ * 補正値の既定値は端末の種類で変わる（種類はハイドレーションの後に調べる）。
  */
 import { Download, Mic, RotateCcw, Square } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AdSlot } from "~/platform/ads/AdSlot";
 import { PageHeader } from "~/platform/shell/PageHeader";
 import { useToolSession, useToolSessionStore } from "~/platform/state/ToolSessionProvider";
 import { Button } from "~/platform/ui/button";
 import { Progress } from "~/platform/ui/progress";
+import type { DevicePlatform } from "../../domain/limits";
 import {
   DEFAULT_METER_SETTINGS,
+  detectPlatform,
   downloadText,
+  effectiveCalibration,
   framesToCsv,
   LiveMeter,
   type MeasurementResult,
   type MeterSettings,
   openMicrophone,
+  ReferenceCalibration,
   SettingsPanel,
   SummaryView,
   settingsStorage,
@@ -54,12 +59,21 @@ export function ToolPage() {
   );
   const [result, setResult] = useToolSession<MeasurementResult | null>(KEYS.result, null);
   const [restored, setRestored] = useState(false);
+  const [platform, setPlatform] = useState<DevicePlatform>("other");
   const durationMs = settings.durationSec * 1000;
-  const { status, error, live, elapsedMs, start, stop } = useMeasurement({
+  const calibrationDb = effectiveCalibration(settings, platform);
+  const weighting = useMemo(
+    () => ({ frequency: settings.frequencyWeighting, time: settings.timeWeighting }),
+    [settings.frequencyWeighting, settings.timeWeighting],
+  );
+  const { status, error, live, elapsedMs, processingActive, start, stop } = useMeasurement({
     openInput: openMicrophone,
     durationMs,
+    weighting,
     onComplete: setResult,
   });
+
+  useEffect(() => setPlatform(detectPlatform()), []);
 
   // 補正値は端末のマイクに合わせるものなので、次回も使う（言語切り替えではセッションの値が残っている）
   useEffect(() => {
@@ -114,6 +128,16 @@ export function ToolPage() {
         <p className="text-xs text-muted-foreground">{t("measure.privacy")}</p>
       </div>
 
+      {processingActive && (
+        <div
+          role="note"
+          className="mt-4 rounded-md border border-warning/50 bg-warning/10 p-3 text-sm"
+          data-testid="measure-processing"
+        >
+          {t("measure.processing")}
+        </div>
+      )}
+
       {error && (
         <div
           role="alert"
@@ -125,11 +149,17 @@ export function ToolPage() {
       )}
 
       <div className="mt-6 flex flex-col gap-6">
-        {(busy || !result) && <LiveMeter live={live} calibrationDb={settings.calibrationDb} />}
+        {(busy || !result) && (
+          <LiveMeter
+            live={live}
+            calibrationDb={calibrationDb}
+            frequencyWeighting={settings.frequencyWeighting}
+          />
+        )}
         {!busy && result && (
           <SummaryView
             summary={result.summary}
-            calibrationDb={settings.calibrationDb}
+            calibrationDb={calibrationDb}
             actions={
               <Button
                 variant="outline"
@@ -137,7 +167,7 @@ export function ToolPage() {
                   downloadText(
                     // ファイル名は英字にする（日本語名を「download」に置き換える環境がある）
                     `sound-analysis-${timestamp(new Date())}.csv`,
-                    framesToCsv(result.frames, settings.calibrationDb),
+                    framesToCsv(result.frames, calibrationDb, result.summary.weighting),
                     "text/csv",
                   )
                 }
@@ -149,10 +179,21 @@ export function ToolPage() {
             }
           />
         )}
+        {!busy && result && (
+          <ReferenceCalibration
+            summary={result.summary}
+            onCalibrate={(value) => setSettings((prev) => ({ ...prev, calibrationDb: value }))}
+          />
+        )}
       </div>
 
       <div className="mt-8 rounded-lg border border-border p-4">
-        <SettingsPanel settings={settings} onChange={setSettings} disabled={busy} />
+        <SettingsPanel
+          settings={settings}
+          calibrationDb={calibrationDb}
+          onChange={setSettings}
+          disabled={busy}
+        />
       </div>
 
       <Faq />
