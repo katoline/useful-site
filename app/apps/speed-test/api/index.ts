@@ -9,6 +9,7 @@
  * 他サイトからの呼び出しは origin-guard で、使いすぎは IP ごとの回数制限で止める
  * （測定の開始は 1 分 10 回、転送は 1 分 1200 回。開発・preview の loopback では制限しない。
  * 利用者ごとの IP が無く、全員が 1 つのキーに数えられるため）。
+ * ping は数えない（回数制限の確認を待つ分だけ応答が遅れ、Ping の値に乗るため。中身の無い応答なので負荷も小さい）。
  */
 import { Hono } from "hono";
 import { isAllowedCaller, isLoopbackHost } from "../../../platform/api/origin-guard";
@@ -54,7 +55,7 @@ api.use("*", async (c, next) => {
   if (!isAllowedCaller(c.req.raw.headers, requestUrl, SITE_ORIGIN)) {
     return error(403, "forbidden_origin");
   }
-  if (isLoopbackHost(requestUrl.hostname)) {
+  if (isLoopbackHost(requestUrl.hostname) || requestUrl.pathname.endsWith("/ping")) {
     await next();
     return;
   }
