@@ -12,6 +12,8 @@
  */
 import type { Context } from "hono";
 import { Hono } from "hono";
+import { isAllowedCaller, isLoopbackHost } from "../../../../platform/api/origin-guard";
+import { rateLimitKey } from "../../../../platform/api/rate-limit-key";
 import { SITE_ORIGIN } from "../../../../platform/config";
 import type { Env } from "../env";
 import {
@@ -20,8 +22,6 @@ import {
   sniffImage,
   TEXT_SNIFF_BYTES,
 } from "../lib/image-sniff";
-import { isAllowedCaller, isLoopbackHost } from "../lib/origin-guard";
-import { rateLimitKey } from "../lib/rate-limit-key";
 import { ownHostSuffixes, parseAndCheckUrl, resolveRedirect } from "../lib/url-guard";
 
 export type FetchImageError =

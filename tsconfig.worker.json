@@ -13,5 +13,10 @@
     "isolatedModules": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["worker/**/*", "app/apps/*/api/**/*", "app/platform/config/**/*"]
+  "include": [
+    "worker/**/*",
+    "app/apps/*/api/**/*",
+    "app/platform/config/**/*",
+    "app/platform/api/**/*"
+  ]
 }
