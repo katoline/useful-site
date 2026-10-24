@@ -5,6 +5,7 @@
 import {
   AudioLines,
   FileText,
+  Gauge,
   Grid2X2,
   Image,
   type LucideIcon,
@@ -20,4 +21,5 @@ export const APP_ICON_COMPONENTS: Record<AppIconKey, LucideIcon> = {
   grid: Grid2X2,
   "qr-code": QrCode,
   "audio-lines": AudioLines,
+  gauge: Gauge,
 };

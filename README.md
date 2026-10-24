@@ -9,6 +9,7 @@
 - **markdown-pdf**（`/markdown-pdf/`）：Markdown を整えて、ブラウザの印刷で PDF にします
 - **qr-code**（`/qr-code/`）：URL から QR コードを生成します。中央に汎用アイコン・サービスロゴ・自分の画像（PNG・JPEG・WebP）を埋め込め、PNG と SVG で保存できます。処理はブラウザの中だけで完結します
 - **sound-meter**（`/sound-meter/`）：騒音計。ボタンを押すとマイクで周りの音を測り、音の大きさ（推定 dB(A)。平均・最大・L10・L50・L90）・主な周波数と音名・音域の内訳を数値にします。結果は CSV で保存できます。音はブラウザの中で解析するだけで、録音も送信もしません
+- **speed-test**（`/speed-test/`）：回線速度テスト（スピードテスト）。ボタンを押すと、このサイトの Worker（いちばん近い Cloudflare のデータセンター）との間で、ダウンロード・アップロードの速度と Ping・ジッターを測り、動画やオンラインゲームなどに足りるかの目安を表示します。結果の履歴はこの端末にだけ残ります
 
 日本語と英語、ライトとダークに対応しています。
 
@@ -16,7 +17,7 @@
 
 - TypeScript、React 19、React Router 7（framework モード。全ページ・全言語をビルド時に静的 HTML にする）
 - Vite 8、Tailwind CSS 4、shadcn/ui 風の部品（Radix UI）
-- Hono（Cloudflare Worker。各アプリの API を集めて配信する。image-adjust の URL 入力のための画像取得の中継 API など）、Wrangler
+- Hono（Cloudflare Worker。各アプリの API を集めて配信する。image-adjust の URL 入力のための画像取得の中継 API、speed-test の測定 API など）、Wrangler
 - 画像処理：jSquash（MozJPEG・libwebp・OxiPNG）、libimagequant-wasm、gifsicle-wasm-browser、SVGO、fflate、Comlink
 - Markdown：markdown-it
 - 音の解析：Web Audio API（getUserMedia・AnalyserNode）
@@ -30,7 +31,7 @@
 ```
 app/
   platform/        土台（シェル・アプリの登録簿・i18n・広告枠・SEO・UI 部品）。どのアプリにも依存しない
-  apps/<id>/       アプリ（portal・image-adjust・markdown-pdf・qr-code・sound-meter）。文言・ページ・ルート・API・テスト等を全部この中に置く
+  apps/<id>/       アプリ（portal・image-adjust・markdown-pdf・qr-code・sound-meter・speed-test）。文言・ページ・ルート・API・テスト等を全部この中に置く
 worker/            Cloudflare Worker（Hono）。各アプリの api/ を集める
 scripts/           ビルド後の整形・依存の境界の検査・OGP 画像の生成・公開前の確認
 public/            favicon とサイト共通の OGP 画像

@@ -1,0 +1,9 @@
+### Network Traffic in Internet Speed Test
+
+Internet Speed Test sends and receives random test data to and from our server (Cloudflare Workers) only after you press the start button, and calculates your speed from the time it takes. Only test data is transferred. No files or information from your device are sent.
+
+As with any connection, the server receives your IP address and similar details. The information Cloudflare attaches (the nearby data center, country, and provider name) is used only for display on the page. Test data and results are never stored or logged on the server. To stop bursts of tests in a short time, the number of tests per IP address is counted temporarily.
+
+### Information Stored on Your Device
+
+- **Result history:** The latest 10 results are kept in this device's localStorage. You can delete them with “Clear history”.

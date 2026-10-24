@@ -2,7 +2,7 @@
 
 1 つのドメイン（https://t0n03k1.com）に、ブラウザ内で動く便利なアプリを多数載せるサイト。ポータル（アプリの一覧）が `/`、各アプリが `/<アプリ>/`。英語版はアプリのパスの内側に `/en/` を付ける（`/image-adjust/en/`。ポータルは `/en/`）。サイト名は仮（日 `便利ツール集`・英 `Handy Tools`）で、`app/platform/config/index.ts` の `SITE_NAME` 1 か所だけで定義する。決まったらそこを変える。
 
-現在のアプリ：`portal`（`/`）・`image-adjust`（画像の変換・圧縮・アイコン生成）・`markdown-pdf`（Markdown → PDF）・`qr-code`（QR コード生成）・`sound-meter`（騒音計）。サイト全体の方針は、ローカルの `docs/site-plan.md`（docs/ は gitignore 済み）。各アプリの仕様は同じくローカルの `docs/` にある。
+現在のアプリ：`portal`（`/`）・`image-adjust`（画像の変換・圧縮・アイコン生成）・`markdown-pdf`（Markdown → PDF）・`qr-code`（QR コード生成）・`sound-meter`（騒音計）・`speed-test`（回線速度テスト）。サイト全体の方針は、ローカルの `docs/site-plan.md`（docs/ は gitignore 済み）。各アプリの仕様は同じくローカルの `docs/` にある。
 
 ## 実行環境
 
@@ -37,7 +37,7 @@
 
 ### platform と apps
 
-- **`app/platform/`（土台）**：どのアプリにも依存しない。ヘッダー・ハンバーガーメニュー・フッター（`shell/`）、アプリの登録簿（`registry/`）、i18n の仕組みと共通の文言、広告枠（`ads/`）、SEO（`seo/`）、ストレージ（`storage/`）、テーマ（`theme/`）、UI 部品（`ui/`）、サイト共通の規約類（`legal/`・`pages/`・`content/`）、設定値（`config/`）
+- **`app/platform/`（土台）**：どのアプリにも依存しない。ヘッダー・ハンバーガーメニュー・フッター（`shell/`）、アプリの登録簿（`registry/`）、i18n の仕組みと共通の文言、広告枠（`ads/`）、SEO（`seo/`）、ストレージ（`storage/`）、テーマ（`theme/`）、UI 部品（`ui/`）、サイト共通の規約類（`legal/`・`pages/`・`content/`）、設定値（`config/`）、アプリの API が共有する部品（`api/`。呼び出し元の検査 `origin-guard.ts`・回数制限のキー `rate-limit-key.ts`）
 - **`app/apps/<id>/`（アプリ）**：差し込み式。ポータル（`portal`、path が空）も 1 つのアプリとして同じ規約で置く。アプリ固有のものは全部そのフォルダの中に置く（文言・ページ・ルート・規約の節・API・public・テスト・E2E・ビルド後フック）
 
 ### import の決まり
@@ -176,6 +176,7 @@ app/
     hooks/                 use-online・use-hydrated
     paths/                 createAppPaths（アプリごとの URL の組み立て）
     config/                サイト名・オリジン・ストレージ接頭辞
+    api/                   アプリの API（Worker）が共有する部品：呼び出し元の検査（origin-guard.ts）・回数制限のキー（rate-limit-key.ts）
     content/               MDX の表示（mdx.tsx・prose.css）と、規約類の本文（ja/・en/）
     legal/ pages/          規約類（privacy・terms）のページと、アプリの節の差し込み
     types.ts utils.ts      AppManifest 等の型・cn()
@@ -185,6 +186,7 @@ app/
     markdown-pdf/          Markdown → PDF（domain/・features/{document-input,render,settings,print}/・pages/tool/）
     qr-code/               QR コード生成（domain/・features/{qr-generation,icon-selection}/・pages/tool/）
     sound-meter/           騒音計（domain/・features/analysis/・pages/tool/。下記「アプリ別の注意」）
+    speed-test/            回線速度テスト（domain/・api/・features/speed-test/・pages/tool/。下記「アプリ別の注意」）
 worker/                    Hono の入口（index.ts）と Env 型（env.ts）。API は各アプリの api/ から集める
 scripts/
   postbuild.ts             ビルド後の整形（404・CSP の meta・アプリのフック・_headers）
@@ -317,6 +319,17 @@ Markdown をブラウザ内で整え、**ブラウザの印刷で PDF にする*
 - 設定（計測時間・補正値）は localStorage（`sound-meter:`）、結果は `useToolSession()`（再読み込みで消える）
 - E2E は Chromium の偽のマイク（`--use-fake-device-for-media-stream`）を使い、`--use-file-for-fake-audio-capture` で 440Hz の正弦波の WAV（テストの開始時に一時ディレクトリへ書き出す）を入れる。既定のビープは鳴り始めるまでに数秒かかり、遅い CI では待つ間に鳴らないことがある
 
+### 回線速度テスト（`app/apps/speed-test/`、`/speed-test/`）
+
+このサイトの Worker（いちばん近い Cloudflare のデータセンター）との間で、Ping・ジッター・ダウンロード・アップロードを測る。名前は日本語「回線速度テスト」、英語「Internet Speed Test」（見出しと title に「スピードテスト」を添える）。外部の測定サービスは使わない。
+
+- API（`api/index.ts`、`/speed-test/api/*`）：`GET /ping`（空の 204）・`GET /info`（`request.cf` の colo・country・asOrganization）・`GET /down?bytes=N`（乱数を返す。64MiB まで）・`POST /up`（本文を数えて捨てる。32MiB まで）。どれも `Cache-Control: no-store`。測定のデータは保存も記録もしない
+- 呼び出し元は `platform/api/origin-guard.ts` で自サイトだけ通す。回数制限は `wrangler.jsonc` の `ratelimits` の 2 本：開始（`/info`）は `SPEED_TEST_START_LIMITER`（IP あたり 1 分 10 回 ＝ 測定 10 回）、転送は `SPEED_TEST_TRANSFER_LIMITER`（1 分 1200 回。速い回線の 1 回の測定で 200〜300 回使う）。開発・preview の loopback では制限しない（利用者ごとの IP が無く、並行して流す E2E が 1 つのキーに数えられて 429 になる）。loopback 以外でバインディングが無ければ 503
+- 手順（`features/speed-test/core/runner.ts`）：情報 → Ping（最初の 1 回を捨てて 20 回。中央値とジッター）→ ダウンロード 8 秒 → アップロード 8 秒。転送は 4 本の接続を同時に使い、1 回の大きさはすぐ終われば倍々に大きくする。結果は始めの 1.5 秒を除いた平均（`core/stats.ts`）。上限・時間は `domain/limits.ts`
+- 通信（`features/speed-test/adapters/http-transport.ts`）：Ping は Resource Timing（requestStart → responseStart）、ダウンロードは fetch の本文を読みながら数え、アップロードは送った量を知るため XMLHttpRequest の `upload.onprogress` で数える。転送中の一時的な通信エラーは 1 本の接続で 2 回まで続けてやり直す（429 はすぐ止める）
+- 結果は `useToolSession()`、履歴（直近 10 件）は localStorage（`speed-test:history`）
+- E2E は preview（workerd）に対して本当に測る（1 回 20 秒ほど。`test.setTimeout(90_000)`）。workerd は打ち切った転送で `Network connection lost` を出すが、測定時間で止めた正常の動き
+
 ## 未解決の注意
 
 - `/assets/*` は存在しないファイルの 404 にも immutable のキャッシュが付く。`wrangler rollback` で旧版に戻した直後にその 404 を受け取った利用者は、旧チャンクを読めない
@@ -324,4 +337,5 @@ Markdown をブラウザ内で整え、**ブラウザの印刷で PDF にする*
 - お問い合わせは GitHub の Issue（`https://github.com/katoline/useful-site/issues`）で受け付ける。Issue は公開されるので、規約・about に「個人情報を書かない」旨を書いてある（`app/platform/content/{ja,en}/privacy.mdx` の「個人情報の取り扱い」）
 - サイト名（`SITE_NAME`）は仮。決まったら `app/platform/config/index.ts` を変える
 - Android 実機の共有受け取りの `Sec-Fetch-Site` は未確認（Image Adjust の PWA の項）
+- 回線速度テストの本番（Cloudflare のエッジ）での速度・回数制限の効き方は未確認。1 回の測定で数十〜数百 MB を送受信するので、Workers の利用量（リクエスト数・CPU 時間）に注意する
 - 騒音計の実機（特に iPhone の Safari）での計測は未確認。推定 dB の既定の補正値（+100）は、実機の騒音計との比較では決めていない
