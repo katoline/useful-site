@@ -2,10 +2,10 @@ import type { AppManifest } from "../../platform/types.ts";
 export const manifest = {
   id: "sound-meter",
   path: "sound-meter",
-  name: { ja: "音響解析", en: "Sound Analyzer" },
+  name: { ja: "騒音計", en: "Sound Level Meter" },
   description: {
-    ja: "ボタンひとつで周りの音を測り、音の大きさと高さを数値にする",
-    en: "Measure the sound around you and turn its loudness and pitch into numbers",
+    ja: "周りの音をデシベル（dB）で測り、周波数も分析",
+    en: "Measure the noise around you in decibels (dB) and analyze its frequency",
   },
   highlights: {
     ja: ["騒音レベル（dB）を計測", "平均・最大・L90 を集計", "周波数と音域の内訳"],
