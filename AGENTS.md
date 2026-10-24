@@ -313,10 +313,10 @@ Markdown をブラウザ内で整え、**ブラウザの印刷で PDF にする*
 マイクで周りの音を測り、音の大きさ（推定 dB(A)）・主な周波数・音域の内訳を数値にする。名前は日本語「騒音計」、英語「Sound Level Meter」（見出しと title に「デシベル測定」「Decibel Meter」を添える）。構成は markdown-pdf と同じ（`domain/`・`features/analysis/{core,adapters,ui,index.ts}`・`pages/tool/`）。
 
 - 音は端末の中で数値にするだけで、録音・送信・保存はしない（規約の節は `legal/privacy.{ja,en}.mdx`）。計測が終わるか停止したらマイクのトラックを止める
-- `features/analysis/adapters/microphone.ts`：`getUserMedia`（エコー除去・雑音抑制・自動音量調整はオフ）＋ Web Audio の `AnalyserNode`（FFT 4096）。スピーカーには繋がない。AudioContext はボタンの操作の中（最初の await の前）で作って再開する（許可を待った後だと Safari 等で止まったままになる）。`resume()` の Promise は待たない（返らない環境で「準備中」のまま固まらない）
-- 0.1 秒ごとに解析する（`domain/limits.ts` の `FRAME_INTERVAL_MS`）。レベル・Leq・Lx・A 特性・主な周波数・スペクトル重心・音域は `features/analysis/core/` の純粋関数（DOM なしで単体テストする）
-- 値は dBFS で持ち、表示の時に補正値を足して推定 dB にする（既定 +100。端末のマイクは校正されていないので目安）。完全な無音（デジタルの 0。ミュート中など）は入力が無い状態として集計から外す
-- 設定（計測時間・補正値）は localStorage（`sound-meter:`）、結果は `useToolSession()`（再読み込みで消える）
+- `features/analysis/adapters/microphone.ts`：`getUserMedia`（エコー除去・雑音抑制・自動音量調整はオフ。切れずに残っていれば `processingActive()` で画面に案内する）＋ Web Audio の `AnalyserNode` を 2 つ（スペクトル用の FFT 4096、波形用の 32768）。スピーカーには繋がない。波形は、前回読んでから進んだ `currentTime` の分だけ長い解析器の末尾から取り出し、すべてのサンプルを解析する（直近の一部だけを読むと間の音を取りこぼす）。AudioContext はボタンの操作の中（最初の await の前）で作って再開する（許可を待った後だと Safari 等で止まったままになる）。`resume()` の Promise は待たない（返らない環境で「準備中」のまま固まらない）
+- 騒音計の計算は IEC 61672-1 の方式（`features/analysis/core/`。DOM なしで単体テストする）：周波数の重み付け A・C・Z は 1 次の区間に分けて双一次変換したデジタルフィルタ（`weighting.ts`。31.5Hz〜4kHz で規格値と 0.2dB 以内）、時間の重み付けは Fast 0.125 秒・Slow 1 秒の指数平均（`meter.ts`）。表示・最大・最小・Lx はこの値、Leq は全サンプルのエネルギーの平均。フィルタが落ち着くまでの 0.2 秒は、音が届き始めて（0 でないサンプルが来て）から数える。0.1 秒ごとに解析する（`domain/limits.ts` の `FRAME_INTERVAL_MS`）。主な周波数・スペクトル重心・音域はスペクトルから求める
+- 値は dBFS で持ち、表示の時に補正値を足して推定 dB にする。補正値の既定値は端末の種類で分ける（`domain/limits.ts` の `DEFAULT_CALIBRATION_DB`。iOS は +122：iPhone で校正済みの騒音計アプリ（dB(A)）と並べて測った差から決めた。それ以外は +100 の暫定値で、実機と比べていない）。設定の `calibrationDb` が null なら既定値。計測結果の下の「基準に合わせる」で、基準の騒音計の平均を入れると補正値を合わせる。完全な無音（デジタルの 0。ミュート中など）は入力が無い状態として集計から外す
+- 設定（計測時間・補正値・重み付け）は localStorage（`sound-meter:`。版 2。版 1 で補正値が前の既定値 100 のままなら、端末ごとの既定値に切り替える）、結果は `useToolSession()`（再読み込みで消える）
 - E2E は Chromium の偽のマイク（`--use-fake-device-for-media-stream`）を使い、`--use-file-for-fake-audio-capture` で 440Hz の正弦波の WAV（テストの開始時に一時ディレクトリへ書き出す）を入れる。既定のビープは鳴り始めるまでに数秒かかり、遅い CI では待つ間に鳴らないことがある
 
 ### 回線速度テスト（`app/apps/speed-test/`、`/speed-test/`）
@@ -338,4 +338,4 @@ Markdown をブラウザ内で整え、**ブラウザの印刷で PDF にする*
 - サイト名（`SITE_NAME`）は仮。決まったら `app/platform/config/index.ts` を変える
 - Android 実機の共有受け取りの `Sec-Fetch-Site` は未確認（Image Adjust の PWA の項）
 - 回線速度テストは Cloudflare のデータセンターまでを測るので、Fast.com（プロバイダー近くの Netflix のサーバー）等とは値が一致しない。プロバイダーと Cloudflare の間の経路が混むと、プログラムでは改善できない。回数制限の効き方は本番で未確認。1 回の測定で数十〜数百 MB を送受信するので、Workers の利用量（リクエスト数・CPU 時間）に注意する
-- 騒音計の実機（特に iPhone の Safari）での計測は未確認。推定 dB の既定の補正値（+100）は、実機の騒音計との比較では決めていない
+- 騒音計の既定の補正値は、iOS（+122）は静かな部屋（約 42dB(A)）の 1 点だけで決めた。大きい音でも差が無いか、機種による違いは未確認。Android・パソコン（+100）は実機と比べていない

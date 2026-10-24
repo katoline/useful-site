@@ -1,5 +1,11 @@
 /** 数値の表示（小数 1 桁の dB・周波数） */
 import { formatNumber, type Lang } from "~/platform/i18n";
+import type { FrequencyWeighting } from "../../../domain/measurement";
+
+/** 推定 dB の単位（例 dB(A)） */
+export function dbUnit(weighting: FrequencyWeighting): string {
+  return `dB(${weighting})`;
+}
 
 export function formatDb(lang: Lang, db: number): string {
   return formatNumber(lang, db, { minimumFractionDigits: 1, maximumFractionDigits: 1 });

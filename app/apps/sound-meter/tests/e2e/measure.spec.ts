@@ -83,6 +83,40 @@ test("時間が来ると自動で終わり、言語を切り替えても結果�
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Sound Level Meter");
 });
 
+test("重み付けなし（Z）では、入れた音の実効値どおりの値になる", async ({ page }) => {
+  await page.goto("/sound-meter/");
+  await page.getByTestId("setting-duration").getByRole("radio", { name: "5 秒" }).click();
+  await page.getByTestId("setting-frequency-weighting").getByRole("radio", { name: "Z" }).click();
+  await page.getByTestId("start").click();
+  await expect(page.getByTestId("result")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("result-weighting")).toContainText("Z");
+  // 振幅 0.25 の正弦波の実効値は -15.05dBFS。パソコン（iOS 以外）の既定の補正値 +100 で 85.0dB(Z)
+  const text = (await page.getByTestId("result-leq").textContent()) ?? "";
+  expect(text).toMatch(/dB\(Z\)/);
+  const value = Number.parseFloat(text);
+  expect(value).toBeGreaterThan(84);
+  expect(value).toBeLessThan(86);
+  // 変わらない音なので、最大は平均とほぼ同じ（マイクの準備中の無音から音が届いた瞬間の揺れを数えない）
+  const max = Number.parseFloat((await page.getByTestId("result-max").textContent()) ?? "");
+  expect(Math.abs(max - value)).toBeLessThan(0.5);
+});
+
+test("基準の値に合わせると、平均がその値になり、補正値が保存される", async ({ page }) => {
+  await page.goto("/sound-meter/");
+  await page.getByTestId("setting-duration").getByRole("radio", { name: "5 秒" }).click();
+  await page.getByTestId("start").click();
+  await expect(page.getByTestId("result")).toBeVisible({ timeout: 15_000 });
+  await page.getByTestId("reference-value").fill("42");
+  await page.getByTestId("reference-apply").click();
+  await expect(page.getByTestId("result-leq")).toHaveText(/^42\.0\s*dB\(A\)/);
+  const calibration = await page.getByTestId("setting-calibration").inputValue();
+  expect(calibration).not.toBe("100");
+  await page.reload();
+  await expect(page.getByTestId("setting-calibration")).toHaveValue(calibration);
+  await page.getByTestId("setting-calibration-reset").click();
+  await expect(page.getByTestId("setting-calibration")).toHaveValue("100");
+});
+
 test("マイクが許可されないときは案内を出す", async ({ browser }) => {
   const context = await browser.newContext({ permissions: [] });
   const page = await context.newPage();

@@ -1,9 +1,10 @@
-/** 計測中の表示：推定 dB(A)・レベルの棒・瞬間最大・主な周波数・スペクトル */
+/** 計測中の表示：推定 dB（時間の重み付けをかけた値）・レベルの棒・瞬間最大・主な周波数・スペクトル */
 import { cn } from "~/platform/utils";
+import type { FrequencyWeighting } from "../../../domain/measurement";
 import { useSoundI18n } from "../../../i18n";
 import { isSilentFrame } from "../core/analyze";
 import { noteOf } from "../core/spectrum";
-import { formatDb, formatHz } from "./format";
+import { dbUnit, formatDb, formatHz } from "./format";
 import { BAR_COUNT, BAR_FLOOR_DB, type LiveView } from "./use-measurement";
 
 /** レベルの棒の範囲（推定 dB） */
@@ -20,14 +21,16 @@ const BAR_KEYS = Array.from({ length: BAR_COUNT }, (_, i) => `bar-${i}`);
 export function LiveMeter({
   live,
   calibrationDb,
+  frequencyWeighting,
 }: {
   live: LiveView | null;
   calibrationDb: number;
+  frequencyWeighting: FrequencyWeighting;
 }) {
   const { t, lang } = useSoundI18n();
   // 完全な無音は入力が無いだけなので数値を出さない
   const frame = live && !isSilentFrame(live.frame) ? live.frame : undefined;
-  const estimated = frame ? frame.levelADbfs + calibrationDb : null;
+  const estimated = frame ? frame.levelDbfs + calibrationDb : null;
   const note = frame?.dominantHz ? noteOf(frame.dominantHz) : null;
   return (
     <section aria-labelledby="sm-live-title" className="rounded-lg border border-border p-4">
@@ -39,7 +42,9 @@ export function LiveMeter({
           <p className="text-sm text-muted-foreground">{t("live.level")}</p>
           <p className="text-4xl font-bold tabular-nums" data-testid="live-level">
             {estimated === null ? t("live.none") : formatDb(lang, estimated)}
-            <span className="ml-1 text-lg font-medium text-muted-foreground">dB(A)</span>
+            <span className="ml-1 text-lg font-medium text-muted-foreground">
+              {dbUnit(frequencyWeighting)}
+            </span>
           </p>
           <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-accent" aria-hidden>
             <div
@@ -54,7 +59,7 @@ export function LiveMeter({
           </div>
           {frame && (
             <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-              {t("result.dbfs", { value: formatDb(lang, frame.levelADbfs) })}
+              {t("result.dbfs", { value: formatDb(lang, frame.levelDbfs) })}
             </p>
           )}
         </div>

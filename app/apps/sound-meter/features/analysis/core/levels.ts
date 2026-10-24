@@ -29,12 +29,6 @@ export function peak(samples: ArrayLike<number>): number {
   return max;
 }
 
-/** 等価騒音レベル（エネルギーの平均を dB に戻す） */
-export function energyAverageDb(levels: readonly number[]): number {
-  if (levels.length === 0) return SILENCE_DBFS;
-  return powerToDb(levels.reduce((sum, db) => sum + dbToPower(db), 0) / levels.length);
-}
-
 /**
  * 時間率騒音レベル Lx：計測時間の x% でこの値を超えていた、というレベル。
  * L10 は大きい方、L90 は小さい方（暗騒音）の目安。線形補間する

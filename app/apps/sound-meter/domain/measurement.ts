@@ -15,15 +15,45 @@ export const BANDS = [
 ] as const satisfies readonly { id: string; minHz: number; maxHz: number }[];
 export type BandId = (typeof BANDS)[number]["id"];
 
-/** 1 回（FRAME_INTERVAL_MS ごと）の解析結果 */
+/**
+ * 周波数の重み付け（IEC 61672-1）。A は人の聞こえ方に近く低音を大きく割り引く（騒音の評価の標準）、
+ * C は低音をあまり割り引かない、Z は重み付けなし
+ */
+export const FREQUENCY_WEIGHTINGS = ["A", "C", "Z"] as const;
+export type FrequencyWeighting = (typeof FREQUENCY_WEIGHTINGS)[number];
+
+/** 時間の重み付け（IEC 61672-1）。音の変化に表示がどれだけ速く付いていくか */
+export const TIME_WEIGHTINGS = ["fast", "slow"] as const;
+export type TimeWeighting = (typeof TIME_WEIGHTINGS)[number];
+
+/** 時間の重み付けの時定数（秒）。Fast 0.125 秒・Slow 1 秒 */
+export const TIME_CONSTANT_SEC: Record<TimeWeighting, number> = { fast: 0.125, slow: 1 };
+
+/** 計測に使った重み付け（結果の単位の表示にも使う） */
+export interface Weighting {
+  frequency: FrequencyWeighting;
+  time: TimeWeighting;
+}
+
+/**
+ * 1 回（FRAME_INTERVAL_MS ごと）の解析結果。前回の解析から届いた音をすべて使う。
+ * level・leq・max・min は、計測の重み付け（周波数・時間）をかけた値
+ */
 export interface FrameAnalysis {
   /** 経過時間（ミリ秒） */
   timeMs: number;
-  /** 実効値のレベル（周波数の重み付けなし。dBFS） */
+  /** この回に解析したサンプルの数（Leq の重み） */
+  sampleCount: number;
+  /** 重み付けなしの実効値（dBFS。無音の判定と音域の内訳の重みに使う） */
+  rawDbfs: number;
+  /** この回の終わりの、時間の重み付けをかけたレベル（騒音計の表示の値。dBFS） */
   levelDbfs: number;
-  /** A 特性（人の聞こえ方に近い重み付け）のレベル（dBFS） */
-  levelADbfs: number;
-  /** 瞬間の最大値（dBFS） */
+  /** この回のエネルギーの平均（時間の重み付けなし。dBFS） */
+  leqDbfs: number;
+  /** この回の中の、時間の重み付けをかけたレベルの最大・最小（dBFS） */
+  maxDbfs: number;
+  minDbfs: number;
+  /** 瞬間の最大値（重み付けなし。dBFS） */
   peakDbfs: number;
   /** いちばん強い周波数（Hz）。無音なら null */
   dominantHz: number | null;
@@ -35,13 +65,14 @@ export interface FrameAnalysis {
 
 /** 計測の集計 */
 export interface MeasurementSummary {
+  weighting: Weighting;
   durationMs: number;
   frames: number;
   /** 完全な無音を除いた回数（0 なら音を受け取れていない） */
   audibleFrames: number;
-  /** 等価騒音レベル（エネルギーの平均。A 特性。dBFS） */
+  /** 等価騒音レベル（エネルギーの平均。dBFS） */
   leqDbfs: number;
-  /** 最大・最小（A 特性。dBFS） */
+  /** 時間の重み付けをかけたレベルの最大・最小（dBFS） */
   maxDbfs: number;
   minDbfs: number;
   /** 時間率騒音レベル：L10（大きい方から 10% の値）・L50（中央値）・L90（暗騒音の目安） */
