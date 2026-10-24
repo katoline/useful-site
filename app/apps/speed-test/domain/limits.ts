@@ -6,13 +6,17 @@ export const PING_COUNT = 20;
 export const TRANSFER_DURATION_MS = 8000;
 /** 最初のこの時間は速度が上がりきっていないので、結果の計算に使わない（ミリ秒） */
 export const WARMUP_MS = 1500;
-/** 同時に流す接続の数（1 本だと回線の速さを出し切れないことがある） */
-export const PARALLEL_STREAMS = 4;
+/**
+ * 同時に流す転送の数。HTTP/2・HTTP/3 ではブラウザが 1 本の接続にまとめ、転送 1 本ごとに
+ * 一度に送れる量（ウィンドウ）に上限があるので、本数が少ないと速い回線を出し切れない
+ */
+export const PARALLEL_STREAMS = 6;
 
 /** 1 回のリクエストで送受信する大きさ（バイト）。速い回線では倍々に大きくする */
 export const INITIAL_CHUNK_BYTES = 256 * 1024;
 export const MAX_DOWNLOAD_BYTES = 64 * 1024 * 1024;
-export const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
+/** アップロードは Worker が受け取った本文を読むので、1 回を小さくして CPU 時間（無料プランは 1 回 10ms）に収める */
+export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 /** 1 回のリクエストがこれより早く終わったら、次は大きくする（ミリ秒） */
 export const GROW_BELOW_MS = 1000;
 

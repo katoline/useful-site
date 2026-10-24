@@ -7,6 +7,7 @@ const FAQ_KEYS = [
   ["faq.q2", "faq.a2"],
   ["faq.q3", "faq.a3"],
   ["faq.q4", "faq.a4"],
+  ["faq.q5", "faq.a5"],
 ] as const;
 
 export function faqItems(t: TFunction) {
