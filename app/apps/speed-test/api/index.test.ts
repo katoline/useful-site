@@ -85,17 +85,39 @@ describe("speed-test の API", () => {
       );
     const env = { SPEED_TEST_START_LIMITER: deny, SPEED_TEST_TRANSFER_LIMITER: allow };
     expect((await remote("info", env)).status).toBe(429);
-    expect((await remote("ping", env)).status).toBe(204);
+    expect((await remote("down?bytes=1", env)).status).toBe(200);
+    const transferDenied = { SPEED_TEST_START_LIMITER: allow, SPEED_TEST_TRANSFER_LIMITER: deny };
+    expect((await remote("down?bytes=1", transferDenied)).status).toBe(429);
+    expect((await remote("info", transferDenied)).status).toBe(200);
+  });
+
+  it("ping は回数制限を確かめない（待ち時間を Ping に乗せない）", async () => {
+    let calls = 0;
+    const counting = {
+      limit: async () => {
+        calls += 1;
+        return { success: false };
+      },
+    };
+    const res = await worker.fetch(
+      new Request("https://example.com/speed-test/api/ping", {
+        headers: { origin: "https://example.com" },
+      }) as Request<unknown, IncomingRequestCfProperties>,
+      { ASSETS: {}, SPEED_TEST_TRANSFER_LIMITER: counting } as unknown as Env,
+      ctx,
+    );
+    expect(res.status).toBe(204);
+    expect(calls).toBe(0);
   });
 
   it("loopback（開発・preview）では回数制限をかけない", async () => {
     const deny = { limit: async () => ({ success: false }) };
-    const res = await call("ping", {}, { SPEED_TEST_TRANSFER_LIMITER: deny });
-    expect(res.status).toBe(204);
+    const res = await call("down?bytes=1", {}, { SPEED_TEST_TRANSFER_LIMITER: deny });
+    expect(res.status).toBe(200);
   });
 
   it("loopback 以外でバインディングが無ければ止める", async () => {
-    const request = new Request("https://example.com/speed-test/api/ping", {
+    const request = new Request("https://example.com/speed-test/api/down?bytes=1", {
       headers: { origin: "https://example.com" },
     }) as Request<unknown, IncomingRequestCfProperties>;
     const res = await worker.fetch(request, { ASSETS: {} } as unknown as Env, ctx);
