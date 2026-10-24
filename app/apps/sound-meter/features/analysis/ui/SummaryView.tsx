@@ -1,9 +1,9 @@
-/** 計測結果：推定 dB(A) の代表値・周波数・音域の内訳 */
+/** 計測結果：推定 dB の代表値・周波数・音域の内訳 */
 import type { ReactNode } from "react";
 import { BANDS, loudnessLevel, type MeasurementSummary } from "../../../domain/measurement";
 import { useSoundI18n } from "../../../i18n";
 import { noteOf } from "../core/spectrum";
-import { formatDb, formatHz, formatPercent, formatSeconds } from "./format";
+import { dbUnit, formatDb, formatHz, formatPercent, formatSeconds } from "./format";
 
 function Stat({
   label,
@@ -41,7 +41,9 @@ export function SummaryView({
   const db = (dbfs: number) => (
     <>
       {formatDb(lang, dbfs + calibrationDb)}
-      <span className="ml-1 text-sm font-medium text-muted-foreground">dB(A)</span>
+      <span className="ml-1 text-sm font-medium text-muted-foreground">
+        {dbUnit(summary.weighting.frequency)}
+      </span>
     </>
   );
   const leq = summary.leqDbfs + calibrationDb;
@@ -60,6 +62,12 @@ export function SummaryView({
           </h2>
           <p className="text-sm text-muted-foreground">
             {t("result.summary", { seconds, frames: summary.frames })}
+          </p>
+          <p className="text-sm text-muted-foreground" data-testid="result-weighting">
+            {t("result.weighting", {
+              frequency: summary.weighting.frequency,
+              time: t(`settings.time.${summary.weighting.time}`),
+            })}
           </p>
         </div>
         {actions}
