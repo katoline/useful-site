@@ -8,6 +8,7 @@
 - **image-adjust**（`/image-adjust/`）：画像の変換・圧縮・最適化、ZIP の一括処理、Web 用アイコン一式の生成。画像はサーバーに送らず、WASM と Web Worker で処理します。PWA（インストール・オフライン動作）に対応しています
 - **markdown-pdf**（`/markdown-pdf/`）：Markdown を整えて、ブラウザの印刷で PDF にします
 - **qr-code**（`/qr-code/`）：URL から QR コードを生成します。中央に汎用アイコン・サービスロゴ・自分の画像（PNG・JPEG・WebP）を埋め込め、PNG と SVG で保存できます。処理はブラウザの中だけで完結します
+- **sound-meter**（`/sound-meter/`）：騒音計。ボタンを押すとマイクで周りの音を測り、音の大きさ（推定 dB(A)。平均・最大・L10・L50・L90）・主な周波数と音名・音域の内訳を数値にします。結果は CSV で保存できます。音はブラウザの中で解析するだけで、録音も送信もしません
 
 日本語と英語、ライトとダークに対応しています。
 
@@ -18,6 +19,7 @@
 - Hono（Cloudflare Worker。各アプリの API を集めて配信する。image-adjust の URL 入力のための画像取得の中継 API など）、Wrangler
 - 画像処理：jSquash（MozJPEG・libwebp・OxiPNG）、libimagequant-wasm、gifsicle-wasm-browser、SVGO、fflate、Comlink
 - Markdown：markdown-it
+- 音の解析：Web Audio API（getUserMedia・AnalyserNode）
 - QR コード：qrcode（純 JavaScript。ブラウザ内で符号化する）、Simple Icons（サービスのロゴ）
 - PWA：Workbox（image-adjust の Service Worker を postbuild で生成）
 - テスト・品質：Biome、Vitest、Playwright
@@ -28,7 +30,7 @@
 ```
 app/
   platform/        土台（シェル・アプリの登録簿・i18n・広告枠・SEO・UI 部品）。どのアプリにも依存しない
-  apps/<id>/       アプリ（portal・image-adjust・markdown-pdf・qr-code）。文言・ページ・ルート・API・テスト等を全部この中に置く
+  apps/<id>/       アプリ（portal・image-adjust・markdown-pdf・qr-code・sound-meter）。文言・ページ・ルート・API・テスト等を全部この中に置く
 worker/            Cloudflare Worker（Hono）。各アプリの api/ を集める
 scripts/           ビルド後の整形・依存の境界の検査・OGP 画像の生成・公開前の確認
 public/            favicon とサイト共通の OGP 画像
@@ -76,6 +78,12 @@ nix develop -c pnpm install
 | --- | --- |
 | `build` | 本番ビルド（プリレンダリング・Worker・各アプリのビルド後フック） |
 | `run deploy` | 公開前の確認 → ビルド → `wrangler deploy`。公開オリジンが仮の値や Worker の routes と食い違うときは止まる |
+
+### CI
+
+PR と `main` への push で、`.github/workflows/ci.yml` の `verify` が上の検証コマンドをすべて流します（`main` へのマージの条件）。
+
+開発環境のうちセキュリティ修正版の Node.js（下記）は公式のバイナリキャッシュに無く、ソースからビルドします。そのため、devShell が使う Nix のストアを `actions/cache` でキャッシュしています（キーは `flake.nix`・`flake.lock`）。キャッシュが効けば `verify` は 5 分ほどで終わります。`flake.nix`・`flake.lock` を変えた PR と、その後の最初の `main` の CI は、キャッシュを作り直すので 1〜2 時間かかります。
 
 ### 自動デプロイ
 
