@@ -11,6 +11,7 @@ export const APP_ICON_KEYS = [
   "grid",
   "qr-code",
   "audio-lines",
+  "gauge",
 ] as const;
 export type AppIconKey = (typeof APP_ICON_KEYS)[number];
 

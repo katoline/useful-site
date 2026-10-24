@@ -1,10 +1,11 @@
 /**
- * fetch-image の呼び出し元の検査（他サイトから中継 API として使われるのを防ぐ。plan.md §3.5）。
+ * アプリの API の呼び出し元の検査（他サイトから API として使われるのを防ぐ）。
+ * 使うのは image-adjust の fetch-image（中継 API。plan.md §3.5）と speed-test の計測 API。
  *
  * これはブラウザ経由の悪用（他サイトのページから利用者のブラウザに叩かせる・<img> で直リンクする）
  * への対策。ブラウザはページの JavaScript から Origin / Referer / Sec-Fetch-Site を偽れないので、
  * これらで自サイトからの呼び出しだけを通す。curl 等のブラウザ以外はヘッダーを自由に付けられるので
- * ここでは防げない。そちらは回数制限（IP あたり 1 分 20 回）と url-guard で抑える。
+ * ここでは防げない。そちらは各 API の回数制限（rate-limit-key.ts）で抑える。
  */
 
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
