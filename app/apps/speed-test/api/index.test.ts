@@ -35,11 +35,16 @@ describe("speed-test の API", () => {
     expect(await res.json()).toEqual({ colo: null, country: null, isp: null });
   });
 
-  it("down は指定のバイト数を返す", async () => {
-    const res = await call("down?bytes=200000");
-    expect(res.status).toBe(200);
-    expect(res.headers.get("content-type")).toBe("application/octet-stream");
-    expect((await res.arrayBuffer()).byteLength).toBe(200000);
+  it("down は指定のバイト数を返す（1MiB より大きくても端数でも）", async () => {
+    for (const bytes of [200_000, 3 * 1024 * 1024 + 5]) {
+      const res = await call(`down?bytes=${bytes}`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe("application/octet-stream");
+      const body = new Uint8Array(await res.arrayBuffer());
+      expect(body.byteLength).toBe(bytes);
+      // 乱数で埋まっている（0 だけではない）
+      expect(body.some((b) => b !== 0)).toBe(true);
+    }
   });
 
   it("down の不正な・大きすぎる指定は 400", async () => {
