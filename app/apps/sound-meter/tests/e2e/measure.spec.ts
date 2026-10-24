@@ -49,7 +49,7 @@ test.use({
 
 test("ボタンで計測し、停止すると結果を数値で表示する", async ({ page }) => {
   await page.goto("/sound-meter/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("音響解析");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("騒音計");
   // 遅い環境でも数値が出る前に終わらない長さにする
   await page.getByTestId("setting-duration").getByRole("radio", { name: "30 秒" }).click();
   await page.getByTestId("start").click();
@@ -80,7 +80,7 @@ test("時間が来ると自動で終わり、言語を切り替えても結果�
   await expect(page.getByTestId("result")).toContainText("5 秒間の計測");
 
   await page.goto("/sound-meter/en/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Sound Analyzer");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Sound Level Meter");
 });
 
 test("マイクが許可されないときは案内を出す", async ({ browser }) => {

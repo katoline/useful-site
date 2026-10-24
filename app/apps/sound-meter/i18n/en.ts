@@ -4,12 +4,12 @@ import type { Dictionary } from "./types.ts";
 export const en = {
   site: { name: manifest.name.en },
   page: {
-    title: "Sound Analyzer (Sound Level Meter)",
-    metaTitle: "Sound Analyzer & Sound Level Meter (Free, Measure dB in Your Browser)",
+    title: "Sound Level Meter (Decibel Meter)",
+    metaTitle: "Sound Level Meter & Decibel Meter (Free, Measure dB in Your Browser)",
     lead: "Press the button to measure the sound around you with your microphone and see its loudness (dB), main frequency, and frequency breakdown as numbers. Sound is analyzed only on your device and is never recorded or sent.",
     description:
-      "A free tool that measures ambient sound with your microphone and shows the average, maximum, and L90 noise level (estimated dB(A)), the main frequency and musical note, and the low-to-high frequency breakdown. No install needed, and sound is analyzed only in your browser.",
-    appName: "Sound Analyzer",
+      "A free sound level meter (decibel meter) that measures the noise around you with your phone or computer microphone. See the average, maximum, and L90 level in estimated dB(A), the main frequency and musical note, and the low-to-high frequency breakdown. No install needed, and sound is analyzed only in your browser.",
+    appName: "Sound Level Meter (Decibel Meter)",
   },
   measure: {
     start: "Start measuring",
@@ -76,7 +76,7 @@ export const en = {
     durationValue: "{seconds} s",
     calibration: "Calibration offset (dB)",
     calibrationHint:
-      "Estimated dB = dBFS + offset. Device microphones aren't calibrated, so if you have a reference such as a sound level meter, adjust the offset to match it. Saved on this device.",
+      "Estimated dB = dBFS + offset. Device microphones aren't calibrated, so if you have a reference such as a dedicated sound level meter, adjust the offset to match it. Saved on this device.",
     reset: "Reset",
   },
   errors: {
@@ -93,7 +93,7 @@ export const en = {
     q1: "Is the sound recorded or sent anywhere?",
     a1: "No. The microphone input is analyzed in your browser every 0.1 seconds and turned into numbers. The sound itself is never stored or sent. The microphone turns off automatically when the measurement ends or you stop it.",
     q2: "How accurate are the dB values?",
-    a2: "They are estimates. Phone and computer microphones differ in sensitivity and aren't calibrated, so the estimated dB is the level the microphone picks up (dBFS) plus a calibration offset. If you know a reference value, for example from a sound level meter, set the offset to match. For measurements with legal or contractual weight, use a certified sound level meter.",
+    a2: "They are estimates. Phone and computer microphones differ in sensitivity and aren't calibrated, so the estimated dB is the level the microphone picks up (dBFS) plus a calibration offset. If you know a reference value, for example from a dedicated sound level meter, set the offset to match. For measurements with legal or contractual weight, use a certified sound level meter.",
     q3: "What do dB(A) and L90 mean?",
     a3: "dB(A) is loudness weighted the way human hearing works (A-weighting), which counts very low and very high sounds less. L90 is the level exceeded 90% of the time. It leaves out passing sounds such as voices or cars, so it shows the usual background noise of a place.",
     q4: "The readings look wrong or too low.",
