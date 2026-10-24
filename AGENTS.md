@@ -2,7 +2,7 @@
 
 1 つのドメイン（https://t0n03k1.com）に、ブラウザ内で動く便利なアプリを多数載せるサイト。ポータル（アプリの一覧）が `/`、各アプリが `/<アプリ>/`。英語版はアプリのパスの内側に `/en/` を付ける（`/image-adjust/en/`。ポータルは `/en/`）。サイト名は仮（日 `便利ツール集`・英 `Handy Tools`）で、`app/platform/config/index.ts` の `SITE_NAME` 1 か所だけで定義する。決まったらそこを変える。
 
-現在のアプリ：`portal`（`/`）・`image-adjust`（画像の変換・圧縮・アイコン生成）・`markdown-pdf`（Markdown → PDF）。サイト全体の方針は、ローカルの `docs/site-plan.md`（docs/ は gitignore 済み）。各アプリの仕様は同じくローカルの `docs/` にある。
+現在のアプリ：`portal`（`/`）・`image-adjust`（画像の変換・圧縮・アイコン生成）・`markdown-pdf`（Markdown → PDF）・`qr-code`（QR コード生成）・`sound-meter`（騒音計）。サイト全体の方針は、ローカルの `docs/site-plan.md`（docs/ は gitignore 済み）。各アプリの仕様は同じくローカルの `docs/` にある。
 
 ## 実行環境
 
@@ -147,7 +147,8 @@ Service Worker を持つアプリ（現状 Image Adjust）は、先に自分を 
 ### 公開先（暫定ドメイン）
 
 - 公開 URL は `https://t0n03k1.com/`。`wrangler.jsonc` の `routes` は `t0n03k1.com/*` の 1 本（`zone_name: t0n03k1.com`）で、サイト全体を 1 つの Worker が担当する。ドメイン直下（`/robots.txt`・`/ads.txt`・`/sitemap.xml`）もこのリポジトリが出す。dev・preview・E2E は routes を使わない（localhost で配信）
-- CI（`ci.yml`）とデプロイ（`deploy.yml`）は、devShell が使う Nix のストアをファイルのバイナリキャッシュにして `actions/cache` でキャッシュする（キーは `flake.nix`・`flake.lock` のハッシュ）。セキュリティ修正版の Node.js は公式のバイナリキャッシュに無くソースからビルドするので、キャッシュが無いと devShell の用意だけで 2 時間近くかかる。`flake.nix`・`flake.lock` を変えた PR と、その後の最初の `main` の CI はこの時間がかかる（PR で保存したキャッシュはその PR の中でしか使えない）
+- CI（`ci.yml`）とデプロイ（`deploy.yml`）は、devShell が使う Nix のストアをファイルのバイナリキャッシュにして `actions/cache` でキャッシュする（キーは `flake.nix`・`flake.lock` のハッシュ）。セキュリティ修正版の Node.js は公式のバイナリキャッシュに無くソースからビルドするので、キャッシュが無いと devShell の用意だけで 2 時間近くかかる。`flake.nix`・`flake.lock` を変えた PR と、その後の最初の `main` の CI はこの時間がかかる（PR で保存したキャッシュはその PR の中でしか使えない。キャッシュの無い `main` に続けてマージすると、それぞれの CI がビルドする）。キャッシュが効けば `verify` は 5 分ほど、デプロイは 2 分ほどで終わる
+- ワークフローで使える action は、リポジトリの Actions の設定で許可されたものだけ（許可されていない action を使うと、ジョブが動く前に `startup_failure` になる）。今使っている `actions/*`・`cachix/install-nix-action` で組み、ほかの action を足すときは先に許可の設定を確かめる
 - 自動デプロイ（`.github/workflows/deploy.yml`）は、`main` への push で CI の `verify` が成功したコミットを `pnpm run deploy` で出す。必要な設定は Actions の Secret `CLOUDFLARE_API_TOKEN` と Variable `CLOUDFLARE_ACCOUNT_ID`、有効化の Variable `DEPLOY_ENABLED=true`。デプロイ先は `CLOUDFLARE_ACCOUNT_ID` のアカウント（ローカルは `wrangler login` のアカウント）。`routes` を使うので、ゾーンが同じアカウントにあり、ネームサーバーが Cloudflare を向いている必要がある
 - `pnpm run deploy` は、公開オリジン（`VITE_SITE_ORIGIN`、未設定なら既定値）のホストが `routes[].pattern` のホストのどれとも一致しなければ止まる（canonical 等が配信していないホストを指すのを防ぐ。判定は `scripts/lib/site-origin.ts` の `checkOriginMatchesRoutes()`）。routes が無いとき（workers.dev だけで公開）は、`workers_dev` が有効で、オリジンが `*.workers.dev` のときだけ通す
 - `workers_dev: false` を明示している（独自ドメインでの公開を確認済み）。wrangler は routes があると workers.dev を既定で無効にするが、明示しておく。ダッシュボード側の設定も次のデプロイでそろう
@@ -182,6 +183,8 @@ app/
     portal/                ルート（/）のアプリ一覧。external-links.ts に外部システム
     image-adjust/          画像調整（domain/・features/{image-processing,icon-generator,remote-image,pwa,guide-content}/・shared/・pages/<ページ>/。下記「アプリ別の注意」）
     markdown-pdf/          Markdown → PDF（domain/・features/{document-input,render,settings,print}/・pages/tool/）
+    qr-code/               QR コード生成（domain/・features/{qr-generation,icon-selection}/・pages/tool/）
+    sound-meter/           騒音計（domain/・features/analysis/・pages/tool/。下記「アプリ別の注意」）
 worker/                    Hono の入口（index.ts）と Env 型（env.ts）。API は各アプリの api/ から集める
 scripts/
   postbuild.ts             ビルド後の整形（404・CSP の meta・アプリのフック・_headers）
@@ -303,6 +306,17 @@ Markdown をブラウザ内で整え、**ブラウザの印刷で PDF にする*
 - 同梱した SVG 画像（拡張子 `.svg` または MIME `image/svg+xml`）は、固定 MIME の `data:image/svg+xml;base64,...` にする。それ以外の画像は、受け付ける拡張子から決めた固定 MIME の Blob に作り直して blob: URL を使う。未対応の拡張子は URL を作らない
 - 広告は印刷されない（印刷されるのは iframe の中身だけ。念のため `print:hidden` でも隠す）。入力の上限は `domain/limits.ts`
 
+### 騒音計（`app/apps/sound-meter/`、`/sound-meter/`）
+
+マイクで周りの音を測り、音の大きさ（推定 dB(A)）・主な周波数・音域の内訳を数値にする。名前は日本語「騒音計」、英語「Sound Level Meter」（見出しと title に「デシベル測定」「Decibel Meter」を添える）。構成は markdown-pdf と同じ（`domain/`・`features/analysis/{core,adapters,ui,index.ts}`・`pages/tool/`）。
+
+- 音は端末の中で数値にするだけで、録音・送信・保存はしない（規約の節は `legal/privacy.{ja,en}.mdx`）。計測が終わるか停止したらマイクのトラックを止める
+- `features/analysis/adapters/microphone.ts`：`getUserMedia`（エコー除去・雑音抑制・自動音量調整はオフ）＋ Web Audio の `AnalyserNode`（FFT 4096）。スピーカーには繋がない。AudioContext はボタンの操作の中（最初の await の前）で作って再開する（許可を待った後だと Safari 等で止まったままになる）。`resume()` の Promise は待たない（返らない環境で「準備中」のまま固まらない）
+- 0.1 秒ごとに解析する（`domain/limits.ts` の `FRAME_INTERVAL_MS`）。レベル・Leq・Lx・A 特性・主な周波数・スペクトル重心・音域は `features/analysis/core/` の純粋関数（DOM なしで単体テストする）
+- 値は dBFS で持ち、表示の時に補正値を足して推定 dB にする（既定 +100。端末のマイクは校正されていないので目安）。完全な無音（デジタルの 0。ミュート中など）は入力が無い状態として集計から外す
+- 設定（計測時間・補正値）は localStorage（`sound-meter:`）、結果は `useToolSession()`（再読み込みで消える）
+- E2E は Chromium の偽のマイク（`--use-fake-device-for-media-stream`）を使い、`--use-file-for-fake-audio-capture` で 440Hz の正弦波の WAV（テストの開始時に一時ディレクトリへ書き出す）を入れる。既定のビープは鳴り始めるまでに数秒かかり、遅い CI では待つ間に鳴らないことがある
+
 ## 未解決の注意
 
 - `/assets/*` は存在しないファイルの 404 にも immutable のキャッシュが付く。`wrangler rollback` で旧版に戻した直後にその 404 を受け取った利用者は、旧チャンクを読めない
@@ -310,3 +324,4 @@ Markdown をブラウザ内で整え、**ブラウザの印刷で PDF にする*
 - お問い合わせは GitHub の Issue（`https://github.com/katoline/useful-site/issues`）で受け付ける。Issue は公開されるので、規約・about に「個人情報を書かない」旨を書いてある（`app/platform/content/{ja,en}/privacy.mdx` の「個人情報の取り扱い」）
 - サイト名（`SITE_NAME`）は仮。決まったら `app/platform/config/index.ts` を変える
 - Android 実機の共有受け取りの `Sec-Fetch-Site` は未確認（Image Adjust の PWA の項）
+- 騒音計の実機（特に iPhone の Safari）での計測は未確認。推定 dB の既定の補正値（+100）は、実機の騒音計との比較では決めていない
