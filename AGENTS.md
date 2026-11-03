@@ -8,7 +8,7 @@
 
 - Node.js・pnpm・Playwright のブラウザは Nix の devShell（`flake.nix`）が供給する。エージェントのシェルでは direnv が効かないので、**コマンドは必ず `nix develop -c <cmd>` で実行する**（例 `nix develop -c pnpm install`）
 - グローバルインストールはしない。依存はプロジェクトの `package.json` に入れる
-- `@playwright/test` は Nix の `playwright-driver` と同じ版（1.63.0）に固定している。上げるときは `flake.lock` の版と揃える
+- `@playwright/test` は Nix の `playwright-driver` と同じ版（1.64.1）に固定している。上げるときは `flake.lock` の版と揃える
 - pnpm 12 はビルドスクリプトを許可制にしている。許可済みは `pnpm-workspace.yaml` の `allowBuilds`（esbuild・workerd）
 
 ## 検証コマンド
