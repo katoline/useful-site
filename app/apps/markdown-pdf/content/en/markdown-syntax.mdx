@@ -1,0 +1,242 @@
+export const frontmatter = {
+  title: "Markdown Syntax Cheat Sheet",
+  description:
+    "A quick Markdown reference with examples: headings, lists, task lists, links, tables, code, footnotes, and how images work when converting Markdown to PDF.",
+  datePublished: "2026-11-05",
+  dateModified: "2026-11-05",
+};
+
+Markdown is a way of writing plain text where a few symbols stand for headings, lists, links, and other formatting. You can write it in any text editor, it stays readable as is, and it can be turned into a clean HTML page or PDF.
+
+This cheat sheet shows the most common syntax as pairs of "what you type" and "what you get". Everything here works in the [Markdown to PDF](/) tool. Press "Insert sample" in the tool to load an example that uses most of these features, and compare it with this page as you read.
+
+## Headings
+
+Start a line with `#` to make a heading. The number of `#` characters sets the level, from 1 to 6. Put a space after the `#` characters; without it, the line is not a heading.
+
+```markdown
+# Document title
+
+## Chapter
+
+### Section
+
+#### Subsection
+```
+
+It is common to use a single level-1 heading (`#`) once, as the document title, and to start the body at `##`. In this tool, the first level-1 heading also becomes the suggested file name when you save the PDF.
+
+There is a second heading style: underline a line of text with `===` (level 1) or `---` (level 2). This is the usual reason a `---` you meant as a page break turns into a heading instead; see "Horizontal rules and page breaks" below.
+
+## Paragraphs and line breaks
+
+A block of text separated by one or more blank lines is a paragraph.
+
+```markdown
+This is the first paragraph.
+This line joins the line above.
+
+A blank line starts the second paragraph.
+```
+
+Pressing Enter once does not create a line break. The first two lines above are shown as one continuous sentence, joined by a space.
+
+To break a line without starting a new paragraph, end the line with two spaces or with a backslash.
+
+```markdown
+Jane Smith\
+123 Main Street\
+Springfield
+```
+
+Trailing spaces are invisible, and some editors strip them when you save, so the backslash is the more reliable choice.
+
+## Emphasis and strikethrough
+
+```markdown
+Make text **bold**
+Make text *italic*
+~~Strike through~~ text
+```
+
+Double asterisks make text bold, single asterisks make it italic, and double tildes draw a line through it. You can use underscores instead of asterisks. Many Japanese and Chinese fonts have no true italic, so if your document mixes languages, bold is the safer way to highlight a phrase.
+
+To show a symbol literally, put a backslash in front of it. For example, `\*` displays an asterisk instead of starting emphasis.
+
+## Bulleted lists
+
+Start a line with `-` (or `*` or `+`) followed by a space. Indent an item by two to four spaces to nest it.
+
+```markdown
+- What to bring
+  - Laptop
+  - Power adapter
+- Schedule for the day
+- Contacts
+```
+
+If a list follows a paragraph, leave a blank line between them to be safe.
+
+## Numbered lists
+
+Start a line with a number and a period.
+
+```markdown
+1. Download the form
+2. Fill in the details
+3. Submit it to your manager
+```
+
+Numbers are counted up from the first item, so you can write `1.` on every line and still get 1, 2, 3. That saves renumbering when you insert an item. If the first item is `3.`, the list starts counting at 3.
+
+To nest a bulleted list inside a numbered item, indent it to where the item's text starts (three spaces for `1. `).
+
+```markdown
+1. Fill in the form
+   - No signature needed
+2. Submit it
+```
+
+## Task lists (checkboxes)
+
+Put `[ ]` after the `- ` of a list item for an open task, or `[x]` for a finished one.
+
+```markdown
+- [x] Book the venue
+- [ ] Print the handouts
+- [ ] Send the invitations
+```
+
+Task lists work well for to-do lists and checklists. Because the output is meant to be a printed or saved document, the checkboxes keep the state you wrote and do not toggle when clicked. To change one, edit `[ ]` or `[x]` in the Markdown.
+
+## Links
+
+```markdown
+[Text to show](https://example.com/)
+[Email us](mailto:info@example.com)
+```
+
+The text in square brackets is what readers see; the address in parentheses is where the link goes. A bare address that starts with `https://` typed into your text also becomes a link automatically.
+
+This tool only accepts http, https, mailto, and tel links, plus relative paths and links within the page (starting with `#`). Potentially dangerous addresses such as `javascript:` are left as plain text. In the PDF, links appear in the same color as the body text, underlined. Depending on the browser you saved from and the PDF viewer, they can still be clicked.
+
+<Ad />
+
+## Images
+
+An image looks like a link with `!` in front. The text in brackets is the alt text, used when the image cannot be shown and by screen readers.
+
+```markdown
+![Sales trend](chart.png)
+![System diagram](images/diagram.svg)
+```
+
+To include images in a PDF with this tool, add the image files with "Add images" (or drop them onto the editor). Images referenced by a relative path, such as `chart.png`, are then shown using the files you added. The tool first matches the full path and then falls back to the file name, so `images/diagram.svg` is found if you add a file named `diagram.svg`. As a last resort it also ignores upper and lower case in the file name.
+
+Supported formats are PNG, JPEG, GIF, WebP, AVIF, and SVG, up to 50 images and 20 MB in total. data: images, where the image itself is embedded as text (such as `data:image/png;base64,…`), also work.
+
+Images from external addresses that start with `https://` are not loaded. Loading an outside image would tell that image's server when someone opened your document. Instead, the tool shows a box saying the image cannot be displayed. If you need such an image, save it to your device first and add it with "Add images".
+
+Standard Markdown has no way to set an image's size. Images are scaled down to fit the width of the text, and smaller images keep their natural size. If you want an image smaller, resize the image file itself.
+
+## Blockquotes
+
+Start a line with `>` to quote it. Use `>` twice for a quote within a quote.
+
+```markdown
+> Next week's meeting has moved to Room B.
+>
+> > Got it, thanks.
+```
+
+Quotes are shown with a line on the left and slightly lighter text. They also work for excerpts from emails, or for notes you want to stand out.
+
+## Code
+
+Wrap short pieces of code, commands, or file names in backticks.
+
+```markdown
+Settings go in `config.json`.
+```
+
+For several lines of code, put a line of three backticks before and after it (a code block). You can write a language name right after the opening backticks.
+
+````markdown
+```js
+const total = items.reduce((sum, item) => sum + item.price, 0);
+console.log(total);
+```
+````
+
+Code is shown in a monospaced font on a light gray background. This tool does not color code by language (syntax highlighting): printouts are often black and white, and code that does not rely on color stays readable. It is still fine to write the language name, which helps if you use the same Markdown file elsewhere.
+
+Inside a code block, symbols such as `#` and `*` are shown as typed, which makes code blocks useful for explaining Markdown itself. Long lines are wrapped so they never run off the page.
+
+## Tables
+
+Separate columns with vertical bars `|`, and put a row of `---` under the header row.
+
+```markdown
+| Item | Owner | Due |
+| :--- | :---: | ---: |
+| Design | Sato | Oct 20 |
+| Build | Suzuki | Nov 10 |
+```
+
+Colons in the separator row set each column's alignment: `:---` is left, `:---:` is centered, and `---:` is right. Right-aligning amounts and dates makes the digits line up and easier to compare.
+
+Every row should have the same number of columns as the header. Column widths are worked out from the content, so you don't need to line up the bars, though doing so keeps the Markdown itself readable. Standard Markdown has no line break inside a cell, so keep long explanations out of the table and add them as a list underneath. To put a literal bar in a cell, write `\|`.
+
+## Horizontal rules and page breaks
+
+A line containing only `---` (or `***` or `___`) is a horizontal rule.
+
+```markdown
+The last paragraph of chapter 1.
+
+---
+
+## Chapter 2
+```
+
+In this tool, when "Start a new page at ---" is on (the default), each horizontal rule starts a new page. The preview marks these page breaks with a dashed line. Turn the option off to print an ordinary line instead.
+
+Be careful: `---` placed directly under a line of text turns that line into a level-2 heading. Whenever you mean a rule or page break, leave a blank line before the `---`.
+
+Markdown files written for blogs and static site generators often begin with "front matter", settings such as a title and date wrapped in `---` lines. This tool does not treat front matter specially, so the first `---` becomes a page break, which can leave a blank first page, and a settings line may show up as a heading. Delete the front matter before making the PDF.
+
+## Footnotes
+
+Put a marker such as `[^1]` where the note belongs, and write the note on its own line starting with `[^1]:`.
+
+```markdown
+Sales grew 12% over last year.[^1]
+
+[^1]: Compared after deducting returns.
+```
+
+The marker becomes a small number, and the notes are collected at the end of the document (not at the bottom of each page). You can use a name instead of a number, such as `[^note]`; footnotes are numbered from 1 in the order they appear.
+
+## What this tool does not support
+
+Some Markdown flavors let you mix in HTML tags. For safety, this tool does not interpret HTML at all, so tags like the following are shown as plain text.
+
+```markdown
+<span style="color: red">Red text</span>
+<div align="center">Centered</div>
+<br>
+```
+
+That means anything that depends on HTML is unavailable: colored text, centering, image sizes, line breaks inside table cells, and so on. Use Markdown instead, for example a trailing backslash for a line break and bold for emphasis.
+
+These are also not shown (or are left as plain text):
+
+- Images from external addresses (see "Images" above)
+- Math written between `$` signs, and diagrams written in Mermaid or similar languages
+- Changing the color, underline, or size of part of the text
+
+If you need a diagram, draw it in another tool, export it as PNG or SVG, and add it with "Add images".
+
+## Read next
+
+Once you know the syntax, see [Tips for clean PDFs from Markdown](/guide/pdf-tips/) for choosing paper size, margins, and font size, handling page breaks and tables, and saving the PDF in each browser. Other articles are in the [guide list](/guide/).

@@ -22,6 +22,30 @@ describe("content（MDX）", () => {
     }
   });
 
+  it("アプリの domain/guides.ts の記事は日英とも content/ にある", async () => {
+    for (const app of readdirSync(APPS_DIR)) {
+      const file = path.join(APPS_DIR, app, "domain", "guides.ts");
+      if (!existsSync(file)) continue;
+      const { GUIDE_SLUGS } = (await import(file)) as { GUIDE_SLUGS: readonly string[] };
+      expect(GUIDE_SLUGS.length, app).toBeGreaterThan(0);
+      for (const lang of LANGS)
+        for (const slug of GUIDE_SLUGS)
+          expect(
+            existsSync(path.join(APPS_DIR, app, "content", lang, `${slug}.mdx`)),
+            `${app} ${lang}/${slug}`,
+          ).toBe(true);
+    }
+  });
+
+  it("運営者情報のページに運営者名とお問い合わせ先がある", () => {
+    for (const lang of LANGS) {
+      const about = readFileSync(path.join(SHARED_CONTENT_DIR, lang, "about.mdx"), "utf8");
+      expect(about).toMatch(/export const frontmatter/);
+      expect(about).toContain("katoline");
+      expect(about).toContain("https://github.com/katoline/useful-site/issues");
+    }
+  });
+
   it("プライバシーポリシーに外部送信規律の見出し（フッターのリンク先）がある", () => {
     for (const lang of LANGS) {
       expect(readFileSync(path.join(SHARED_CONTENT_DIR, lang, "privacy.mdx"), "utf8")).toContain(

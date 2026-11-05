@@ -10,7 +10,7 @@ import path from "node:path";
 import type { Logger, Plugin } from "vite";
 import { DEFAULT_SITE_ORIGIN, normalizeSiteOrigin } from "../app/platform/config/index.ts";
 import { LANGS } from "../app/platform/i18n/langs.ts";
-import { SITE_LEGAL_PAGES } from "../app/platform/legal/paths.ts";
+import { SITE_PAGES } from "../app/platform/legal/paths.ts";
 import { buildSitemap } from "../app/platform/seo/sitemap.ts";
 import { buildAdsTxt } from "./lib/ads-txt.ts";
 import { collectAppRoutes } from "./lib/app-routes.ts";
@@ -52,7 +52,7 @@ export function siteFilesPlugin(): Plugin {
     generatedFiles = {};
     const sitePages = [
       ...apps.filter((app) => !app.appPath).flatMap((app) => app.allPagePaths()),
-      ...SITE_LEGAL_PAGES,
+      ...SITE_PAGES,
     ];
     generatedFiles["sitemaps/site.xml"] = buildSitemap(origin, [{ appPath: "", pages: sitePages }]);
     const sitemapNames = ["sitemaps/site.xml"];

@@ -1,0 +1,141 @@
+export const frontmatter = {
+  title: "How Much Internet Speed Do You Need? A Guide by Activity",
+  description:
+    "Rough speeds needed for browsing, video, video calls, online gaming and remote work, plus what Mbps, bits vs bytes, download, upload, ping and jitter mean.",
+  datePublished: "2026-11-05",
+  dateModified: "2026-11-05",
+};
+
+"How many Mbps do I actually need?" depends almost entirely on what you do online. Email and web browsing work fine on a few Mbps, a household streaming 4K video at the same time wants a few dozen, and for online gaming the response time (ping) matters more than raw speed.
+
+This guide walks through the units used to describe speed, the four numbers you see in a speed test result, rough requirements by activity, and how to read the results of our [Internet Speed Test](/). The figures here are **rough guides** based on commonly published recommendations. What you really need varies with the service, the quality setting and your device.
+
+## Units used for internet speed
+
+### bps and Mbps
+
+Internet speed is the amount of data that can be moved in one second. The unit **bps** (bits per second) counts bits per second, and larger values use the usual prefixes:
+
+- 1 kbps (kilobit per second) = 1,000 bps
+- 1 Mbps (megabit per second) = 1,000 kbps
+- 1 Gbps (gigabit per second) = 1,000 Mbps
+
+Home fiber plans are often sold as "up to 1 Gbps" or "up to 10 Gbps", while mobile connections usually range from tens to hundreds of Mbps, so Mbps is the most common unit for everyday comparisons. The bigger the number, the more data can be moved in the same amount of time.
+
+### Bits vs bytes
+
+A common source of confusion is the difference between bits and bytes. **One byte is eight bits**, so to convert a speed in Mbps into MB (megabytes), the unit used for file sizes, divide by 8. When your browser's download window says "12 MB/s", that is bytes, so be careful not to compare it directly with your connection speed.
+
+| Connection speed | Per second (in bytes) | Time for a 1 GB file (theoretical) |
+| --- | --- | --- |
+| 10 Mbps | about 1.25 MB | about 13 minutes |
+| 30 Mbps | about 3.75 MB | about 4.5 minutes |
+| 100 Mbps | about 12.5 MB | about 80 seconds |
+| 1 Gbps (1,000 Mbps) | about 125 MB | about 8 seconds |
+
+These figures assume a constant speed and ignore the extra data used to control the connection (overhead). In practice the server you download from also plays a part, so real downloads usually take longer.
+
+## The four numbers in a speed test result
+
+A speed test usually shows four values. Each one matters in different situations.
+
+### Download
+
+How fast your device receives data from the internet. Loading web pages, streaming video and music, and downloading apps and files all depend on it, and it covers most everyday use. When people talk about "internet speed", they usually mean download speed.
+
+### Upload
+
+How fast your device sends data to the internet. It is used when you post photos or videos, back up to cloud storage, or send your own camera feed in a video call. Upload is slower than download on many connections, but it matters a lot if you work from home or stream.
+
+### Ping (latency)
+
+The round-trip time between sending a small piece of data and getting a reply, measured in milliseconds (ms, one thousandth of a second). **Lower is faster.** If speed (Mbps) is how much can be carried at once, ping is how long the trip there and back takes. Even with fast download speeds, high ping makes things feel sluggish, because there is a delay between your action and the response. It is especially important for online games and video calls.
+
+### Jitter
+
+How much the ping varies from one measurement to the next, also in milliseconds. High jitter means the response time keeps changing, which is a sign of an unstable connection. It can cause choppy audio in calls and sudden jumps in games, so **lower means more stable**.
+
+## Rough speeds needed by activity
+
+These are approximate values for one device doing one thing at a time. Video assumes a single stream, and video calls assume standard quality.
+
+| Activity | Download | Upload | Ping | Notes |
+| --- | --- | --- | --- | --- |
+| Email and messaging (mostly text) | about 1 Mbps | about 1 Mbps | Not critical | Upload matters when sending large attachments |
+| Web browsing | 1–10 Mbps | Minimal | 100 ms or less feels snappy | Image-heavy pages show the difference most |
+| Social media (text and photos) | 1–5 Mbps | 1–3 Mbps | Not critical | Check upload if you post many photos |
+| Short social media videos | about 5 Mbps | about 3 Mbps | Not critical | Upload matters if you post videos yourself |
+| Music streaming | around 1 Mbps | Minimal | Not critical | More for high-quality or hi-res settings |
+| Video, standard definition (480p) | 1–3 Mbps | Minimal | Not critical | Quality drops automatically if speed is short |
+| Video, HD (720p to 1080p) | 3–8 Mbps | Minimal | Not critical | Many services suggest around 5 Mbps |
+| Video, 4K | 15–25 Mbps | Minimal | Not critical | For example on a large TV |
+| Video call (one-to-one) | 2–4 Mbps | 2–4 Mbps | 150 ms or less | Low jitter keeps audio from breaking up |
+| Video meeting (many people, screen sharing) | 5–10 Mbps | 3–5 Mbps | 150 ms or less | Showing more participants needs more download |
+| Online gaming (competitive) | about 10 Mbps | about 3 Mbps | 50 ms or less | Ping and jitter matter more than speed |
+| Large files and game updates | 100 Mbps or more | – | Not critical | Faster means shorter waits |
+| Remote work (one person) | 10–30 Mbps | 5–10 Mbps | 100 ms or less | Assumes meetings and cloud sync at once |
+
+### Streaming video
+
+Most streaming services switch quality automatically to suit your connection. When speed runs short, the picture usually gets blurry before playback actually stops. Around 5 Mbps is a typical guide for 1080p and 15–25 Mbps for 4K. Extra headroom shortens the wait before playback starts and the loading time when you skip ahead.
+
+### Video calls and remote work
+
+In a video call you send your own video continuously as well as receiving the other person's, so **upload speed** is essential. With fast download but only about 1 Mbps of upload, the other side sees your video as blocky or frozen. Conversations are also back-and-forth, so high ping makes people talk over each other. When working from home, file transfers and cloud sync often run during meetings, so it is safer to have more than the table suggests.
+
+### Online gaming: ping and jitter matter most
+
+Competitive online games mainly exchange small pieces of data such as player positions and inputs. The speed they need is modest; what decides how smooth they feel is how long it takes for your input to reach the server and the result to come back, in other words ping. 50 ms or less is a common guide, and lower is better for split-second genres such as fighting games and shooters. With high jitter, a connection that is usually fine will occasionally stutter (lag).
+
+Downloading the game itself or its updates is a different story: tens of GB is not unusual. A 50 GB download takes about 1 hour 7 minutes at 100 Mbps and about 7 minutes at 1 Gbps, in theory. It helps to think of ping as what matters while playing, and download speed as what matters while getting ready to play.
+
+<Ad />
+
+## Add it up for a household
+
+The table shows one device and one activity. When several people share the same connection, **add up what is used at the same time**. Suppose that one evening the following happens at once:
+
+- 4K video on the living room TV: 25 Mbps download
+- A video meeting in another room: 5 Mbps download, 5 Mbps upload
+- An online match on a game console: 10 Mbps download
+- Two smartphones watching social media videos: 5 Mbps download each
+
+That adds up to roughly 50 Mbps of download and around 10 Mbps of upload. Phones and computers also install updates and back up photos in the background, so **about 1.5 to 2 times the total** gives a comfortable margin. Also remember that devices on the same Wi-Fi router share its airtime, so even on a fast line, each device gets less when many are connected.
+
+## Reading this tool's results
+
+### What it measures
+
+Our [Internet Speed Test](/) measures speed between your device and the nearest Cloudflare data center serving this site. It works as follows:
+
+1. **Ping**: it sends 20 small requests and reports the median time until each reply starts arriving. The very first request is not counted, because it includes setting up the connection. The median keeps one unusually slow reply from skewing the result.
+2. **Jitter**: the average difference between consecutive ping measurements.
+3. **Download and upload**: each runs for about 8 seconds with 6 transfers in parallel. The size of each transfer grows as it goes so that fast connections can be used to the full. The first 1.5 seconds, while the connection is still ramping up, are excluded, and the average after that becomes the result.
+
+Because this tool measures ping by sending real requests from your browser, the value can be a little higher than what the ping command on a computer shows. The data center used appears in the result as a three-letter code, such as NRT for Tokyo.
+
+### The overall rating
+
+The overall rating is based on download speed only, in five steps:
+
+| Download speed | Overall rating |
+| --- | --- |
+| Less than 3 Mbps | Very slow |
+| 3 Mbps to less than 10 Mbps | Slow |
+| 10 Mbps to less than 30 Mbps | Fair |
+| 30 Mbps to less than 100 Mbps | Fast |
+| 100 Mbps or more | Very fast |
+
+"Fair" is often enough for one person to stream video or join meetings. If you see "Very slow" or "Slow", it is worth measuring again at a different time of day or with a different connection method.
+
+### "What you can do at this speed"
+
+Below the result, the tool shows whether websites, music, HD video, 4K video, video calls, online gaming and large downloads are likely to be comfortable at your measured speed. The check uses download, upload and ping guides in the same spirit as the table above (online gaming, for example, uses 10 Mbps download, 3 Mbps upload and ping of 50 ms or less). These assume a single device, so allow more headroom if several people use the connection at once.
+
+### Things to keep in mind
+
+- **Don't judge by a single result**: speed changes with the time of day and the radio conditions around you. Measuring several times, in the morning, at midday and in the evening, gives a better picture. The last 10 results are kept in this browser on this device, which makes comparison easy.
+- **Watch your data usage**: one test sends and receives roughly tens to hundreds of MB depending on your speed. Keep your data allowance in mind on mobile connections.
+- **Different speed tests won't match, and that's normal**: each service measures to a different server in a different way, so the same connection gives different numbers. Compare results from the same test.
+
+If the result is slower than you expected, see [Why your internet is slow and how to fix it](/guide/improve-speed/) for how to measure properly and what to check. Other articles are listed in the [guide](/guide/).

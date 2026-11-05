@@ -3,6 +3,7 @@ import { type MouseEvent, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { SITE_NAME } from "../config";
 import { useI18n } from "../i18n";
+import { SITE_PAGES } from "../legal/paths";
 import { createAppPaths } from "../paths/app-paths";
 import { listedApps } from "../registry";
 import { AppIcon } from "../registry/icons";
@@ -199,17 +200,17 @@ export function SiteHeader({ config }: { config: ShellConfig }) {
               <ThemeToggleGroup />
             </div>
             <nav
-              aria-label={t("legal.terms")}
+              aria-label={t("legal.about")}
               className="flex flex-col border-t border-border pt-4"
             >
-              {(["privacy", "terms"] as const).map((page) => (
+              {SITE_PAGES.map((page) => (
                 <Link
                   key={page}
                   to={sitePath.localizedPath(lang, page)}
                   onClick={navigateAndClose}
                   className="inline-flex min-h-11 items-center text-sm"
                 >
-                  {t(page === "privacy" ? "legal.privacy" : "legal.terms")}
+                  {t(`legal.${page}`)}
                 </Link>
               ))}
             </nav>

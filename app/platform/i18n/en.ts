@@ -43,7 +43,15 @@ export const en = {
     beta: "Beta",
     categories: { image: "Images", document: "Documents", other: "Other" },
   },
+  content: {
+    updated: "Updated: {date}",
+    guideTitle: "{app} guide",
+    guideDescription:
+      "Articles on using {app}, plus background knowledge that helps when you use it.",
+    related: "Guides",
+  },
   legal: {
+    about: "About us & contact",
     privacy: "Privacy policy",
     terms: "Terms & disclaimer",
     externalTransmission: "External transmission",

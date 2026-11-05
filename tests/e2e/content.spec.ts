@@ -63,7 +63,8 @@ for (const lang of ["ja", "en"] as const) {
       for (const href of await page
         .locator("main .prose-content a[href^='/']")
         .evaluateAll((els) => els.map((el) => el.getAttribute("href") ?? ""))) {
-        expect(href.startsWith(prefix) || href === `${lang === "ja" ? "/" : "/en/"}privacy/`).toBe(
+        const site = lang === "ja" ? "/" : "/en/";
+        expect(href.startsWith(prefix) || [`${site}privacy/`, `${site}about/`].includes(href)).toBe(
           true,
         );
       }
@@ -194,3 +195,45 @@ test("全ページに言語別の OGP 画像（1200×630）が付く", async ({ 
     expect(res.headers()["content-type"]).toContain("image/png");
   }
 });
+
+test("サイト共通の運営者情報に運営者名・お問い合わせ先・アプリの一覧がある", async ({ page }) => {
+  for (const [path, heading] of [
+    ["/about/", "運営者情報・お問い合わせ"],
+    ["/en/about/", "About Us & Contact"],
+  ] as const) {
+    const response = await page.goto(path);
+    expect(response?.status()).toBe(200);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(heading);
+    await expect(page.locator("main")).toContainText("katoline");
+    await expect(
+      page.locator('main a[href="https://github.com/katoline/useful-site/issues"]').first(),
+    ).toBeVisible();
+    const appsBase = path === "/about/" ? "/" : "/en/";
+    await expect(page.locator(`main .prose-content a[href="/sound-meter${appsBase}"]`)).toHaveCount(
+      1,
+    );
+    await expect(page.locator(`footer a[href="${path}"]`)).toHaveCount(1);
+  }
+});
+
+for (const app of ["markdown-pdf", "qr-code", "sound-meter", "speed-test"]) {
+  test(`${app} のガイド一覧から記事を開け、ツールのページにも記事へのリンクがある`, async ({
+    page,
+  }) => {
+    for (const base of [`/${app}/`, `/${app}/en/`]) {
+      await page.goto(`${base}guide/`);
+      const cards = page.locator(`main a[href^="${base}guide/"]`);
+      expect(await cards.count()).toBeGreaterThanOrEqual(2);
+      const href = (await cards.first().getAttribute("href")) ?? "";
+      await page.goto(href);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+      expect(await page.locator("main .prose-content h2").count()).toBeGreaterThanOrEqual(3);
+      const jsonLd = await page
+        .locator('script[type="application/ld+json"]')
+        .evaluateAll((els) => els.map((el) => JSON.parse(el.textContent ?? "{}")["@type"]));
+      expect(jsonLd).toEqual(expect.arrayContaining(["Article", "BreadcrumbList"]));
+      await page.goto(base);
+      await expect(page.locator(`main a[href^="${base}guide/"]`).first()).toBeVisible();
+    }
+  });
+}

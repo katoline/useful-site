@@ -10,10 +10,9 @@ test("ポータルの日英ページから画像ツールを開ける", async ({
     const response = await page.goto(path);
     expect(response?.status()).toBe(200);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(heading);
-    await expect(page.getByRole("main").getByRole("link", { name: appName })).toHaveAttribute(
-      "href",
-      appPath,
-    );
+    await expect(
+      page.getByRole("main").getByRole("link", { name: appName, exact: true }),
+    ).toHaveAttribute("href", appPath);
     await expect(page.locator('link[rel="manifest"]')).toHaveCount(0);
   }
 });

@@ -1,5 +1,5 @@
 import type { Config } from "@react-router/dev/config";
-import { allLegalBuildPaths } from "./app/platform/legal/paths.ts";
+import { allSitePageBuildPaths } from "./app/platform/legal/paths.ts";
 import { collectAppRoutes } from "./scripts/lib/app-routes.ts";
 
 export default {
@@ -8,7 +8,7 @@ export default {
   basename: "/",
   prerender: async () => [
     ...(await collectAppRoutes()).flatMap((app) => app.allBuildPaths()),
-    ...allLegalBuildPaths(),
+    ...allSitePageBuildPaths(),
     "/404",
     "/en/404",
   ],

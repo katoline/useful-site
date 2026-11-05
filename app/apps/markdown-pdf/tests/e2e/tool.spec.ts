@@ -291,7 +291,7 @@ test("共通メニューからポータル・画像ツールと行き来でき�
   await expect(page).toHaveURL("/");
   // ポータルの一覧にも載る
   await expect(
-    page.getByRole("main").getByRole("link", { name: "Markdown → PDF" }),
+    page.getByRole("main").getByRole("link", { name: "Markdown → PDF", exact: true }),
   ).toHaveAttribute("href", "/markdown-pdf/");
 });
 

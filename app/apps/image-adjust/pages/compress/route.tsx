@@ -5,10 +5,13 @@ import { type CompressFormat, FORMAT_LABEL, isCompressFormat } from "../../domai
 import { faqFromDict, ImageTool } from "../../features/image-processing";
 import { remoteImageLoader } from "../../features/remote-image";
 import { useI18n } from "../../i18n";
+import { PageDetails } from "../../shared/PageDetails";
 import { faqJsonLd, webApplicationJsonLd } from "../../shared/seo/json-ld";
 import { buildPageMeta, metaContext } from "../../shared/seo/meta";
 import { pageParam } from "../../shared/site-routes";
 import type { Route } from "./+types/route";
+
+const DETAIL_SECTIONS = ["s1", "s2", "s3"] as const;
 
 /** 形式（app/apps/image-adjust/routes.ts が COMPRESS_FORMATS の値ごとに登録する静的ルート。app/routes.ts が規約で集める）。パスから取り出す */
 function formatFrom(pathname: string): CompressFormat | undefined {
@@ -51,6 +54,19 @@ export default function CompressFormatPage() {
         intro={t(`compress.intro.${format}`)}
         faq={faqFromDict(t, `compress.faq.${format}`)}
         remoteImage={remoteImageLoader}
+      />
+      <PageDetails
+        id="compress-details"
+        title={t("compress.detailsTitle", l)}
+        sections={DETAIL_SECTIONS.map((s) => ({
+          title: t(`compress.details.${format}.${s}.title`),
+          body: t(`compress.details.${format}.${s}.body`),
+        }))}
+        guide={{
+          lead: t("compress.guideLead"),
+          page: "guide/optimize-lp-images",
+          label: t("pages.guide.articles.optimize-lp-images"),
+        }}
       />
     </>
   );

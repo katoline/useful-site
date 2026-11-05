@@ -15,5 +15,8 @@ export const manifest = {
   status: "public",
   icon: "audio-lines",
   order: 30,
-  menu: [{ page: "", label: { ja: "計測", en: "Measure" } }],
+  menu: [
+    { page: "", label: { ja: "計測", en: "Measure" } },
+    { page: "guide", label: { ja: "ガイド", en: "Guide" } },
+  ],
 } satisfies AppManifest;

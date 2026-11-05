@@ -10,10 +10,13 @@ import {
 import { faqFromDict, ImageTool } from "../../features/image-processing";
 import { remoteImageLoader } from "../../features/remote-image";
 import { useI18n } from "../../i18n";
+import { PageDetails } from "../../shared/PageDetails";
 import { faqJsonLd, webApplicationJsonLd } from "../../shared/seo/json-ld";
 import { buildPageMeta, metaContext } from "../../shared/seo/meta";
 import { pageParam } from "../../shared/site-routes";
 import type { Route } from "./+types/route";
+
+const DETAIL_SECTIONS = ["s1", "s2", "s3"] as const;
 
 /**
  * 変換方向（app/apps/image-adjust/routes.ts が CONVERT_PAIRS の値ごとに登録する静的ルート。app/routes.ts が規約で集める）。パスから取り出す
@@ -64,6 +67,19 @@ export default function ConvertPairPage() {
         intro={t(`convert.intro.${pair}`)}
         faq={faqFromDict(t, `convert.faq.${pair}`)}
         remoteImage={remoteImageLoader}
+      />
+      <PageDetails
+        id="convert-details"
+        title={t("convert.detailsTitle", l)}
+        sections={DETAIL_SECTIONS.map((s) => ({
+          title: t(`convert.details.${pair}.${s}.title`),
+          body: t(`convert.details.${pair}.${s}.body`),
+        }))}
+        guide={{
+          lead: t("convert.guideLead"),
+          page: "guide/image-formats",
+          label: t("pages.guide.articles.image-formats"),
+        }}
       />
     </>
   );

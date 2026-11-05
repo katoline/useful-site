@@ -15,7 +15,7 @@ export const en = {
     guide: "Guides",
   },
   footer: {
-    about: "About & Contact",
+    about: "How to use",
     privacy: "Privacy Policy",
     terms: "Terms & Disclaimer",
     note: "Images are processed in your browser and never uploaded to our server.",
@@ -168,8 +168,8 @@ export const en = {
       },
     },
     about: {
-      title: "How to Use & About",
-      description: "How to use Image Adjust, who runs it and how to contact us.",
+      title: "How to Use Image Adjust",
+      description: "How to use Image Adjust and what makes it different.",
     },
     privacy: {
       title: "Privacy Policy",
@@ -355,6 +355,94 @@ export const en = {
     },
   },
   convert: {
+    detailsTitle: "Converting {from} to {to}: what to know",
+    guideLead: "For a closer look at each format and when to use it, see the guide:",
+    details: {
+      "png-to-jpeg": {
+        s1: {
+          title: "When to convert to JPEG",
+          body: "Phone screenshots and photos exported from editing software as PNG often weigh several megabytes. Photographic images, where colors change subtly from pixel to pixel, are exactly what JPEG's lossy compression is good at: at around quality 80 the file commonly shrinks to a fraction of its size. For email attachments, blog or social media posts, or upload forms with a size limit, JPEG is the easy choice.\n\nLogos, icons, text-heavy diagrams and UI screenshots are a different story. JPEG tends to add fuzzy noise around sharp edges (mosquito noise), and the file barely gets smaller. Keep images like these as PNG and compress them, or try converting to WebP instead.",
+        },
+        s2: {
+          title: "What changes in the conversion",
+          body: "JPEG has no transparency, so transparent and semi-transparent areas are blended onto the “JPEG background” color (white by default). Anti-aliased edges are mixed with that color too, so if the image will sit on a dark page, set the background to match and the edges won't show a light halo. If the PNG carries an ICC profile (color space information), it is embedded again in the JPEG so the colors stay the same. Other metadata, such as text chunks, is dropped when the image is re-encoded.",
+        },
+        s3: {
+          title: "Recommended settings",
+          body: "Start with “Standard” quality (80), then use “Compare” on the result to zoom in and check for visible artifacts. “Progressive JPEG” is on by default; it shows a coarse version of the whole image while it loads, which suits the web. If the destination has a limit such as “under 500 KB”, choose “Target size” and the tool finds the highest quality that fits. Images rarely need more pixels than the screen they're shown on, so resizing to around 1920px wide under “Advanced” usually shrinks the file more gracefully than lowering the quality.",
+        },
+      },
+      "png-to-webp": {
+        s1: {
+          title: "How much smaller WebP gets",
+          body: "WebP has both a lossless and a lossy mode, and both support transparency. For PNGs with few colors and crisp edges, such as logos, diagrams and screenshots, turning on “Lossless WebP” typically makes the file 20–30% smaller than the PNG without changing a single pixel. For photos or PNGs full of gradients, lossy WebP at quality 75–85 can cut the size to a fraction. Keeping transparency while getting JPEG-like file sizes is something neither PNG nor JPEG can do, and it is WebP's main strength.",
+        },
+        s2: {
+          title: "What changes, and what to watch for",
+          body: "Transparent and semi-transparent areas are kept in both lossless and lossy mode. In lossy mode, WebP stores color information at reduced resolution, just like JPEG, so the edges of thin red or blue text and lines can blur slightly. For images where text matters, choose lossless or check the result with “Compare”. Also note that WebP is limited to 16383px in width and height. Very tall images such as full-page screenshots exceed this and fail to convert, so resize them first.",
+        },
+        s3: {
+          title: "Recommended settings",
+          body: "For images on a website, pick 640, 1280 and 1920px under “Responsive export widths” in “Advanced”. The tool exports WebP versions at each width smaller than the original and creates a <picture> / srcset HTML snippet. The “Landing page hero” preset sets everything up for a 1920px-wide WebP under 300 KB in one step. All current major browsers display WebP, but if the image may go to a print service or older editing software that does not accept WebP, keep the original PNG as well.",
+        },
+      },
+      "jpeg-to-png": {
+        s1: {
+          title: "Why convert to PNG",
+          body: "Converting a JPEG to PNG does not bring back the detail lost to JPEG compression, nor remove its blocky noise. Where PNG helps is when you will edit and save the image many times. A JPEG is recompressed and degrades a little with every save, whereas a lossless PNG stays exactly the same no matter how often you save it. PNG suits editing software or submission services that only accept PNG, and working copies for cut-outs or adding text. Note that converting to PNG does not make the background transparent: a white background stays as white pixels.",
+        },
+        s2: {
+          title: "Default color reduction and the lossless option",
+          body: "By default, this tool's PNG output reduces the number of colors according to the quality value. At quality 80 the image is mapped to a palette of about 100 colors, with dithering to represent in-between shades (quality 100 does not reduce colors). To keep a photo's smooth tones intact, turn on “Do not reduce PNG colors (lossless)” under “Advanced”. No color is changed, but the file is usually several times larger than the original JPEG. Conversely, when you receive an illustration or chart with few colors as a JPEG, reducing colors gives you a smaller PNG.",
+        },
+        s3: {
+          title: "Camera data and photo orientation",
+          body: "JPEGs from phones and digital cameras often contain EXIF data such as the date, camera model and GPS location. Converting to PNG removes it, so the output cannot reveal where the photo was taken. The EXIF orientation flag, which tells viewers to rotate the photo, is applied to the pixels before saving, so the converted image will not end up sideways. Color information (the ICC profile) is embedded again in the PNG.",
+        },
+      },
+      "jpeg-to-webp": {
+        s1: {
+          title: "Lighter photos for the web",
+          body: "Converting JPEG to WebP is a standard way to make a website load faster. At the same visual quality, WebP is typically 25–35% smaller than JPEG, and the savings add up on photo-heavy pages. If you want to improve Largest Contentful Paint (LCP), one of the Core Web Vitals, converting hero images and featured images to WebP is one of the most effective steps.",
+        },
+        s2: {
+          title: "Choosing the quality",
+          body: "The source JPEG is already lossy, so converting it to WebP is a second round of lossy compression. Raising the quality too far cannot make it look better than the original JPEG and only makes the file larger, so quality 75–85 is a good range. “Lossless WebP” tries to preserve the JPEG's noise exactly and almost always ends up larger than the original JPEG, so it is not suited to photos. If there is a size limit, use “Target size”; for oversized photos, add a resize to around 1920px wide to shrink the file with minimal loss.",
+        },
+        s3: {
+          title: "Metadata and publishing",
+          body: "The conversion removes EXIF data (date, location and so on) and keeps only color information (the ICC profile). The camera's orientation flag is applied to the pixels, so photos keep the right rotation. All current major browsers display WebP, but for photos sent by email or used for printing, JPEG is still the safer choice. When you use WebP on a website, keep the original JPEG too; if needed, a <picture> element can list the JPEG as a fallback.",
+        },
+      },
+      "webp-to-png": {
+        s1: {
+          title: "When to convert to PNG",
+          body: "It is increasingly common for an image downloaded from the web to turn out to be WebP. If you need it in image editors that cannot open WebP, or in upload forms and document tools that only accept PNG or JPEG, converting to PNG is the reliable option because it keeps transparency. Lossless PNG is also a good choice for saving work in progress without degrading it.\n\nSome websites serve WebP data even when the file name ends in .png or .jpg. This tool detects the format from the file's contents rather than its extension, so such images convert to PNG as they are.",
+        },
+        s2: {
+          title: "What changes in the conversion",
+          body: "Transparent and semi-transparent areas become the PNG's alpha channel (its transparency information) unchanged. If the source WebP was lossy, however, its noise and blurring are copied into the PNG as well, so the image does not get any better. The file is usually larger than the original WebP. Animated WebP is not supported for conversion; it is output as WebP with only its metadata removed.",
+        },
+        s3: {
+          title: "Recommended settings",
+          body: "By default, this tool's PNG output reduces the number of colors according to the quality (about 100 colors at quality 80). For illustrations and icons the difference is barely visible and the file stays small. For photos, or images you plan to edit further, turn on “Do not reduce PNG colors (lossless)” under “Advanced”. Color information (the ICC profile) in the source WebP is embedded again in the PNG, while EXIF and other metadata are removed.",
+        },
+      },
+      "webp-to-jpeg": {
+        s1: {
+          title: "When to convert to JPEG",
+          body: "WebP is an excellent format for the web, but for social media posts, email attachments, photo prints and print submissions, or pasting into older spreadsheet and presentation software, JPEG is still the format that works everywhere. When you want a photo-like WebP in a form anyone can open, JPEG is the right choice. For logos that need transparency, or images made mostly of text and lines, convert to PNG instead.",
+        },
+        s2: {
+          title: "Transparency and quality",
+          body: "JPEG cannot store transparency, so transparent and semi-transparent areas are filled with the “JPEG background” color (white by default). Semi-transparent edges blend with that color too, so if the image will be placed on a dark background, match the color to it. If the source WebP is lossy, converting to JPEG is a second round of lossy compression and the losses add up. A slightly higher quality of 85–90 keeps the degradation hard to notice. Animated WebP is not supported for conversion and is output as WebP.",
+        },
+        s3: {
+          title: "Recommended settings",
+          body: "“Progressive JPEG” is on by default. It lets the whole image appear while loading, so it is fine to leave on for the web too. For destinations with a file size limit, enter the limit in KB under “Target size” and the tool finds the highest quality below it. To make the OGP image shown when a link is shared on social media, the “OGP image” preset (1200px wide, JPEG at quality 85) is handy. EXIF and other metadata are removed, while color information (the ICC profile) is kept.",
+        },
+      },
+    },
     intro: {
       "png-to-jpeg":
         "Converting PNG to JPEG greatly reduces file size for photo-like images. Transparent areas are filled with the background color you choose (white by default).",
@@ -406,7 +494,7 @@ export const en = {
         q1: "Is transparency preserved?",
         a1: "Yes. WebP transparency becomes the PNG alpha channel.",
         q2: "Can I convert animated WebP?",
-        a2: "Only the first frame is converted as a still image.",
+        a2: "Not at the moment. Animated WebP files are not converted: they are output as the original WebP (with only metadata removed), and a notice is shown.",
         q3: "Why is the file larger?",
         a3: "PNG is lossless, so it is larger than WebP. Reducing “PNG colors” makes the file smaller.",
       },
@@ -421,6 +509,80 @@ export const en = {
     },
   },
   compress: {
+    detailsTitle: "Compressing {format}: what to know",
+    guideLead: "For a step-by-step approach to lighter web page images, see the guide:",
+    details: {
+      jpeg: {
+        s1: {
+          title: "How JPEG compression works",
+          body: "JPEG is a lossy format that splits an image into 8×8 pixel blocks and discards fine detail the eye is unlikely to notice. “Quality” controls how much is discarded: the lower it is, the smaller the file, but blocky noise and blurred edges start to appear. This tool uses MozJPEG, an efficient encoder developed by Mozilla, which optimizes the entropy coding and uses progressive encoding to produce smaller files than typical software at the same quality value.",
+        },
+        s2: {
+          title: "Recommended settings",
+          body: "For photos, quality 75–85 is a good range; at “Standard” (80), differences are usually invisible unless you zoom in. If the destination has a limit such as “under 200 KB”, choose “Target size” and the tool searches for the highest quality that fits. Resizing has the biggest effect. Scaling a phone photo (around 4000px wide) down to 1920px leaves only about a quarter of the pixels, cutting the file size dramatically with almost no loss of quality. EXIF data such as GPS location is removed by default.",
+        },
+        s3: {
+          title: "When the file does not get smaller",
+          body: "Re-saving a JPEG that was already stored at low quality with quality 80 can make it larger. When the result is larger than the original, this tool outputs the original data (with only the metadata removed) and tells you it was not smaller. In that case, lower the quality or add a resize. JPEG also degrades a little more with every re-save, so keep your uncompressed original and always export from it. Images made mostly of text or diagrams are a poor fit for JPEG in the first place; if you still have the source, saving it as PNG or WebP gives a cleaner, smaller result.",
+        },
+      },
+      png: {
+        s1: {
+          title: "How PNG compression works",
+          body: "PNG is a lossless format that stores every pixel exactly. It records differences from neighboring pixels and then compresses them with Deflate, the same method ZIP uses. This tool shrinks PNGs in two stages. First, color reduction: libimagequant maps the colors to a palette of up to 256, using dithering to represent in-between shades. Second, OxiPNG repacks the file, choosing better filters and compression settings to trim data without changing how it looks. Screenshots and illustrations benefit greatly from color reduction and often end up less than half their original size.",
+        },
+        s2: {
+          title: "Recommended settings",
+          body: "For PNG, “Quality” maps to the number of colors: about 160 colors at “High” (90), about 100 at “Standard” (80) and about 40 at “Light” (60); quality 100 does not reduce colors. Transparency, including partial transparency, is kept after color reduction. For material where no pixel may change (pixel art, images for visual comparison, print masters), turn on “Do not reduce PNG colors (lossless)”. Only OxiPNG's repacking is applied then, so savings are limited to a few percent up to a few tens of percent. “Target size” automatically finds the largest number of colors that fits under the target.",
+        },
+        s3: {
+          title: "When the file does not get smaller",
+          body: "Photos saved as PNG contain too many colors to shrink much with color reduction, and reducing colors tends to add banding or grain to gradients. Photos get far smaller as JPEG or WebP; you can try this just by changing the output format. PNGs that were already reduced and optimized by another tool may not get any smaller. In that case, the original data is output and the tool tells you it was not smaller. If the resolution is much larger than the size the image is displayed at, consider resizing too.",
+        },
+      },
+      webp: {
+        s1: {
+          title: "How WebP compression works",
+          body: "WebP, developed by Google, has two modes: lossy and lossless. Lossy WebP is based on the VP8 video codec; it predicts each block from its neighbors and stores only the difference, which compresses photos more efficiently than JPEG. Lossless WebP keeps every pixel and uses a color cache and back-references to repeated areas to store images more compactly than PNG. Both modes support transparency. This tool re-encodes images with Google's libwebp.",
+        },
+        s2: {
+          title: "Recommended settings",
+          body: "For photos, lossy mode at quality 75–85 is a good range. For logos, icons, text-heavy diagrams and UI screenshots, turning on “Lossless WebP” keeps edges sharp. “Target size” searches for a lossy quality, so the lossless setting is not used while a target size is set. Resizing images that are larger than their display size is the most effective step, and choosing “Responsive export widths” under “Advanced” produces 640, 1280 and 1920px versions together with srcset HTML.",
+        },
+        s3: {
+          title: "When the file does not get smaller",
+          body: "WebP images downloaded from the web are often already heavily compressed by the site that served them, so re-saving at quality 80 may not make them smaller. In that case the original data is output and the tool tells you it was not smaller; lower the quality or resize instead. Re-saving a lossy WebP as lossless makes it larger, because the encoder tries to preserve the noise exactly. Animated WebP is not supported yet; it is output unchanged apart from removing its metadata.",
+        },
+      },
+      gif: {
+        s1: {
+          title: "How GIF compression works",
+          body: "GIF stores each frame with a palette of up to 256 colors and a lossless compression method called LZW, and plays several frames in sequence as an animation. This tool uses gifsicle to shrink GIFs in three ways while keeping the number, order and timing of frames: “optimization”, which keeps only the parts that changed from the previous frame; “lossy” compression, which evens out runs of similar colors so LZW works better; and “color reduction”, which shrinks the palette.",
+        },
+        s2: {
+          title: "Recommended settings",
+          body: "The default optimization level of 2 is usually enough. Level 3 tries more methods, but on large GIFs it takes much longer for only a small gain. Lossiness defaults to 30, and 30–60 is a good balance between size and quality; higher values shrink the file further but add a sandy noise. Colors default to “Keep”; reducing to 64 or 32 colors can cut the size a lot, although gradients become coarser. Resizing has the biggest effect: halving the width and height leaves a quarter of the pixels, and that applies to every frame.",
+        },
+        s3: {
+          title: "When the file does not get smaller",
+          body: "GIFs that have already been optimized may not get any smaller. In that case the original data is output and the tool tells you it was not smaller; raise the lossiness, reduce the colors or resize. GIFs made from live-action video, where the whole frame changes every time, gain little from frame optimization and hit the limits of the format. This tool cannot convert GIF to other formats, but for use on a website, a video format such as MP4 or WebM is far smaller.",
+        },
+      },
+      svg: {
+        s1: {
+          title: "How SVG compression works",
+          body: "SVG describes shapes as XML text, so there is no notion of image quality: the less unnecessary markup, the smaller the file. SVGs exported from Illustrator, Inkscape and similar tools contain editor-specific attributes, metadata, comments, hidden elements and needlessly precise decimals. This tool removes these with SVGO and rewrites path data in a shorter form. Files often shrink to less than half their size without any visible change.",
+        },
+        s2: {
+          title: "The three optimization levels",
+          body: "“Safe” only removes metadata, comments and editor-specific attributes, leaving shapes and ids untouched. “Standard” (the default) runs SVGO's standard set of optimizations repeatedly, rewriting paths and removing or shortening unused ids. “Aggressive” additionally rounds numbers to two decimal places. If CSS or JavaScript targets elements by id, or the file is a sprite referenced from HTML with <use>, changed ids will break its appearance or behavior, so choose “Safe”. The viewBox is kept at every level.",
+        },
+        s3: {
+          title: "When the file does not get smaller",
+          body: "An SVG that has already been optimized is output as the original data, and the tool tells you it was not smaller. If the SVG embeds a photo or other bitmap (a long Base64 string), SVGO cannot shrink that part. SVGs whose paths are inherently huge, such as logos with text converted to outlines or detailed traced images, also gain less. Because SVG is text, serving it with gzip or Brotli compression from the server cuts the transfer size to a fraction again. There is no target size or resize for SVG: it scales up and down without any loss, which is the point of the format.",
+        },
+      },
+    },
     intro: {
       jpeg: "Re-encodes with MozJPEG to shrink JPEG files while keeping the same look. Set a quality, a target size (e.g. under 200 KB) or a resize.",
       png: "Re-packs PNG losslessly with OxiPNG and optionally reduces the number of colors (quantization) to make it smaller. Transparency is preserved.",
@@ -449,7 +611,7 @@ export const en = {
         q1: "What is the difference between lossless and lossy?",
         a1: "Lossless keeps every pixel exactly (logos, diagrams). Lossy lets you set a quality for much smaller files (photos).",
         q2: "Can I compress animated WebP?",
-        a2: "Only still images are supported for now; animations keep only the first frame.",
+        a2: "Not at the moment. Animated WebP files are left uncompressed and output as they are (with only metadata removed), and a notice is shown.",
         q3: "Can I set a target size?",
         a3: "Yes. Choose “Target size”, enter a KB value, and the highest quality at or below it is found automatically.",
       },

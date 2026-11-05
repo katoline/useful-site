@@ -1,6 +1,7 @@
-import { index, layout, prefix, type RouteConfig } from "@react-router/dev/routes";
+import { index, layout, prefix, type RouteConfig, route } from "@react-router/dev/routes";
 import { LANG_PREFIX, LANGS, type Lang } from "../../platform/i18n/langs.ts";
 import { createAppPaths } from "../../platform/paths/app-paths.ts";
+import { GUIDE_SLUGS } from "./domain/guides.ts";
 import { manifest } from "./manifest.ts";
 
 export const appPath = manifest.path;
@@ -10,6 +11,12 @@ function pages(lang: Lang): Awaited<RouteConfig> {
   return [
     layout("apps/qr-code/layout.tsx", { id: id("layout") }, [
       index("apps/qr-code/pages/tool/route.tsx", { id: id("tool") }),
+      route("guide", "apps/qr-code/pages/guide-index/route.tsx", { id: id("guide") }),
+      ...GUIDE_SLUGS.map((slug) =>
+        route(`guide/${slug}`, "apps/qr-code/pages/guide-article/route.tsx", {
+          id: id(`guide/${slug}`),
+        }),
+      ),
     ]),
   ];
 }
@@ -22,7 +29,7 @@ export function createRoutes(): Awaited<RouteConfig> {
 
 /** sitemap に載せるページ（言語に依存しないパス） */
 export function allPagePaths(): string[] {
-  return [""];
+  return ["", "guide", ...GUIDE_SLUGS.map((slug) => `guide/${slug}`)];
 }
 
 /** prerender の対象。末尾スラッシュなしで渡す（付けると本文の無い SPA フォールバックになる） */

@@ -1,0 +1,154 @@
+export const frontmatter = {
+  title: "How to Measure Noise Accurately with Your Phone",
+  description:
+    "Choosing A, C or Z weighting and Fast or Slow, when to use Leq, max or L90, phone microphone limits, calibrating against a reference meter, and practical tips.",
+  datePublished: "2026-11-05",
+  dateModified: "2026-11-05",
+};
+
+With a smartphone, measuring noise takes seconds. But two people in the same spot can get very different numbers depending on how they hold the phone, which settings they use and which value they read. This guide covers what you need to know to [measure with the Sound Level Meter](/) well: what the frequency and time weightings mean, how to read the results (average, maximum, L90 and more), the limits of phone microphones and how to calibrate, and practical tips for taking measurements. For the basics of decibels and how loud common sounds are, see [How Loud Is It? Decibel Levels of Everyday Sounds](/guide/noise-levels/).
+
+## Frequency weighting: A, C and Z
+
+### Our ears hear low sounds as quieter
+
+Human hearing is most sensitive between roughly 1 kHz and 4 kHz. Low and very high frequencies sound quieter even when they carry the same energy. A sound level meter compensates for this by discounting each frequency before adding up the level. This is frequency weighting, and the international standard IEC 61672-1 defines three types: A, C and Z. The Sound Level Meter applies them with digital filters based on the formulas in that standard.
+
+| Frequency | A-weighting | C-weighting | Z-weighting |
+| --- | --- | --- | --- |
+| 31.5 Hz | about −39 dB | about −3 dB | 0 dB |
+| 63 Hz | about −26 dB | about −1 dB | 0 dB |
+| 125 Hz | about −16 dB | about 0 dB | 0 dB |
+| 250 Hz | about −9 dB | 0 dB | 0 dB |
+| 500 Hz | about −3 dB | 0 dB | 0 dB |
+| 1 kHz | 0 dB | 0 dB | 0 dB |
+| 4 kHz | about +1 dB | about −1 dB | 0 dB |
+| 8 kHz | about −1 dB | about −3 dB | 0 dB |
+
+### Which one to use
+
+- **A-weighting (default)**: closest to how loud noise feels. Noise assessments and environmental standards are normally given in A-weighted values, written dB(A). If in doubt, use A.
+- **C-weighting**: barely discounts low frequencies. Comparing it with the A-weighted value helps when you're looking into low-frequency noise such as engines, bass-heavy music or a humming outdoor unit. If the C value is 10 dB or more above the A value, the sound likely contains a lot of low frequencies.
+- **Z-weighting**: no weighting at all. Use it when you want the raw physical level.
+
+When comparing with a commercial meter or another app, **always use the same weighting on both**. Where low frequencies dominate, A and C readings can differ by 10 dB or more.
+
+## Time weighting: Fast and Slow
+
+The level shown on a sound level meter is smoothed by a "time weighting," which sets how quickly the reading follows changes in the sound.
+
+- **Fast (0.125 s)**: follows changes quickly. It catches the peaks of short events, such as a passing car or a door closing, and is the usual choice for environmental noise.
+- **Slow (1 s)**: the reading moves more gently and is easier to follow by eye. It suits steady sounds such as an air conditioner or a ventilation fan.
+
+In the Sound Level Meter, this setting affects the live "Right now" level, the maximum (Lmax), the minimum (Lmin), and L10, L50 and L90. The average (Leq), on the other hand, is the energy average of all the sound received, so it comes out essentially the same with Fast or Slow. Short loud sounds produce a higher maximum with Fast, so keep the setting the same when comparing maximum values.
+
+## Reading the results
+
+When a measurement finishes, you get several values. Each one answers a different question.
+
+| Value | Meaning | Good for |
+| --- | --- | --- |
+| Average (Leq) | Energy average over the measurement | The representative level; comparing with environmental standards |
+| Maximum (Lmax) | Highest time-weighted level | Brief loud events such as passing cars or footsteps |
+| Minimum (Lmin) | Lowest time-weighted level | The quietest moment |
+| L10 | Exceeded 10% of the time | How loud it gets in the noisier moments |
+| L50 | Median | The level right in the middle |
+| L90 | Exceeded 90% of the time | Background noise, without voices and other short events |
+| Peak | Unweighted instantaneous maximum | Checking sharp sounds such as a hand clap |
+
+### Leq is not an ordinary average
+
+Leq averages energy, so loud sounds pull it up strongly. Suppose that during 60 seconds, a sound at 80 dB lasts 10 seconds and the remaining 50 seconds sit at 50 dB. Averaging the decibel numbers would give 55 dB, but the Leq is about 72 dB. This reflects the fact that occasional loud sounds weigh heavily on the people hearing them. Environmental standards are set in terms of Leq for this reason.
+
+### L90 reveals how quiet a place really is
+
+L90 is the level exceeded for 90% of the measurement. It is hardly affected by the odd passing car or conversation, so it indicates what the place sounds like when nothing in particular is happening. To see how much a newly installed outdoor unit adds, for instance, compare L90 before and after it was installed.
+
+### Read the maximum and the average together
+
+A low average with a high maximum means a place that is usually quiet but has occasional loud sounds. Problems like waking up at night are often linked to the maximum values and how often they occur rather than to the average. If the average and L90 are close, the sound is steady and continuous.
+
+### Frequency information
+
+Along with loudness, the Sound Level Meter shows the dominant frequency (with its musical note), the brightness of the sound (spectral centroid) and how the energy splits across four bands from low to high. A large low band share (20–250 Hz) suggests engines, outdoor units, footsteps or bass-heavy music. Knowing the source makes it easier to choose a fix, such as secondary glazing or anti-vibration pads.
+
+<Ad />
+
+## Limits of phone and computer microphones
+
+Phone and computer microphones are built for calls and recording, not for measuring noise. Knowing their limits helps you avoid misreading the results.
+
+### Sensitivity varies between models
+
+Microphone sensitivity differs from model to model, and the microphones are not calibrated. The Sound Level Meter takes the level the microphone picks up (in dBFS, where 0 is the digital maximum) and adds an offset to estimate dB. The default offset is +122 dB on iPhone and iPad, set by measuring side by side with a calibrated sound meter app, and a provisional +100 dB on other devices. Readings on Android phones and computers in particular can be well off.
+
+### Audio processing can get in the way
+
+Many devices apply noise suppression, automatic gain control and echo cancellation to make calls clearer. The Sound Level Meter asks the browser to turn these off, but some devices keep them on anyway. When that happens, a notice appears on screen. Quiet sounds may then read lower than they are, and changes in level may be smoothed out.
+
+### Very quiet, very loud and low sounds are hard
+
+- **Very quiet places**: a microphone can't measure sound below its own self-noise. In a room quieter than about 30 dB, readings may come out higher than the real level.
+- **Very loud sound**: the microphone or its circuitry can saturate, so readings may come out lower than the real level. Be careful at concerts or near construction sites.
+- **Low frequencies**: small microphones pick up low frequencies poorly, so C- and Z-weighted values tend to undercount low sounds, especially below about 100 Hz.
+
+## Calibrating against a reference meter
+
+If you have a commercial sound level meter or a calibrated sound meter app, you can adjust the offset to match it.
+
+1. Set both meters to the same weighting (A, C or Z, and Fast or Slow).
+2. Place them as close together as possible, pointing the same way.
+3. Pick a spot with a steady sound, such as a ventilation fan or an air conditioner. Avoid places that are too quiet. A level of around 50–70 dB works well.
+4. Measure at the same time for about 30 seconds and note the reference meter's average (often labelled Leq or AVG).
+5. Enter that value under "Match a reference (calibrate)" below your results and tap "Match this value."
+
+The offset is set so that this measurement's average equals the reference value. It is saved on your device and used for future measurements. "Reset" in the settings restores the default.
+
+Because the match is made at a single level, it may not hold equally well at other levels. Measuring a few other sounds side by side to check the difference gives you more confidence. Recalibrate whenever you switch browser or device, or connect an external microphone or headset.
+
+## Practical tips for accurate measurements
+
+### Holding and placing the device
+
+- **Keep the microphone uncovered**: on most phones the microphone is on the bottom edge. Covering it with a finger, a case or a pocket lowers the reading considerably.
+- **Hold it away from your body**: your body reflects and blocks sound. Hold the phone at arm's length or put it on a stand. For environmental noise, measurements are generally taken about 1.2–1.5 m above the ground.
+- **Keep away from walls and desks**: reflected sound adds to the reading. Staying about 1 m from walls and windows is a reasonable rule of thumb.
+- **Don't move or touch it during measurement**: handling noise reaches the microphone directly and can push the maximum up sharply.
+
+### Preparing your equipment
+
+- **Disconnect Bluetooth earbuds and external microphones**: if one is connected, you may end up measuring with it. Bluetooth headset microphones apply heavy processing and cut off higher frequencies.
+- **Make sure no other app is using the microphone**: a call app or voice recorder running in the background can block access.
+- **Watch out for wind outdoors**: wind hitting the microphone is counted as loud low-frequency sound. Avoid windy or rainy days, or measure in the shelter of a building.
+
+### How often and how long
+
+- **Measure several times**: a single measurement can be skewed by a chance sound. Take about three under the same conditions and check that the averages (Leq) agree.
+- **Match the duration to the sound**: 10 seconds is enough for steady sound. For changing sound such as traffic or trains, measure for 60 seconds and repeat.
+- **Measure at different times**: noise varies a lot through the day. Comparing day and night, or weekdays and weekends, shows when the problem actually occurs.
+
+### Record the conditions
+
+So you can compare later, note:
+
+- Date and time, location (which room, distance from the window) and whether the window was open
+- The device and the weighting settings (A, C or Z, and Fast or Slow)
+- The average, maximum and L90
+- What you could hear at the time (traffic, construction, voices)
+
+"Save CSV" in the results saves the level every 0.1 seconds in a format you can open in a spreadsheet. It's handy for checking when loud sounds occurred. No audio is recorded.
+
+## Checking neighbour or road noise
+
+When noise from next door or a nearby road bothers you, phone measurements can help you work out when it happens and roughly how loud it is. A record by time of day is also more convincing than impressions alone when you explain the situation to a building manager or a neighbour.
+
+Still, phone readings are estimates. Where numbers serve as evidence, as in court or formal complaints, measurements must be taken with a certified sound level meter following the prescribed method. Your local authority's environmental department may be able to advise on how to measure, and some lend sound level meters.
+
+## Summary
+
+- If in doubt, measure with A-weighting and Fast, and use the same weighting as whatever you compare with.
+- Use the average (Leq) as the representative value, the maximum for brief loud events and L90 for background noise.
+- Phone microphones have limits. If you have a reference meter, calibrate with "Match a reference (calibrate)."
+- Keep the microphone uncovered and away from your body, measure several times and at different times of day, and record the conditions.
+
+When you're ready, [measure with the Sound Level Meter](/). To put your numbers in context, compare them with the table in [How Loud Is It? Decibel Levels of Everyday Sounds](/guide/noise-levels/). Other articles are on the [guide index](/guide/).

@@ -1,0 +1,135 @@
+export const frontmatter = {
+  title: "QR Code Use Cases and a Pre-Launch Checklist",
+  description:
+    "QR codes on business cards, flyers, menus, events, packaging and slides, plus picking the link URL, avoiding QR phishing, using logos and a final checklist.",
+  datePublished: "2026-11-05",
+  dateModified: "2026-11-05",
+};
+
+QR codes are an easy way to send people from paper or a screen to a web page on their phone. What you need to watch out for, though, depends on where the code goes and who will scan it. This article covers common use cases, how to choose the URL behind the code, how to keep the people scanning it safe, and ends with a checklist to go through before you distribute anything.
+
+For tips on making the code itself easy to scan (error correction, margin, color and print size), see [How to make QR codes that scan reliably](/guide/qr-tips/).
+
+## Use cases
+
+### Business cards
+
+Business cards often carry a QR code linking to a profile page, company website or portfolio. Cards are small, so the code usually ends up around 2 cm wide. Keep the URL as short as you can so the modules stay large.
+
+People may keep a business card for years. Link to a page that will stay at the same URL for a long time, rather than one that may change when you switch roles or jobs. If you place the code on the back, leave a clear margin between it and any text or lines.
+
+### Flyers and posters
+
+Flyers are read in hand, so 2–3 cm is usually enough; posters are read from further away and need to be larger. A useful guide is a width of about one tenth of the scanning distance. In places where people keep walking, such as station corridors, go bigger still.
+
+Add a short line next to the code that says what happens when you scan it, such as "See details" or "Book now". People are sometimes wary of scanning a code when they cannot tell where it leads.
+
+### Restaurant menus
+
+Many restaurants put a QR code on the table to open a menu or ordering page. Dining rooms are often dimly lit and tables can reflect light, so test from an actual seat. If you laminate the code or put it in an acrylic stand, a low-glare finish makes scanning easier.
+
+Some guests will not have a smartphone, will have a flat battery, or will find small screens hard to read. Keeping a printed menu available means everyone can order.
+
+### Event reception and signage
+
+At events, QR codes work well for registration pages, schedules, venue maps and surveys. If many people will scan at the reception desk at once, print the code large and place it in several spots to avoid a queue.
+
+When showing a code on a monitor or tablet, turn the brightness up and angle the screen to avoid reflections. Codes projected onto a screen can show flicker or banding through a phone camera, so test the setup beforehand.
+
+### Product packaging and labels
+
+Packaging can link to instructions, recipes, support pages or warranty registration. Packages stay on shelves and in homes for a long time, so choosing a URL you can keep unchanged for years matters even more here.
+
+Curved bottles and glossy film make codes harder to read. Choose a flat surface, use a low-reflection finish, and print a little larger. Before mass production, check a proof printed on the actual material.
+
+### Presentations and handouts
+
+A QR code on a slide lets the audience jump straight to a download page or survey. To be readable from the back of the room it has to be large: from 10 m away, the one-tenth guideline suggests a code nearly 1 m wide. In a large venue, leave the code on screen long enough at the end of the talk, and show a short URL in text next to it.
+
+For handouts, assume they may be photocopied in black and white, and make the code in black or another dark color.
+
+## Choosing the URL
+
+### Link to a page that will last
+
+Once a QR code is printed, its contents cannot be changed. If the target page moves or is deleted, the code stops working. For printed material, prefer URLs that:
+
+- Sit on a domain you (or your organization) control
+- Point to a page you can keep updating at the same address
+- Can still show something useful, such as a "campaign ended" notice or related links, after a campaign is over
+
+### Adding tracking parameters
+
+If you want to know how many people arrived from a particular flyer or sign, a common approach is to add parameters to the URL and count them in your analytics tool. The best-known are UTM parameters.
+
+| Parameter | Meaning | Example |
+| --- | --- | --- |
+| `utm_source` | Where the visit came from | `flyer`, `business_card` |
+| `utm_medium` | Type of channel | `qr`, `print` |
+| `utm_campaign` | Campaign name | `spring_sale` |
+
+Example: `https://example.com/sale/?utm_source=flyer&utm_medium=qr&utm_campaign=spring_sale`
+
+Parameters make the URL longer, which makes the modules smaller. Use only the ones you need, and keep the values short. If space is tight, you can set up a short page path for tracking that redirects to the real destination.
+
+### Using link-shortening services
+
+An external link shortener makes the URL shorter, but people scanning the code only see the shortener's domain, which makes it harder for them to judge whether the link is trustworthy. If the service shuts down or changes its terms, every printed code that uses it may stop working. For long-lived print material, a short URL on a domain you control is more dependable.
+
+<Ad />
+
+## Keeping people safe
+
+### Be aware of QR code phishing
+
+You cannot see where a QR code leads until you scan it. Scammers exploit this to send people to fake login or payment pages, a technique often called QR code phishing. As the creator, making it easy for people to tell that your code is genuine helps protect your own audience.
+
+### Use https and show the URL in text
+
+Make the destination an https page. When the scanned link opens as a secure connection in the browser, people can be more confident. Our tool accepts both http and https URLs, but there is rarely a reason to choose http.
+
+It also helps to print the domain name or a short URL next to the code. People can compare it with what they scanned, and anyone who cannot use a camera can type it in.
+
+### Do not put personal information in the URL
+
+A QR code contains the URL exactly as written. Anyone holding the printed item can scan it, so do not include names, email addresses, phone numbers or membership IDs in the URL. URLs are also recorded in browser history, server logs and analytics tools. If you need personalized content, use a method that does not rely on the URL, such as showing the information after sign-in.
+
+Our tool does not send the URL you enter to our servers; the QR code is created entirely in your browser. See the [privacy policy](/privacy/) for details.
+
+### Watch for tampered signs
+
+On outdoor posters, parking meters and shop displays, scammers sometimes stick a fake QR code over the real one. If you post codes in public places, consider these measures:
+
+- Check your signs regularly for stickers or notices placed on top
+- Where possible, display the code behind glass or acrylic
+- Print your correct domain name in text on the sign
+
+## Using service logos
+
+Our tool lets you place a generic icon (such as a link, map pin or envelope) or a service logo such as YouTube, Instagram or LINE in the center of the code. Service names and logos are trademarks of their respective owners.
+
+When you use a logo, follow the brand guidelines that the company publishes. Many guidelines prohibit changing a logo's colors or shape, combining it with other graphics so it looks like a different mark, or using it in a way that suggests a partnership with the service. Use a service logo only when the link actually goes to that service, for example your own Instagram account, and do not put it on unrelated pages. If in doubt, a generic icon or your own logo is the safer choice.
+
+## Pre-launch checklist
+
+Before printing or sharing, go through the following.
+
+| Check | What to confirm |
+| --- | --- |
+| Destination | Opens the intended page, over https, and works well on a phone |
+| URL lifespan | The page will stay at the same URL for as long as the material is in use |
+| URL contents | No personal information or unnecessary parameters |
+| Scanning | Scans with the built-in camera on several phones |
+| Conditions | Scans at the expected distance, angle, lighting and on the actual material |
+| Print size | At least about one tenth of the scanning distance; roughly 2 cm minimum |
+| Margin | A 4-module blank margin remains around the code |
+| Color | Dark modules on a light background, not inverted |
+| File format | SVG, or a large enough PNG, for print |
+| Call to action | A short line saying what the code opens |
+| Alternative | A printed URL or paper option for people who cannot scan |
+| Logo | Any service logo follows that company's brand guidelines |
+| After posting | For public places, a plan to check for tampering |
+
+When you are ready, create your code with our [QR code generator](/). Error correction, margin and background are fixed to scan-friendly values, so you only need to choose the URL, color and icon. For more on what makes a code readable, see [How to make QR codes that scan reliably](/guide/qr-tips/), and browse other articles in the [guide index](/guide/).
+
+QR Code is a registered trademark of DENSO WAVE INCORPORATED.

@@ -1,0 +1,123 @@
+export const frontmatter = {
+  title: "How to Make QR Codes That Scan Reliably",
+  description:
+    "How QR codes work (modules, versions, error correction), plus tips on quiet zones, contrast, print size, URL length, PNG vs. SVG and testing before you print.",
+  datePublished: "2026-11-05",
+  dateModified: "2026-11-05",
+};
+
+A QR code is a handy way to get people to a web page without typing, but small mistakes can leave you with a code that phones ignore or that only scans from a few centimeters away. Once it is printed, the only fix is a reprint. This guide explains the basic structure of a QR code and then walks through the things that actually decide whether it scans.
+
+You can make one with our [QR code generator](/). Several of the settings discussed below, such as error correction and the margin, are already fixed to scan-friendly values in the tool.
+
+## How a QR code is built
+
+### Modules and versions
+
+A QR code is a grid of small dark and light squares. Each square is called a module. A scanner reads the pattern of modules from the camera image and turns it back into data.
+
+The number of modules per side is set by the code's version. The smallest, version 1, is 21×21 modules. Each version adds 4 modules per side, up to 177×177 at version 40. The more data you store, the higher the version, and the smaller each module becomes when the code is printed at a given size. In other words, the amount of data directly affects how easy the code is to scan.
+
+### The finder patterns in three corners
+
+The top-left, top-right and bottom-left corners each hold a square-within-a-square marker called a finder pattern. Scanners use these three markers to locate the code and work out its orientation and tilt, which is why a QR code can be read from any angle.
+
+There are other fixed elements too: smaller alignment patterns (from version 2 upward), timing patterns that mark the module spacing, and format information that records the error correction level. These areas should never be moved, recolored or covered for the sake of design.
+
+### Error correction levels (L, M, Q, H)
+
+QR codes include error correction (Reed–Solomon codes), so data can still be recovered when part of the code is dirty or damaged. You choose how much can be recovered from four levels.
+
+| Level | Approx. recoverable | Typical use |
+| --- | --- | --- |
+| L | about 7% | Keeping the code as small as possible |
+| M | about 15% | General use |
+| Q | about 25% | Places where the code may get dirty |
+| H | about 30% | Codes with a center logo, outdoor or industrial use |
+
+Higher levels store more correction data, so the same URL needs more modules. As a rough example, a URL of about 60 characters fits in version 4 (33×33) at level M, but needs version 7 (45×45) at level H.
+
+### Use level H when you add a center icon
+
+When you place a logo in the middle of a QR code, the modules underneath can no longer be read. The code still works only because error correction fills in the missing part.
+
+Our tool always uses level H. You can set the icon to 12–20% of the code's width; even at 20%, the icon covers only about 4% of the area. However, error correction does not work by area. It works on chunks of data called codewords, and a codeword that is even slightly damaged counts as fully wrong, so an icon uses more correction capacity than its area suggests. The same capacity also has to cover smudged printing, dirt and blurry photos. Rather than making the icon as large as possible, keep it just large enough to recognize. The tool also adds a one-module white border around the icon so the logo does not blend into the pattern.
+
+## Keep the quiet zone
+
+A QR code needs a blank margin around it, called the quiet zone. The standard specifies 4 modules. Scanners use this margin to find where the code begins and ends.
+
+A common mistake is trimming the margin to fit a layout, then placing text, a border or a photo right up against the code. Anything inside the margin can confuse the scanner about the code's boundary. Images exported by our tool already include a 4-module white margin. When you place the image, keep that white area instead of cropping it.
+
+## Color and contrast
+
+### Dark modules on a light background
+
+Scanners tell modules apart by the difference between light and dark. The smaller that difference, the harder the code is to read in dim light or on glossy paper. Colors other than black are fine, as long as they are genuinely dark, such as navy, deep green or dark brown.
+
+Our tool fixes the background to white and only accepts foreground colors with a contrast ratio of at least 7:1 against white. That is the level the Web Content Accessibility Guidelines (WCAG) set for enhanced text contrast. Yellow, light blue and pastel pink fall short and cannot be saved. Gradients and photo backgrounds are also best avoided, because they lower the contrast in parts of the code.
+
+### Avoid inverted codes
+
+Inverted codes, with light modules on a dark background, can look stylish, but some scanners cannot read them. Many recent phone cameras handle them, yet not every scanning app or business barcode reader does. If you are printing on black or dark paper, put a white square (including the margin) behind the code.
+
+<Ad />
+
+## How big to print
+
+### About one tenth of the scanning distance
+
+A widely used rule of thumb is to make the code about one tenth as wide as the distance it will be scanned from. For business cards and flyers held 20–30 cm away, that means 2–3 cm. For a poster read from 2 m away, about 20 cm. Even for handheld items, treat roughly 2 cm square as the minimum. Camera quality and lighting change the result, so use this as a starting point and test the real thing.
+
+### URL length and module size
+
+At the same 2 cm width, a longer URL means more modules, so each module is smaller. Here are rough figures for a plain ASCII URL at error correction level H.
+
+| URL length (approx.) | Version | Modules | Width incl. margin | Module size at 2 cm |
+| --- | --- | --- | --- | --- |
+| up to 24 characters | 3 | 29×29 | 37 | about 0.54 mm |
+| up to 44 characters | 5 | 37×37 | 45 | about 0.44 mm |
+| up to 84 characters | 8 | 49×49 | 57 | about 0.35 mm |
+| up to 119 characters | 10 | 57×57 | 65 | about 0.31 mm |
+
+The finer the modules, the more ink spread and camera blur matter. If a long URL has to be printed small, shorten the URL or make the code bigger. Our tool also blocks PNG sizes that would give less than 4 pixels per module, which is why 256 px may be unavailable for a long URL.
+
+## Keep the URL short
+
+As the table shows, a shorter URL means fewer, larger modules and an easier scan. You can often shorten a URL by:
+
+- Removing query strings you do not need, such as tracking parameters or values added while browsing
+- Dropping parts like a trailing `index.html` when the page opens without them
+- Creating a short, dedicated page path instead of linking deep into your site
+
+If you want to add tracking parameters for analytics, see [QR code use cases and a pre-launch checklist](/guide/qr-uses/) for how to approach it.
+
+## PNG vs. SVG
+
+Our tool exports PNG (256, 512, 1024 or 2048 px) and SVG. Pick the one that suits where the code will go.
+
+| Format | What it is | Best for |
+| --- | --- | --- |
+| PNG | A pixel image that opens anywhere | Web pages, social media, slides, documents |
+| SVG | A vector image that stays sharp at any size | Print artwork, design software, large signs |
+
+If you print a PNG, mind the resolution. At 300 dpi, a common target for print, a 1024 px image prints sharply up to about 8.7 cm and a 2048 px image up to about 17 cm. For anything larger, such as posters, or when you want to resize freely in design software, SVG is the safer choice.
+
+After placing the image, avoid stretching it, changing its aspect ratio, or adding blur, shadows or other effects in your design software. Distorted modules are harder to read.
+
+## Always test before you distribute
+
+However carefully you make a code, you cannot be sure it works until you try it. Before printing or sharing, check:
+
+- That it scans with the built-in camera on several phones, for example an iPhone and an Android phone
+- That it scans at the expected distance, angle and lighting (a dim restaurant, glare from a window)
+- That printed items are tested on a proof at actual size, on the actual paper
+- That it opens the intended page, over https, and that the page works well on a phone
+
+Be especially thorough if you added a center icon or used a color other than black. The [use cases and checklist](/guide/qr-uses/) article has a table of checks for different situations, and you can find other articles in the [guide index](/guide/).
+
+## Summary
+
+A QR code that scans reliably comes down to four things: keep the data small so the modules stay large, keep the quiet zone, use a dark color on a light background, and test the real thing. Our [QR code generator](/) fixes error correction at H, includes a 4-module margin on a white background, and blocks low-contrast colors and PNG sizes that are too coarse. Print size and real-world testing are still up to you, so check them for each use.
+
+QR Code is a registered trademark of DENSO WAVE INCORPORATED.
