@@ -4,9 +4,9 @@ import { LOCALE, useLang } from "../i18n";
 import { PageHeader } from "../shell/PageHeader";
 import { Shell } from "../shell/Shell";
 import { AppLegalSections } from "./index";
-import type { LegalPage as LegalPageName } from "./paths";
+import { isLegalPage, type SitePage } from "./paths";
 
-export function LegalPage({ content, page }: { content: ContentModule; page: LegalPageName }) {
+export function LegalPage({ content, page }: { content: ContentModule; page: SitePage }) {
   const lang = useLang();
   const { title, dateModified } = content.frontmatter;
   const date = new Intl.DateTimeFormat(LOCALE[lang], {
@@ -27,9 +27,11 @@ export function LegalPage({ content, page }: { content: ContentModule; page: Leg
           }
         />
         <ContentBody content={content} appPath="" />
-        <div className="prose-content">
-          <AppLegalSections page={page} lang={lang} />
-        </div>
+        {isLegalPage(page) && (
+          <div className="prose-content">
+            <AppLegalSections page={page} lang={lang} />
+          </div>
+        )}
       </article>
     </Shell>
   );

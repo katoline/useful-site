@@ -56,10 +56,24 @@ export function meta({ location }: { location: { pathname: string } }) {
     ],
   });
 }
+const FEATURES = [1, 2, 3, 4] as const;
+
+/** ガイド（メニューに "guide" を持つアプリ）へのリンク */
+function guideLinks(lang: "ja" | "en") {
+  return listedApps
+    .filter((app) => app.menu.some((item) => item.page === "guide"))
+    .map((app) => ({
+      id: app.id,
+      name: app.name[lang],
+      url: createAppPaths(app.path).localizedPath(lang, "guide"),
+    }));
+}
+
 export default function Home() {
   const { lang, t } = useI18n();
   const dict = lang === "ja" ? ja : en;
   const apps = entries(lang);
+  const guides = guideLinks(lang);
   return (
     <Shell config={{ appPath: "", name: SITE_NAME, menu: [] }}>
       <h1 className="text-3xl font-bold">{SITE_NAME[lang]}</h1>
@@ -146,9 +160,52 @@ export default function Home() {
           );
         })}
       </div>
+      <section aria-labelledby="features" className="mt-12">
+        <h2 id="features" className="mb-4 text-lg font-semibold">
+          {dict.featuresTitle}
+        </h2>
+        <dl className="grid gap-4 sm:grid-cols-2">
+          {FEATURES.map((n) => (
+            <div key={n} className="rounded-lg border border-border p-4">
+              <dt className="font-semibold">{dict[`feature${n}Title`]}</dt>
+              <dd className="mt-1 text-sm text-muted-foreground">{dict[`feature${n}Body`]}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+      {guides.length > 0 && (
+        <section aria-labelledby="guides" className="mt-12">
+          <h2 id="guides" className="text-lg font-semibold">
+            {dict.guidesTitle}
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{dict.guidesLead}</p>
+          <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-1">
+            {guides.map((guide) => (
+              <li key={guide.id}>
+                <Link
+                  to={guide.url}
+                  className="inline-flex min-h-11 items-center underline underline-offset-4 hover:text-muted-foreground"
+                >
+                  {dict.guideOf.replace("{app}", guide.name)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="mt-10">
         <AdSlot format="responsive" />
       </div>
+      <p className="mt-10 text-sm text-muted-foreground">
+        {dict.aboutBefore}
+        <Link
+          to={createAppPaths("").localizedPath(lang, "about")}
+          className="underline underline-offset-4 hover:text-foreground"
+        >
+          {dict.aboutLink}
+        </Link>
+        {dict.aboutAfter}
+      </p>
     </Shell>
   );
 }

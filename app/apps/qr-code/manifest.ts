@@ -15,5 +15,8 @@ export const manifest = {
   status: "public",
   icon: "qr-code",
   order: 30,
-  menu: [{ page: "", label: { ja: "QRコード生成", en: "QR code generator" } }],
+  menu: [
+    { page: "", label: { ja: "QRコード生成", en: "QR code generator" } },
+    { page: "guide", label: { ja: "ガイド", en: "Guide" } },
+  ],
 } satisfies AppManifest;

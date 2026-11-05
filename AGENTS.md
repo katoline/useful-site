@@ -1,6 +1,6 @@
 # AGENTS.md
 
-1 つのドメイン（https://t0n03k1.com）に、ブラウザ内で動く便利なアプリを多数載せるサイト。ポータル（アプリの一覧）が `/`、各アプリが `/<アプリ>/`。英語版はアプリのパスの内側に `/en/` を付ける（`/image-adjust/en/`。ポータルは `/en/`）。サイト名は仮（日 `便利ツール集`・英 `Handy Tools`）で、`app/platform/config/index.ts` の `SITE_NAME` 1 か所だけで定義する。決まったらそこを変える。
+1 つのドメイン（https://t0n03k1.com）に、ブラウザ内で動く便利なアプリを多数載せるサイト。ポータル（アプリの一覧）が `/`、各アプリが `/<アプリ>/`。英語版はアプリのパスの内側に `/en/` を付ける（`/image-adjust/en/`。ポータルは `/en/`）。サイト名は日 `便利ツール集`・英 `Handy Tools` で、`app/platform/config/index.ts` の `SITE_NAME` 1 か所だけで定義する（フッターの © もこれ）。運営者は `katoline`（`/about/` の運営者情報・お問い合わせ）。
 
 現在のアプリ：`portal`（`/`）・`image-adjust`（画像の変換・圧縮・アイコン生成）・`markdown-pdf`（Markdown → PDF）・`qr-code`（QR コード生成）・`sound-meter`（騒音計）・`speed-test`（回線速度テスト）。サイト全体の方針は、ローカルの `docs/site-plan.md`（docs/ は gitignore 済み）。各アプリの仕様は同じくローカルの `docs/` にある。
 
@@ -87,11 +87,11 @@ platform ──▶ apps/*/manifest.ts 等（規約による自動収集だけ。
 | `api/index.ts` | 任意 | Hono の `api` と `appPath` を export する。Worker が `/<path>/api/*` に載せる（`wrangler.jsonc` の `run_worker_first` は `/*/api/*`） |
 | `build/postbuild.ts` | 任意 | `postbuild(context): Promise<AppBuildResult>` を export する。`scripts/postbuild.ts` が呼ぶ。`_headers` に足すルールを返せる（型は `scripts/lib/postbuild-types.ts`） |
 | `site-files.ts` | 任意 | `buildSiteFiles()` が返したファイルを `/<path>/` 以下に出す（image-adjust のマニフェスト） |
-| `content/<lang>/*.mdx` | 任意 | 記事。日英で同じファイル名にする（片方だけだとビルドで警告） |
+| `content/<lang>/*.mdx` | 任意 | 記事。日英で同じファイル名にする（片方だけだとビルドで警告）。ガイド（`/<アプリ>/guide/` と `/<アプリ>/guide/<slug>/`）にするなら `domain/guides.ts` の `GUIDE_SLUGS` に足す（下記「記事（MDX）」） |
 | `tests/` | 任意 | 単体テスト（`app/**/*.test.ts(x)` なので `tests/` の中でも `*.test.ts` なら拾われる） |
 | `tests/e2e/*.spec.ts` | 任意 | アプリ固有の E2E（アプリを消せば一緒に消える） |
 
-- `manifest.path` は小文字の英数字とハイフン（`^[a-z0-9]+(?:-[a-z0-9]+)*$`）で、他のアプリと重複しないこと。予約語は使えない：`en`・`assets`・`privacy`・`terms`・`404`・`sitemap.xml`・`robots.txt`・`ads.txt`・`favicon.ico`・`og`（`app/platform/registry/validation.ts` の `RESERVED_APP_PATHS`）。`id` も重複不可。ポータルだけ `path` が空
+- `manifest.path` は小文字の英数字とハイフン（`^[a-z0-9]+(?:-[a-z0-9]+)*$`）で、他のアプリと重複しないこと。予約語は使えない：`en`・`assets`・`about`・`privacy`・`terms`・`404`・`sitemap.xml`・`robots.txt`・`ads.txt`・`favicon.ico`・`og`（`app/platform/registry/validation.ts` の `RESERVED_APP_PATHS`）。`id` も重複不可。ポータルだけ `path` が空
 - `icon` と `category` は `app/platform/types.ts` の許可リスト（`APP_ICON_KEYS`・`APP_CATEGORIES`）から選ぶ。足りなければ `platform` の側に足す（`registry/icons.tsx` も）。**これは中央の一覧への追加が要る唯一の例外**
 - 動的セグメント（`:pair` 等）は使わず、値ごとに静的ルートを登録する（「ルートの追加」参照）
 - アプリ固有の外部サービスを使うなら、`scripts/lib/csp.ts` の許可リストに足す（CSP は全ページ共通の 1 本）
@@ -178,15 +178,15 @@ app/
     config/                サイト名・オリジン・ストレージ接頭辞
     api/                   アプリの API（Worker）が共有する部品：呼び出し元の検査（origin-guard.ts）・回数制限のキー（rate-limit-key.ts）
     content/               MDX の表示（mdx.tsx・prose.css）と、規約類の本文（ja/・en/）
-    legal/ pages/          規約類（privacy・terms）のページと、アプリの節の差し込み
+    legal/ pages/          サイト共通のページ（about・privacy・terms。`legal/paths.ts` の `SITE_PAGES`）と、規約類へのアプリの節の差し込み
     types.ts utils.ts      AppManifest 等の型・cn()
   apps/
     portal/                ルート（/）のアプリ一覧。external-links.ts に外部システム
     image-adjust/          画像調整（domain/・features/{image-processing,icon-generator,remote-image,pwa,guide-content}/・shared/・pages/<ページ>/。下記「アプリ別の注意」）
-    markdown-pdf/          Markdown → PDF（domain/・features/{document-input,render,settings,print}/・pages/tool/）
-    qr-code/               QR コード生成（domain/・features/{qr-generation,icon-selection}/・pages/tool/）
-    sound-meter/           騒音計（domain/・features/analysis/・pages/tool/。下記「アプリ別の注意」）
-    speed-test/            回線速度テスト（domain/・api/・features/speed-test/・pages/tool/。下記「アプリ別の注意」）
+    markdown-pdf/          Markdown → PDF（domain/・features/{document-input,render,settings,print}/・pages/{tool,guide-index,guide-article}/・content/）
+    qr-code/               QR コード生成（domain/・features/{qr-generation,icon-selection}/・pages/{tool,guide-index,guide-article}/・content/）
+    sound-meter/           騒音計（domain/・features/analysis/・pages/{tool,guide-index,guide-article}/・content/。下記「アプリ別の注意」）
+    speed-test/            回線速度テスト（domain/・api/・features/speed-test/・pages/{tool,guide-index,guide-article}/・content/。下記「アプリ別の注意」）
 worker/                    Hono の入口（index.ts）と Env 型（env.ts）。API は各アプリの api/ から集める
 scripts/
   postbuild.ts             ビルド後の整形（404・CSP の meta・アプリのフック・_headers）
@@ -260,9 +260,10 @@ tests/unit, tests/e2e      サイト共通の Vitest・Playwright
 
 ### 記事（MDX）
 
-- 各アプリの `content/<lang>/<name>.mdx`（image-adjust のガイド・about 等）。日英で同じファイル名にする（片方しか無いとビルドで警告、Vitest で失敗）。サイト共通の規約類は `app/platform/content/<lang>/{privacy,terms}.mdx`、アプリ固有の節は `app/apps/<id>/legal/{privacy,terms}.{ja,en}.mdx`
+- 各アプリの `content/<lang>/<name>.mdx`（image-adjust のガイド・about 等）。日英で同じファイル名にする（片方しか無いとビルドで警告、Vitest で失敗）。サイト共通のページは `app/platform/content/<lang>/{about,privacy,terms}.mdx`（`/about/` は運営者情報・お問い合わせ。公開中のアプリの一覧は本文の `<SiteApps />` が registry から出す）、アプリ固有の節は `app/apps/<id>/legal/{privacy,terms}.{ja,en}.mdx`
+- **ガイド（解説記事）**：ツールだけのページは中身の薄いページと見なされやすいので（AdSense の「有用性の低いコンテンツ」で不承認になった）、各アプリに使う場面で役立つ解説記事を置く。image-adjust 以外は `app/platform/content/articles.tsx` の部品（`GuideIndexPage`・`GuideArticle`・`guideIndexMeta`・`guideArticleMeta`・`RelatedGuides`）を使う：`domain/guides.ts` に `GUIDE_SLUGS`、`content/{ja,en}/<slug>.mdx`、`routes.ts` に `guide` と `guide/<slug>` の静的ルート（`allPagePaths()` にも）、`pages/guide-index`・`pages/guide-article`、`manifest.ts` の `menu` に `guide`、ツールのページの下に `<RelatedGuides>`（markdown-pdf 等を参照）。ポータルは `menu` に `guide` を持つアプリのガイドへリンクする。`tests/unit/content.test.ts` が `GUIDE_SLUGS` の日英の記事の有無を確かめる
 - 先頭で `export const frontmatter = { title, description, datePublished, dateModified }` を出す（YAML は使えない）。title がページの h1 と `<title>` になる。本文の見出しは h2 から
-- サイト内リンクは、そのアプリの `/<アプリ>` と言語接頭辞なしのページパスで書く（image-adjust なら `[変換](/convert/png-to-webp/)`）。表示中の言語の URL に直る。サイト共通の規約類へは `/privacy/`・`/terms/`
+- サイト内リンクは、そのアプリの `/<アプリ>` と言語接頭辞なしのページパスで書く（image-adjust なら `[変換](/convert/png-to-webp/)`）。表示中の言語の URL に直る。サイト共通のページへは `/about/`・`/privacy/`・`/terms/`
 - 本文中（コードブロックの外）に `{` `}` `<` を素で書かない（JSX として解釈される）。見た目は `app/platform/content/prose.css`
 - フッターの「外部送信について」は `/privacy/` の `<h2 id="external-transmission">` へのリンク（`EXTERNAL_TRANSMISSION_ANCHOR`、`app/platform/legal/paths.ts`）
 
@@ -334,8 +335,7 @@ Markdown をブラウザ内で整え、**ブラウザの印刷で PDF にする*
 
 - `/assets/*` は存在しないファイルの 404 にも immutable のキャッシュが付く。`wrangler rollback` で旧版に戻した直後にその 404 を受け取った利用者は、旧チャンクを読めない
 - Service Worker が無い状態（サイトデータを消した後）で OS の共有を使うと、`POST /image-adjust/share-target` は 405 になる
-- お問い合わせは GitHub の Issue（`https://github.com/katoline/useful-site/issues`）で受け付ける。Issue は公開されるので、規約・about に「個人情報を書かない」旨を書いてある（`app/platform/content/{ja,en}/privacy.mdx` の「個人情報の取り扱い」）
-- サイト名（`SITE_NAME`）は仮。決まったら `app/platform/config/index.ts` を変える
+- お問い合わせは GitHub の Issue（`https://github.com/katoline/useful-site/issues`）で受け付ける。Issue は公開されるので、規約・about に「個人情報を書かない」旨を書いてある（`app/platform/content/{ja,en}/privacy.mdx` の「個人情報の取り扱い」・`about.mdx`）
 - Android 実機の共有受け取りの `Sec-Fetch-Site` は未確認（Image Adjust の PWA の項）
 - 回線速度テストは Cloudflare のデータセンターまでを測るので、Fast.com（プロバイダー近くの Netflix のサーバー）等とは値が一致しない。プロバイダーと Cloudflare の間の経路が混むと、プログラムでは改善できない。回数制限の効き方は本番で未確認。1 回の測定で数十〜数百 MB を送受信するので、Workers の利用量（リクエスト数・CPU 時間）に注意する
 - 騒音計の既定の補正値は、iOS（+122）は静かな部屋（約 42dB(A)）の 1 点だけで決めた。大きい音でも差が無いか、機種による違いは未確認。Android・パソコン（+100）は実機と比べていない

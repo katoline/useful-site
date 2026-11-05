@@ -1,0 +1,150 @@
+export const frontmatter = {
+  title: "Tips for Clean PDFs from Markdown",
+  description:
+    "Make readable PDFs from Markdown: paper size, margins, font size, headings, page breaks, tables, images, and how to save in each browser without headers.",
+  datePublished: "2026-11-05",
+  dateModified: "2026-11-05",
+};
+
+A Markdown file is readable as plain text, but if you are sending it to someone or printing it, a PDF looks the same on every device. With the [Markdown to PDF](/) tool, you can lay out Markdown for a sheet of paper and save it as a PDF through your browser's print dialog.
+
+A document that reads well on screen is not quite the same as one that reads well on paper or as a PDF. This article collects practical tips for a clean result, from choosing the paper to page breaks, tables, images, and the saving steps. For the syntax itself, see the [Markdown syntax cheat sheet](/guide/markdown-syntax/).
+
+## Choose the paper size and orientation
+
+Start by matching the paper your readers use. Under "Page setup" in the tool, you can choose A4 or Letter.
+
+- **Letter (8.5 × 11 in, 215.9 × 279.4 mm)**: the standard in the United States and Canada. Choose it for documents read or printed there.
+- **A4 (210 × 297 mm)**: the standard in most other countries, including Europe, Japan, and much of Asia. It is slightly narrower and taller than Letter.
+
+When the paper doesn't match, the recipient's printer may shrink the pages or cut off the edges. If in doubt, follow the standard where your readers are.
+
+Use "Portrait" for documents that are mostly text, and "Landscape" when wide tables or diagrams are the main content. Orientation applies to the whole document; you can't mix portrait and landscape pages. If only one wide table needs landscape, consider making that table a separate PDF.
+
+## Pick the margins
+
+Margins come in three widths, "Narrow (10 mm)", "Normal (20 mm)", and "Wide (30 mm)", applied equally to all four sides.
+
+- **Normal (20 mm)**: right for most documents. Lines are a comfortable length to read.
+- **Narrow (10 mm)**: useful for squeezing in a wide table or reducing the page count. Long lines make it harder for the eye to find the start of the next line, though, so avoid it for text-heavy documents.
+- **Wide (30 mm)**: good when pages will be hole-punched, bound in a folder, or annotated by hand.
+
+## Pick the font size and typeface
+
+Font sizes are 9, 10, 11, 12, and 14 pt (11 pt by default).
+
+For documents that will be printed, 10 to 11 pt is a good range; it is close to the 10 to 12 pt common in office documents and books. 9 pt helps fit a dense reference sheet or a list on one page, but long passages in small type are tiring, so avoid setting the whole body that small.
+
+If you know most readers will open the PDF on a phone, 12 pt makes it readable without zooming. For handouts aimed at older readers or notices to be posted on a wall, consider 14 pt.
+
+The typeface options are "Sans-serif" and "Serif". Sans-serif has even strokes and stays crisp on screen and at small sizes. Serif is often considered easier for long reading on paper and gives reports a more formal, bookish feel. A simple rule: sans-serif for documents read on screen, serif for long documents read in print.
+
+The tool uses fonts already installed on your device. The fonts you used are embedded in the PDF, so the document looks the same for whoever opens it.
+
+## Build the structure with headings
+
+People often scan a PDF page by page looking for what they need, so well-planned headings make a big difference.
+
+- Use a level-1 heading (`#`) once, at the top, as the title. In this tool, the first level-1 heading becomes the suggested PDF file name, so writing the title you want saves a step when saving.
+- Use `##` for chapters and `###` for sections without skipping levels. Jumping from `##` straight to `####` makes the size difference too large and the structure harder to follow.
+- Keep headings short and descriptive. "Registration deadline" and "Cost breakdown" are easier to find than a series of "Other" and "Notes".
+- When a chapter runs long, split it with `###` subheadings. A rough target is one or two headings visible on each page.
+
+The tool also tries to keep a heading from being stranded at the bottom of a page with its text pushed to the next one, by asking the browser not to break a page right after a heading.
+
+<Ad />
+
+## Control page breaks
+
+The browser decides where pages end. On top of that, the tool asks it to avoid splitting the following across pages where possible:
+
+- The point right after a heading
+- A single table row (rows are not split in the middle)
+- Code blocks, blockquotes, and images
+
+A code block or quote longer than a page will still be split, since it cannot fit anywhere else.
+
+To start each chapter on a new page, keep "Start a new page at ---" turned on (it is on by default) and put a `---` line where you want the break. The preview marks page breaks with a dashed line so you can check them before saving.
+
+```markdown
+## 1. Overview
+
+Overview text...
+
+---
+
+## 2. Details
+
+Detail text...
+```
+
+A few tips for page breaks:
+
+- Always leave a blank line before `---`. Directly under a line of text, `---` turns that line into a heading.
+- For a cover page, write only the title, date, and author, then `---`. The first page becomes the cover.
+- A `---` at the very end of the document can add a blank last page, so don't end with one.
+- Remove front matter (the settings block wrapped in `---` at the top of many blog Markdown files). Left in place, it can produce a blank first page.
+
+If you only want a dividing line and no page break, turn "Start a new page at ---" off.
+
+Footnotes are collected at the end of the document, not at the bottom of each page. The line above the footnotes never causes a page break.
+
+## Keep tables readable
+
+Tables are the element most likely to become hard to read in a PDF. To keep a table from running off the page, the tool narrows the columns and wraps the text. With too many columns, a cell may hold only a few characters and words get broken mid-word.
+
+- **Use fewer columns**: on A4 or Letter portrait with normal margins at 11 pt, four or five columns is a sensible limit. If you need more, split the table in two or drop the less important columns.
+- **Switch to landscape**: for a list that really needs many columns, set "Orientation" to "Landscape". Combine it with 9 or 10 pt text and narrow margins for even more room.
+- **Keep cells short**: cells can't contain line breaks. Put explanations in a list below the table and keep the table to short words and numbers.
+- **Right-align numbers**: write `---:` in the separator row to right-align a column, so the digits of amounts and counts line up.
+
+For long tables that run across pages, most browsers repeat the header row at the top of each page, and rows are never split in the middle, so long lists are safe to include.
+
+## Image size and resolution
+
+Images come from the files you add with "Add images" (images from external addresses are not loaded). Their size in the PDF works like this:
+
+- Images are scaled down to fit the width of the text. They are never enlarged.
+- 96 image pixels count as roughly one inch, so an image 400 pixels wide appears about 4.2 inches (10.6 cm) wide.
+- On A4 portrait with normal margins, the text is 170 mm (about 6.7 in) wide; on Letter it is about 176 mm (6.9 in). For an image to fill the full width, it needs to be around 650 pixels wide or more.
+
+For images that stay sharp in print, use about twice as many pixels as the size they will appear at and let the tool scale them down. For a full-width image, 1,300 to 2,000 pixels wide prints cleanly. To make an image appear smaller, you have to shrink the image file itself, since Markdown has no way to set the display size.
+
+For diagrams and charts, SVG is the best choice if you can export it, because it stays sharp at any size. Use JPEG for photos and PNG for screenshots with text. Very large images also make the PDF heavy, so if you plan to email it, scale down oversized photos before adding them.
+
+## Turn off headers and footers
+
+Browser print dialogs have a "Headers and footers" setting that adds the date, page title, web address, and page numbers to the top and bottom of every page. Left on, it puts an unrelated web address into your PDF, so turn it off before saving.
+
+Turning it off also removes page numbers. The browser switches all of these together, so you can't keep just the page numbers. If readers need to refer to parts of the document, numbering your chapter headings works well without page numbers.
+
+## Saving steps in each browser
+
+When you press "Save as PDF" in the tool, the browser's print dialog opens. Save the PDF from there.
+
+- **Chrome or Edge (desktop)**: set Destination to "Save as PDF", open "More settings", and uncheck "Headers and footers". Leave "Margins" at "Default" so the tool's margins are used, and leave "Scale" at its default.
+- **Safari (Mac)**: turn off "Print headers and footers", then choose "Save as PDF" from the PDF menu at the bottom left.
+- **iPhone or iPad**: in the print options, tap the Share button, then "Save to Files". The PDF can then be opened in the Files app.
+- **Android (Chrome)**: set the printer to "Save as PDF" and tap the PDF button.
+
+If the print dialog shows a paper size option, check that it matches the paper chosen under "Page setup" in the tool. Some browsers give priority to the dialog's setting.
+
+Light background colors, such as the table header row and code blocks, are set to appear in the PDF. If they come out missing, turn on "Background graphics" in the print dialog.
+
+Finally, open the saved PDF once more and check the page breaks, how tables wrap, the image sizes, and that no stray header or footer slipped in.
+
+## Your document stays on your device
+
+The tool converts the Markdown and saves the PDF entirely inside your browser. Neither your text nor your images are sent to a server. The preview is blocked from making any outside connections, which is also why images from external addresses are not loaded.
+
+What you type and your page setup are kept only in the current tab so they survive a reload, and they disappear when you close the tab. If you may want to edit the document later, use "Save .md" to keep a copy of the Markdown file. For details, see the [privacy policy](/privacy/).
+
+## Where it comes in handy
+
+- **Meeting minutes**: put decisions in a task list and owners and deadlines in a table, and the notes are ready to share right after the meeting. Make the date and meeting name the level-1 heading and it doubles as the file name.
+- **Manuals and how-tos**: use numbered lists for steps and code blocks for commands and settings. Starting each chapter on a new page with `---` makes it easy to print only the chapter someone needs.
+- **Reports**: add a cover page, then structure chapters with `##` and sections with `###`. Footnotes let you add sources and side notes without interrupting the text. A serif typeface gives long reports a calm, formal look.
+- **Résumés and CVs**: organize your experience with tables and lists, and export on your local paper size with a serif typeface and normal margins. It is not suited to forms with fixed boxes, but works well for free-form documents.
+- **READMEs and technical docs**: share development docs with people who don't read Markdown. Note that HTML tags common in READMEs (centering, image tags) and badge images from external addresses won't appear. Rewrite the HTML as Markdown, and save any images you need to your device before adding them with "Add images".
+
+Try it in the [tool](/): press "Insert sample" and watch how the preview changes as you adjust the settings. To check the syntax, see the [Markdown syntax cheat sheet](/guide/markdown-syntax/); other articles are in the [guide list](/guide/).

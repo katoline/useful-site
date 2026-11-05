@@ -8,6 +8,7 @@
  * - サイト内リンクは BASE_PATH と言語接頭辞を付けないページパスで書く（例 `[変換](/convert/png-to-webp/)`）。
  *   表示中の言語の URL に直して <Link> にする
  * - 記事内広告は `<Ad />`（ガイドのみ）
+ * - サイト名は `<SiteName />`、公開中のアプリの一覧（名前と説明）は `<SiteApps />`
  */
 import type { MDXComponents, MDXContent } from "mdx/types";
 import { type ComponentProps, createContext, type ReactNode, useContext } from "react";
@@ -16,6 +17,8 @@ import { AdSlot } from "~/platform/ads/AdSlot";
 import { SITE_NAME } from "~/platform/config";
 import { type Lang, useLang } from "~/platform/i18n";
 import { createAppPaths, parsePath } from "~/platform/paths";
+import { listedApps } from "~/platform/registry";
+import { handleAppNavigation } from "~/platform/shell/app-navigation";
 import "./prose.css";
 
 export interface ContentFrontmatter {
@@ -52,7 +55,7 @@ export function MdxLink({ href = "", children, ...props }: ComponentProps<"a">) 
   if (href.startsWith("/") && !href.startsWith("//")) {
     const [path = "", hash] = href.split("#");
     const target = parsePath(path);
-    const sitePage = /^(privacy|terms)(\/|$)/.test(target.page);
+    const sitePage = /^(about|privacy|terms)(\/|$)/.test(target.page);
     const targetApp = target.appPath || (sitePage ? "" : (appPath ?? parsePath(pathname).appPath));
     const to = `${createAppPaths(targetApp).localizedPath(lang, target.page)}${hash ? `#${hash}` : ""}`;
     return (
@@ -86,6 +89,27 @@ function SiteName() {
   return SITE_NAME[useLang()];
 }
 
+/** 公開中のアプリの一覧（運営者情報のページ用。アプリを足し引きしても本文を直さなくてよい） */
+function SiteApps() {
+  const lang = useLang();
+  return (
+    <ul>
+      {listedApps.map((app) => (
+        <li key={app.id}>
+          <Link
+            to={createAppPaths(app.path).localizedPath(lang, "")}
+            onClick={(event) => handleAppNavigation(event, "")}
+          >
+            {app.name[lang]}
+          </Link>
+          {lang === "ja" ? "：" : ": "}
+          {app.description[lang]}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function MdxBody({
   body: Body,
   appPath,
@@ -98,7 +122,7 @@ export function MdxBody({
   return (
     <ContentAppContext.Provider value={appPath}>
       <div className="prose-content">
-        <Body components={{ ...COMPONENTS, SiteName }} />
+        <Body components={{ ...COMPONENTS, SiteName, SiteApps }} />
         {children}
       </div>
     </ContentAppContext.Provider>

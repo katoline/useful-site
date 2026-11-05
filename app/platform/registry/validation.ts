@@ -4,6 +4,7 @@ export const RESERVED_APP_PATHS = [
   "assets",
   "privacy",
   "terms",
+  "about",
   "404",
   "sitemap.xml",
   "robots.txt",

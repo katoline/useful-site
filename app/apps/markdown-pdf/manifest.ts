@@ -15,5 +15,8 @@ export const manifest = {
   status: "public",
   icon: "file-text",
   order: 20,
-  menu: [{ page: "", label: { ja: "変換", en: "Convert" } }],
+  menu: [
+    { page: "", label: { ja: "変換", en: "Convert" } },
+    { page: "guide", label: { ja: "ガイド", en: "Guide" } },
+  ],
 } satisfies AppManifest;

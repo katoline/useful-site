@@ -15,5 +15,8 @@ export const manifest = {
   status: "public",
   icon: "gauge",
   order: 40,
-  menu: [{ page: "", label: { ja: "測定", en: "Test" } }],
+  menu: [
+    { page: "", label: { ja: "測定", en: "Test" } },
+    { page: "guide", label: { ja: "ガイド", en: "Guide" } },
+  ],
 } satisfies AppManifest;

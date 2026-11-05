@@ -42,7 +42,14 @@ export const ja = {
     beta: "ベータ版",
     categories: { image: "画像", document: "文書", other: "その他" },
   },
+  content: {
+    updated: "更新日：{date}",
+    guideTitle: "{app}のガイド",
+    guideDescription: "{app}の使い方と、使う場面で役立つ知識をまとめた解説記事です。",
+    related: "使い方と解説",
+  },
   legal: {
+    about: "運営者情報・お問い合わせ",
     privacy: "プライバシーポリシー",
     terms: "利用規約・免責事項",
     externalTransmission: "外部送信について",

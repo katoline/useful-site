@@ -1,0 +1,150 @@
+export const frontmatter = {
+  title: "Why Your Internet Is Slow and How to Fix It",
+  description:
+    "Learn why your internet is slow and how to fix it: measuring properly, why results differ from your plan, and checking Wi-Fi, routers, cables and settings.",
+  datePublished: "2026-11-05",
+  dateModified: "2026-11-05",
+};
+
+When videos keep buffering or pages load slowly, the problem is not always the internet connection itself. Wi-Fi signal, the router, cables, your device and even the way you measured can all be to blame. Before buying new equipment, the quickest route is to measure properly and narrow down where the slowdown happens.
+
+This article covers how to measure speed correctly, common causes and what you can do yourself, and when to contact your provider. For how much speed you actually need, see [How much internet speed do you need?](/guide/speed-guide/).
+
+## Start by measuring properly
+
+Speed varies a lot with conditions. If you measure differently each time, you can't tell whether anything improved. Keep the following consistent.
+
+### Before you measure
+
+- **Stop other traffic**: video playback, downloads, cloud storage sync, and operating system or game updates running in the background all pull the result down.
+- **Check other devices too**: make sure nobody else is streaming on the same connection and that a game console isn't downloading an update.
+- **Close extra browser tabs**: pages left open can keep using the network.
+
+### Measure on both a cable and Wi-Fi
+
+Connecting a computer directly to the router with a LAN (Ethernet) cable shows what the line can do without Wi-Fi in the way. If wired is fast and Wi-Fi is slow, the problem is on the Wi-Fi side. If wired is slow as well, suspect the router, the line or the provider. For devices without an Ethernet port, measuring right next to the router keeps the effect of the wireless signal to a minimum.
+
+### Measure several times at different hours
+
+Speed depends on the time of day. In the evening, when many people are online, lines and provider equipment tend to get congested. Measure two or three times each in the morning, at midday and in the evening, and you'll see whether it is "always slow" or "slow only at certain times". Our [Internet Speed Test](/) keeps your last 10 results in this browser on this device, so you can compare them along with the time they were taken.
+
+## Why results differ from your plan and from other tests
+
+### "Up to" speeds are best effort
+
+A plan speed such as "up to 1 Gbps" is the theoretical maximum under ideal conditions. Most home internet is a "best effort" service that does not guarantee that speed. Part of the capacity also goes to controlling the connection, so real-world speeds below the advertised figure are completely normal.
+
+### The test server makes a difference
+
+Speed is determined by the whole path from your device to **the server you are testing against**, and that server differs between services. This site's speed test measures to a Cloudflare data center, whereas Fast.com, for example, measures to Netflix servers placed close to your provider. The routes are different, so the same connection at the same moment gives different numbers. Neither is wrong; they measure different distances. When checking whether a change helped, **compare results from the same test**.
+
+### Very fast connections hit measurement limits
+
+On connections faster than several hundred Mbps, your device's processing power, the browser, the route to the test server or the test's own design can become the limit and show a value lower than the line can really do. If a 1 Gbps plan shows around 500 Mbps and everyday use feels fine, there's no need to worry too much.
+
+## The slowest link sets the speed
+
+An internet connection is like a road made of several sections joined together, from your device to the server. Overall speed is set by **the narrowest section (the bottleneck)**. If one part is narrow, widening everything else won't help.
+
+| Section | Common causes | How to check |
+| --- | --- | --- |
+| Device | Old model, older Wi-Fi standard, heavy load | Measure on another device and compare |
+| Wi-Fi | Distance, walls, interference, a crowded band | Measure next to the router or on a cable |
+| Router and modem / fiber terminal | Running for a long time, old model, settings | Restart and measure again |
+| LAN cable | Older category (such as Cat 5), damage | Swap the cable and measure |
+| Line and provider | Evening congestion, connection method | Measure on a cable at different hours |
+| Test or destination server | Load or distance on the server side | See whether other services are slow too |
+
+The earlier advice, comparing wired with Wi-Fi and testing at different hours, is a way of finding which row in this table is the narrow one.
+
+<Ad />
+
+## Check your Wi-Fi
+
+Wi-Fi is one of the most common reasons a home connection feels slow.
+
+### Where the router sits
+
+Wi-Fi signals weaken with distance and every wall or floor they pass through. Ideally, put the router near the middle of your home, about 1 to 2 meters off the floor. Avoid the back of a cabinet, the floor or behind the TV. Metal blocks radio waves and water absorbs them, so metal furniture and aquariums are poor neighbors too.
+
+### 2.4 GHz, 5 GHz and 6 GHz
+
+Most routers broadcast on more than one frequency band, and each has different strengths.
+
+| Band | Strengths | Weaknesses |
+| --- | --- | --- |
+| 2.4 GHz | Reaches farther and gets around walls and floors more easily | Prone to interference from microwave ovens and Bluetooth, often crowded, lower speeds |
+| 5 GHz | Faster, less interference | Weakened more by walls and floors; some channels pause briefly when weather radar or similar is detected |
+| 6 GHz | Even less crowded and usually more stable | Shorter range; only works between routers and devices that support Wi-Fi 6E or Wi-Fi 7 |
+
+As a rule, use 5 GHz (or 6 GHz if available) in the same room as the router or the next one, and 2.4 GHz in distant rooms where the signal is weak. Network names (SSIDs) ending in something like "-5G" or "-A" are often the 5 GHz band, so check which one your device is connected to.
+
+### Interference
+
+In apartment buildings, neighbors' routers on the same channel can slow you down. Most routers pick a channel automatically, and a restart sometimes makes them choose a better one. On 2.4 GHz, keeping away from a running microwave oven or a cordless phone base also helps.
+
+### Mesh Wi-Fi for larger homes
+
+If one router can't cover a multi-story home or one with many rooms, **mesh Wi-Fi**, which uses several units to cover the whole home, works well. A traditional range extender also extends coverage, but depending on the model it can cut speed because it has to relay everything. Place an extender or mesh unit roughly halfway between the main router and your devices, where the main router's signal is still strong.
+
+## Check your equipment and cables
+
+### Restart the router and modem or fiber terminal
+
+Routers and modems (or fiber terminals, called ONUs in some countries) can become unstable after running for a long time. Simply switching them off, waiting a moment and turning them back on can help. As a rule, **power on the modem or fiber terminal first, then the router**. Starting the router after the modem's lights have settled makes it reconnect cleanly.
+
+### Update the firmware
+
+The software inside a router (firmware) receives updates that fix bugs and improve security. Check in the admin page or the manufacturer's app that it is up to date, and turn on automatic updates if available. Routers that have been on the market for many years may no longer get updates, in which case replacing them is worth considering.
+
+### LAN cable categories
+
+LAN cables come in categories, and older ones have lower speed limits. The category is usually printed on the cable, such as "CAT5e" or "CAT6".
+
+| Category | Rough speed supported |
+| --- | --- |
+| Cat 5 | Up to 100 Mbps |
+| Cat 5e | Up to 1 Gbps |
+| Cat 6 | Up to 1 Gbps (10 Gbps under some conditions) |
+| Cat 6A and above | Up to 10 Gbps |
+
+If a 1 Gbps connection keeps topping out at around 100 Mbps, there may be a Cat 5 cable or an old device port that only supports 100 Mbps somewhere along the way. Kinked cables and broken connector clips can also reduce speed.
+
+### Device and port limits
+
+Older phones and computers may use an older Wi-Fi standard or lack the processing power to make use of a fast connection. And even with a 10 Gbps plan, a computer or router with a 1 Gbps port tops out at 1 Gbps on that device. If another device measures faster, the cause is probably on the device side.
+
+## Check the connection method (a Japanese example: IPv6 IPoE vs PPPoE)
+
+How your provider connects you to the wider internet can also matter. In Japan, fiber lines built on NTT East and West's FLET'S network (including resold "Hikari Collaboration" plans) offer two main connection methods.
+
+- **PPPoE**: the traditional IPv4 method. Traffic passes through equipment at the handover point to the provider, which is often said to get congested in the evening when many people are online.
+- **IPv6 IPoE**: uses a different handover point and is generally considered less affected by that congestion. Sites that only support IPv4 can still be reached over the same route using "IPv4 over IPv6" techniques such as DS-Lite and MAP-E.
+
+If you are in Japan and your connection is only very slow in the evening, it is worth checking whether you are using IPv6 IPoE. It requires provider support, sign-up (sometimes it is enabled automatically) and a compatible router, and the router's admin page often shows which method is in use. Congestion still varies by area, time and provider, so switching does not guarantee faster speeds. Elsewhere, the general lesson is the same: if slowdowns follow a daily pattern, ask your provider whether a different connection option or plan avoids the congested part of the network.
+
+## Check VPNs and security software
+
+With a VPN, your traffic first travels through the VPN server and is encrypted along the way, which can lower speed and raise ping. Turn the VPN off temporarily and measure again to see its effect. Some security software inspects the contents of your traffic, which can slow things down if your device can't keep up. Browser extensions can also play a part, so trying a private window is another simple check.
+
+## When mobile data is slow
+
+On a smartphone connection, these causes are common:
+
+- **Throttling after the data cap**: once you use up your monthly allowance, many plans limit speed to somewhere around 128 kbps to 1 Mbps, depending on the plan. Check your remaining data in your carrier's app or account page.
+- **Place and time**: busy places such as stations and city centers, and busy times such as lunch hour and the evening commute, can congest cell towers.
+- **Signal**: signal weakens deep inside buildings and underground. Moving closer to a window can help.
+
+Remember that a speed test itself uses data. This site's speed test sends and receives roughly tens to hundreds of MB per run, so avoid running it over and over on mobile data.
+
+## When to contact your provider
+
+If the problem continues after trying the steps above, contact your internet provider or line operator when:
+
+- It is always slow, at any time of day, even on a cable right after restarting the router
+- Speed has dropped clearly from what you used to get and hasn't recovered
+- The connection drops frequently, or the modem or fiber terminal lights indicate a fault
+
+When you get in touch, share several results along with **when, on which device, and whether wired or Wi-Fi**. That makes the conversation much faster. Note the model names of your router and modem and what you have already tried. Sometimes the fix is on the provider's side, or a change of plan solves it.
+
+Speed changes every time you measure. Start by running the [Internet Speed Test](/) a few times under the same conditions and find where the narrow section is. For rough speeds needed by activity, see [How much internet speed do you need?](/guide/speed-guide/), and browse other articles in the [guide](/guide/). For how test data is handled, see the [privacy policy](/privacy/).

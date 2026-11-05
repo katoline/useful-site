@@ -84,7 +84,7 @@ test("端末の設定に従う（既定）では prefers-color-scheme に追従�
 
 test("言語切り替えは同じページの他言語版へクライアント側で遷移する", async ({ page }) => {
   await page.goto("/image-adjust/about/");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("使い方・運営者情報");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Image Adjust の使い方と特徴");
   // ページ全体の再読み込みが起きないこと（＝ツールの状態を失わない）を目印で確かめる
   await page.evaluate(() => ((window as { __marker?: number }).__marker = 1));
   if (isMobile(page)) await page.getByTestId("mobile-menu-button").click();
@@ -92,7 +92,7 @@ test("言語切り替えは同じページの他言語版へクライアント�
   await page.getByTestId("lang-en").filter({ visible: true }).click();
   await expect(page).toHaveURL(/\/image-adjust\/en\/about\/$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("How to Use & About");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("How to Use Image Adjust");
   expect(await page.evaluate(() => (window as { __marker?: number }).__marker)).toBe(1);
   expect(await page.evaluate(() => localStorage.getItem("site:lang"))).toBe("en");
 });

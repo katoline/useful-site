@@ -1,5 +1,6 @@
 import type { MouseEvent } from "react";
 import { Link } from "react-router";
+import { SITE_NAME } from "../config";
 import { useI18n } from "../i18n";
 import { EXTERNAL_TRANSMISSION_ANCHOR } from "../legal/paths";
 import { createAppPaths } from "../paths/app-paths";
@@ -27,6 +28,11 @@ export function SiteFooter({ config }: { config: ShellConfig }) {
               </li>
             ))}
             <li>
+              <Link to={localizedPath(lang, "about")} className={linkClass} onClick={navigate}>
+                {t("legal.about")}
+              </Link>
+            </li>
+            <li>
               <Link to={localizedPath(lang, "privacy")} className={linkClass} onClick={navigate}>
                 {t("legal.privacy")}
               </Link>
@@ -49,7 +55,7 @@ export function SiteFooter({ config }: { config: ShellConfig }) {
           </ul>
         </nav>
         {config.footerNote && <p>{config.footerNote[lang]}</p>}
-        <p>© {config.name[lang]}</p>
+        <p>© {SITE_NAME[lang]}</p>
       </div>
     </footer>
   );
