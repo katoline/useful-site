@@ -1,0 +1,145 @@
+export const frontmatter = {
+  title: "How This Sound Meter Works and How Accurate It Is",
+  description:
+    "A detailed look at how this site's sound level meter turns microphone audio into estimated dB(A): the weighting filters, Fast and Slow, how Leq and L90 are calculated, and how the calibration offset was chosen — plus what has been verified and what has not.",
+  datePublished: "2026-11-28",
+  dateModified: "2026-11-28",
+};
+
+There are plenty of sound meter apps and websites, but few of them explain how the number on screen is actually calculated, or how far you can trust it. This article walks through the calculations this site's [Sound Level Meter](/) performs, in the order the audio flows from the microphone to the result. It also separates what is checked by automated tests from what has not yet been confirmed on real devices.
+
+For choosing settings and practical measuring tips, see [How to Measure Noise Accurately with Your Phone](/guide/how-to-measure/). For what decibels mean and how loud everyday sounds are, see [Decibel Levels of Everyday Sounds](/guide/noise-levels/). This article covers what happens under the hood, and how accurate the result is.
+
+## From microphone audio to numbers
+
+A measurement goes through five stages. All of them run inside your browser; the audio itself is never stored or sent anywhere.
+
+1. **Open the microphone**: the browser's getUserMedia feature is used, with a request to turn off the echo cancellation, noise suppression and automatic gain control that are meant for calls.
+2. **Tap the audio**: two Web Audio analysers are connected. One runs an FFT (4,096 points) for frequency analysis; the other holds a long buffer of the raw waveform (32,768 samples, about 0.68 seconds at 48 kHz). Nothing is routed to the speakers, so there is no feedback.
+3. **Analyse every 0.1 seconds**: each time, the meter takes exactly as many samples from the end of the buffer as the time that has passed since the last read. That way every sample is counted once, even if the timing drifts a little. Reading only the most recent slice would skip the audio in between and skew the average and maximum.
+4. **Apply weightings and compute the level**: every sample goes through a frequency weighting (A, C or Z), is squared, and then goes through a time weighting (Fast or Slow).
+5. **Add the calibration offset**: the computed value is a digital level (dBFS), so a calibration offset is added at the end to give an estimated dB.
+
+Stages 4 and 5 are explained in detail below.
+
+## How the frequency weightings are built
+
+### Turning the standard's formula into digital filters
+
+A- and C-weighting are defined in the international sound level meter standard, IEC 61672-1, as formulas for analogue circuits. Those formulas are described by four frequencies (poles): 20.6 Hz, 107.7 Hz, 737.9 Hz and 12,194 Hz. This meter splits the formula into small first-order filters and converts each to a digital filter using the bilinear transform. A-weighting uses six stages and C-weighting four. Finally, the overall gain is set so that 1 kHz comes out at exactly 0 dB.
+
+The bilinear transform is usually paired with a correction for frequency warping (pre-warping), but it is deliberately left out here. With pre-warping, the 12,194 Hz pole moves and lifts the 4–10 kHz range, which actually made the error larger in the frequencies that matter most for everyday noise.
+
+Z-weighting means "no weighting", but microphone signals can carry a DC offset, so a single filter stage removes everything below 2 Hz.
+
+### How close the filters are to the standard
+
+The filter response is compared with the reference values in the standard by an automated test that runs on every change, at both 44.1 kHz and 48 kHz sampling rates. The test checks the following:
+
+| Frequency range | What is checked |
+| --- | --- |
+| 31.5 Hz–4 kHz | Both A and C are within 0.2 dB of the standard's reference values |
+| 31.5 Hz–16 kHz | Within the Class 1 tolerances of the standard |
+| 8 kHz | A-weighting reads about 0.7 dB below the reference (inside the tolerance) |
+| Z-weighting | Flat to within 0.3 dB from 31.5 Hz to 8 kHz; DC is removed |
+
+Keep in mind that this is the accuracy of **the calculation only**. The final reading depends much more on the microphone that comes before it (see below).
+
+## Time weighting and the values on screen
+
+### Calculating Fast and Slow
+
+The weighted waveform is squared and run through an exponential average: with each sample, the running value moves a small step toward the new value. The step size is `α = 1 − exp(−1 / (τ × fs))`, where τ is the time constant and fs is the sampling rate. τ is 0.125 seconds for Fast and 1 second for Slow, the same as in the standard.
+
+### How each value is calculated
+
+| Value | How it is calculated |
+| --- | --- |
+| Current level | The time-weighted level at the end of each 0.1-second analysis |
+| Maximum (Lmax) and minimum (Lmin) | The highest and lowest time-weighted level across every sample, not just the values read every 0.1 seconds |
+| Average (Leq) | The mean of the squared weighted samples (an energy average) over all samples. No time weighting is applied |
+| L10, L50, L90 | The values read every 0.1 seconds (600 values for 60 seconds) are sorted, and the values at the 10%, 50% and 90% positions from the top are taken, interpolating linearly |
+| Peak | The largest absolute value of the unweighted waveform |
+
+The peak is unweighted. Professional meters usually report a C-weighted peak (LCpeak), which is defined differently, so don't compare the two directly.
+
+### The first 0.2 seconds and digital silence
+
+Digital filters wobble briefly right after they start. So the meter skips 0.2 seconds of samples **from the moment sound starts arriving**. While the microphone is starting up, the browser delivers samples that are exactly zero; if the skip were counted from the button press, the wobble would remain and be recorded as the maximum.
+
+Stretches where every sample is exactly zero (when muted, or when the microphone is disconnected) mean "no input" rather than "silence", so they are left out of the average, L90 and the other statistics. If that lasts for the whole measurement, the result is replaced by a message saying no sound was received.
+
+## Frequency analysis
+
+The dominant frequency, brightness and band breakdown come from the FFT spectrum, separately from the level. At 48 kHz, each frequency bin is about 11.7 Hz wide.
+
+- **Dominant frequency**: the strongest bin between 50 Hz and 8 kHz is found, and its neighbours are used to estimate a value between bins. Below 50 Hz is skipped because air conditioning and wind noise dominate there. No frequency is reported for very quiet sound (-80 dBFS or below).
+- **Dominant frequency for the whole measurement**: the 0.1-second results are grouped by semitone, and the median of the most frequent semitone is reported.
+- **Band breakdown**: the share of energy in the low (20–250 Hz), low-mid (250 Hz–1 kHz), high-mid (1–4 kHz) and high (4–16 kHz) bands. No weighting is applied.
+
+## From dBFS to estimated dB: the calibration offset
+
+### Why an offset is needed
+
+The browser only provides audio as a level relative to the digital maximum (dBFS). The same 60 dB sound produces different dBFS values on different devices, depending on microphone sensitivity and internal amplification. So this meter displays **estimated dB = dBFS + calibration offset**. The offset can be set between 60 and 140 dB.
+
+### How the default offsets were chosen
+
+| Device | Default | Basis |
+| --- | --- | --- |
+| iPhone and iPad | +122 dB | The difference from a commercial, per-model calibrated sound meter app (dB(A)), measured side by side on an iPhone |
+| Everything else (Android, computers, etc.) | +100 dB | A provisional value, not compared against a real meter |
+
+The iPhone and iPad value comes from a single comparison in a quiet room (about 42 dB(A)). Whether it holds for loud sounds, and whether it differs between models, has not been checked yet. The +100 dB for Android and computers is a provisional value that hasn't been compared with a real sound level meter, so it may be well off for your device. If you need a reliable number, calibrate it as described below.
+
+Earlier versions used +100 dB on every device. When the iPhone value was revised, devices whose saved settings were from the old version and still had the old default of 100 were switched to the new per-device default automatically.
+
+### Matching your own reference meter
+
+If you enter the average (Leq) from a reference meter, measured in the same place, at the same time and with the same weighting, into "Match a reference (calibrate)" below the results, the meter sets **offset = reference value − this measurement's average (dBFS)** and saves it on your device. Because it simply matches the averages of one measurement, sounds far from the level you calibrated at may drift. For the step-by-step procedure and the kind of sound to calibrate with, see the calibration section of [How to Measure Noise Accurately with Your Phone](/guide/how-to-measure/).
+
+## What determines accuracy
+
+The calculations above are covered by automated tests, but the accuracy of the displayed value is mostly decided before the calculation starts.
+
+| Factor | What this meter does | Remaining limits |
+| --- | --- | --- |
+| Microphone sensitivity | Corrected by the calibration offset | Default confirmed at one level on one iPhone only |
+| Microphone frequency response | Not corrected | Small microphones pick up low frequencies poorly, so C and Z readings tend to be low |
+| Call-oriented audio processing | Asks for it to be turned off, and shows a notice if it is still on | Processing the browser doesn't report cannot be detected |
+| Loud sounds | Displayed within the offset range | When the microphone or circuitry saturates, the reading is lower than reality |
+| Quiet sounds | Floor at -100 dBFS | Sounds below the microphone's own noise cannot be measured |
+| Missed audio | Reads the continuation from a buffer of about 0.68 seconds | If processing is delayed for longer, such as in a background tab, that audio is not counted |
+
+Keeping the page on screen during a measurement prevents that last issue in practice.
+
+## What this sound meter can't be used for
+
+This sound meter is a tool for getting a sense of how loud your surroundings are and for comparing places and times. It is not a certified sound level meter, so it is not suitable for:
+
+- Evidence in neighbour disputes, court cases or complaints to authorities
+- Measurements that regulations require to follow a specific method, such as workplace noise management
+- Formal reports such as environmental impact assessments
+
+For those, contact your local authority or a professional with a certified meter. That said, comparing readings taken on the same device with the same settings — before and after closing a window, day versus night — works well, because any offset error cancels out.
+
+## Not yet verified, and next steps
+
+- Whether the iPhone and iPad offset holds for loud sounds (70 dB and above)
+- Differences between iPhone and iPad models
+- Appropriate offsets for Android devices and computers
+
+If you have side-by-side results against a commercial meter or a calibrated app (device model, weighting, and both readings), we'd be glad to hear them via the contact method on [About Us & Contact](/about/). They help us revisit the defaults. Please don't include personal information.
+
+## How audio is handled
+
+Microphone audio is turned into numbers every 0.1 seconds inside your browser and is never recorded, stored or sent. The microphone turns off automatically when the measurement ends or you stop it. "Save CSV" saves only the computed numbers, directly to your device. See the [Privacy Policy](/privacy/) for details.
+
+## Summary
+
+- The frequency weightings are digital versions of the standard's formulas, and automated tests confirm they are within 0.2 dB of the reference values from 31.5 Hz to 4 kHz.
+- Fast and Slow, Leq, Lmax and Lmin, and L10 to L90 follow the same approach as the standard and use every sample.
+- Estimated dB is dBFS plus an offset, so accuracy is mainly determined by the microphone and the offset. The iPhone and iPad default comes from a single comparison; the others are provisional.
+- If you need accurate values, use "Match a reference (calibrate)" with a meter you have.
+
+Now that you know how it works, try [measuring with the Sound Level Meter](/). More articles are in the [guide index](/guide/).
