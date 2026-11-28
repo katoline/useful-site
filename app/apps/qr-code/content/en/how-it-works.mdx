@@ -1,0 +1,118 @@
+export const frontmatter = {
+  title: "How the QR Code Generator Works: Error Correction, Icons and File Formats",
+  description:
+    "What this tool actually does to turn a URL into a QR code, with real numbers: why error correction is fixed at H, how much the center icon covers, the margin and resolution rules, how the PNG and SVG files are built, and what the tool does not do.",
+  datePublished: "2026-11-28",
+  dateModified: "2026-11-28",
+};
+
+The [QR code generator](/) turns a URL into a QR code on the spot, lets you place an icon in the center and saves the result as PNG or SVG. This article explains what happens behind the scenes and the rules the tool uses to decide that a code is fit to save, using the tool's own settings and numbers calculated with the same encoding library and settings the tool uses.
+
+For how QR codes work in general and tips on scan-friendly design, see [How to make QR codes that scan reliably](/guide/qr-tips/).
+
+## The overall flow
+
+1. The URL you enter is checked: it must start with `http://` or `https://`, have a host name, and be no longer than 1,000 bytes.
+2. The URL text is encoded into QR modules (the small black and white squares) with error correction level H.
+3. A margin is added around it. If you chose an icon, the modules in the center are cleared to white and the icon is placed on top. The result is assembled as an SVG.
+4. "Save PNG" redraws that SVG as a PNG at the size you chose. "Save SVG" saves the SVG as it is.
+
+All of this happens inside your browser. The URL you enter is never sent to our server, and the tool never visits the page the URL points to, whether to read its content or to fetch its favicon.
+
+## From URL to QR code
+
+The encoding is done by **qrcode**, an open-source JavaScript library. It is not loaded when the page first opens; it is loaded the moment a code needs to be made.
+
+What goes into the QR code is the text in the input box with only the leading and trailing spaces removed. The browser's URL parser is used to check that the input is a valid URL, but its output — which replaces non-ASCII characters with sequences like `%E3%81%82` — is not what gets encoded. Doing so would turn each Japanese character in a URL into nine characters and make the QR code needlessly dense.
+
+### Up to 1,000 bytes
+
+URLs can be up to 1,000 bytes in UTF-8. ASCII letters and digits count as one byte each; most Japanese characters count as three. A QR code at level H can technically hold more, but a URL that long produces a pattern so fine that it becomes hard to scan in practice.
+
+## Error correction is fixed at H
+
+QR codes include error correction that can restore the content even if part of the code is dirty or missing. There are four levels, L, M, Q and H. This tool offers no choice and always uses the strongest, **H (about 30% recoverable)**.
+
+The cost of H is a denser pattern (more modules) for the same URL. The tool uses it anyway so that there is enough correction to cover the area hidden by a center icon, with capacity left over for faded print or a shaky camera. The setting is the same with or without an icon, so removing the icon never makes a code harder to read.
+
+### URL length and pattern density
+
+The table below shows what you get when an ASCII URL is encoded with the same library and settings as the tool (error correction H, 4-module margin). URLs with Japanese text or many symbols may differ slightly for the same number of bytes.
+
+| URL length | QR version | Modules | Side incl. margin | Smallest PNG allowed |
+| --- | --- | --- | --- | --- |
+| 20 bytes | 3 | 29 × 29 | 37 | 256 px |
+| 40 bytes | 5 | 37 × 37 | 45 | 256 px |
+| 60 bytes | 7 | 45 × 45 | 53 | 256 px |
+| 100 bytes | 10 | 57 × 57 | 65 | 512 px |
+| 200 bytes | 15 | 77 × 77 | 85 | 512 px |
+| 500 bytes | 24 | 113 × 113 | 121 | 512 px |
+| 1,000 bytes | 36 | 161 × 161 | 169 | 1024 px |
+
+The shorter the URL, the larger each module, and the easier the code is to scan even when printed small. It is worth checking whether you have added more tracking parameters than you need.
+
+<Ad />
+
+## How much the center icon covers
+
+The modules under an icon can no longer be read. The tool places the icon as follows:
+
+- The icon's side is **12–20%** of the width of the QR code itself, excluding the margin (16% by default). It is rounded to whole modules, and if it would be smaller than 3 modules, no icon is placed.
+- A **white backing one module wide** is added around the icon, so the edges of the icon and the pattern do not blend together and confuse the scanning app.
+- The icon is always centered and never overlaps the three finder patterns in the corners that scanners use to locate the code.
+
+Here is how much of the QR code itself is cleared to white, backing included:
+
+| URL length | Icon at 16% | Icon at 20% |
+| --- | --- | --- |
+| 20 bytes (29 × 29) | about 5.8% | about 7.6% |
+| 60 bytes (45 × 45) | about 4.0% | about 6.0% |
+| 200 bytes (77 × 77) | about 3.3% | about 4.9% |
+| 1,000 bytes (161 × 161) | about 3.0% | about 4.5% |
+
+Shorter URLs have fewer modules, so the one-module backing is relatively larger and a bigger share is covered. In every case, the covered area is well below the roughly 30% that level H can recover.
+
+Keep in mind, though, that error correction works on codewords — the units the data is split into — rather than on area. A codeword that is even slightly damaged counts as entirely wrong, so the correction actually used is larger than the covered area suggests. The rest of the capacity is what absorbs printing and camera problems, so it is safest to keep the icon as small as it can be while still recognizable.
+
+### Available icons
+
+- **Generic icons** (10, such as link, globe and mail) and **service logos** (10, such as GitHub, YouTube and LINE): shapes built into the tool, drawn in the same color as the QR code.
+- **Your own image**: PNG, JPEG or WebP, up to 2 MB and 4096 px on each side. The tool reads the first bytes of the file to check that it really is one of those formats, not just that the extension says so (SVG and GIF are not accepted). The image is rotated according to its orientation data, scaled down in steps until its longer side is 512 px or less, and redrawn as a PNG before being embedded. Because it is redrawn, metadata in the original image, such as the date taken or location, does not end up in the QR code.
+
+## Color and margin rules
+
+The background is always white, and the QR code color must have a **contrast ratio of at least 7:1** against white — the strictest (AAA) level of the WCAG web accessibility guidelines. All seven preset colors meet it. A custom color is checked with the same formula, and if it falls short, the code cannot be saved. Some scanning apps cannot read inverted (light-on-dark) codes, so the tool does not let you make one.
+
+A margin (quiet zone) of **4 modules**, as the QR code standard specifies, is always added. Without it, scanners may not be able to tell the code apart from its surroundings.
+
+## How the PNG and SVG are built
+
+### SVG
+
+The SVG is built first. It is a very simple SVG in which all dark modules are combined into a single shape. It contains only the module pattern, validated colors and numbers, and the icon — the URL text itself is never written into the SVG. Built-in icons are checked to contain no scripts or external references before they are inserted, and your own image is embedded inside the SVG as PNG data. The saved SVG therefore refers to no external files and displays on its own.
+
+SVG stays sharp at any size, which makes it a good fit for print and large signs.
+
+### PNG
+
+The PNG is made by redrawing the SVG with the browser's canvas at the size you chose (256, 512, 1024 or 2048 px). While doing so, the code is shrunk very slightly and centered so that **each module is exactly a whole number of pixels**, with the leftover pixels added to the white margin. For example, a code that is 53 modules wide including the margin, saved at 512 px, gets 9 px per module (53 × 9 = 477 px), and the remaining 35 px are split between the margins on each side. Module edges do not blur, so the PNG stays crisp.
+
+The tool also **will not save a PNG in which a module would be smaller than 4 px**, as it might be too coarse to scan. In that case it tells you which size you can use instead (the "Smallest PNG allowed" column above).
+
+The file is named after the URL's host name, for example `example.com.png`.
+
+## What the tool does not do
+
+- **It does not rewrite your URL**: there is no short link and no redirect through our server. The URL you enter is what goes into the QR code.
+- **It does not track scans**: nothing records who scanned the code or when. If you need numbers, add tracking parameters to the destination URL and count visits in your own site's analytics ([QR code use cases](/guide/qr-uses/) explains how).
+- **It never expires**: the URL itself is inside the QR code, so it keeps working even if this site disappears. The flip side is that you cannot change the destination after the code is made. If it might change, use the URL of a page you control.
+- **It does not store anything**: the URL, settings and icon are kept only in the tab's memory so they survive switching languages. They are not saved on your device or on our server, and they disappear when you reload.
+
+## Summary
+
+- Error correction is always H. The icon plus its one-module backing covers about 3–8% of the QR code itself
+- The margin is always 4 modules, the color always has at least 7:1 contrast against white, and a PNG always has at least 4 px per module
+- The SVG is a simple shape that contains no URL text and refers to nothing external. The PNG is drawn with a whole number of pixels per module
+- No URL rewriting, no scan tracking, no expiry — and everything runs in your browser
+
+Even when all these rules are met, how easily a code scans depends on the device, the app and the print quality. Before handing out a code, check that it scans on the devices people will actually use. To make one, open the [QR code generator](/); other articles are in the [guide index](/guide/).
