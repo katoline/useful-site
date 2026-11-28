@@ -216,6 +216,25 @@ test("サイト共通の運営者情報に運営者名・お問い合わせ先�
   }
 });
 
+test("サイト共通の更新履歴が日付の見出しつきで表示され、記事へのリンクが表示中の言語に直る", async ({
+  page,
+}) => {
+  for (const [path, heading, base] of [
+    ["/changelog/", "更新履歴", "/"],
+    ["/en/changelog/", "Changelog", "/en/"],
+  ] as const) {
+    const response = await page.goto(path);
+    expect(response?.status()).toBe(200);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(heading);
+    expect(await page.locator("main .prose-content h2").count()).toBeGreaterThanOrEqual(3);
+    await expect(
+      page.locator(`main .prose-content a[href="/speed-test${base}guide/how-it-works/"]`),
+    ).toHaveCount(1);
+    await expect(page.locator(`main .prose-content a[href="${base}about/"]`)).toHaveCount(1);
+    await expect(page.locator(`footer a[href="${path}"]`)).toHaveCount(1);
+  }
+});
+
 for (const app of ["markdown-pdf", "qr-code", "sound-meter", "speed-test"]) {
   test(`${app} のガイド一覧から記事を開け、ツールのページにも記事へのリンクがある`, async ({
     page,

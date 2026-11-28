@@ -1,0 +1,63 @@
+export const frontmatter = {
+  title: "Changelog",
+  description: "A record of new tools, improvements, new guides, and bug and security fixes on Handy Tools.",
+  datePublished: "2026-11-28",
+  dateModified: "2026-11-28",
+};
+
+This page lists what has changed on <SiteName />, newest first: new tools and improvements, new guides, and bug and security fixes. Routine work that doesn't change how the site looks or behaves, such as regular library updates, isn't listed. To report a problem or suggest something, see [About us & contact](/about/).
+
+## November 28, 2026
+
+- Added a guide to each tool explaining how it processes or calculates its results, and how far you can trust them
+  - [How the speed test measures](/speed-test/guide/how-it-works/): how ping, jitter, download and upload are worked out, and why results differ from other speed tests
+  - [How the sound level meter calculates, and how accurate it is](/sound-meter/guide/accuracy/): frequency and time weighting, how the calibration offset was chosen, and the limits of phone microphones
+  - [How the image converter works](/image-adjust/guide/how-it-works/): the encoders used, how the target-size search works, and what happens to metadata and transparency
+  - [How Markdown to PDF works](/markdown-pdf/guide/how-it-works/): the conversion rules, how the preview is kept safe, and why the PDF is made by printing
+  - [How the QR code generator works](/qr-code/guide/how-it-works/): error correction versus icon size, and the output formats
+- Added this changelog
+
+## November 5, 2026
+
+- Added an About us & contact page, linked from the footer and menu of every page
+- Added two guides each to Markdown to PDF, QR Code Generator, Sound Level Meter and Internet Speed Test
+  - Markdown syntax cheat sheet / Tips for clean PDFs from Markdown
+  - How to make QR codes that scan reliably / QR code use cases and a pre-launch checklist
+  - How to measure noise accurately with your phone / Decibel levels of everyday sounds
+  - How much internet speed you need / Why your internet is slow and how to fix it
+- Added notes specific to each format pair to the image converter's six conversion pages and five compression pages, with recommended settings
+- Added the site's key features and links to each tool's guides to the home page
+- Corrected the FAQ answer about animated WebP to match what the tool actually does (it outputs the file unchanged)
+
+## October 24, 2026
+
+- Launched the [Internet Speed Test](/speed-test/). It measures download, upload, ping and jitter to your nearest Cloudflare data center
+  - Six transfers now run in parallel so that fast connections are measured correctly
+- The sound meter now follows the international sound level meter standard (IEC 61672-1) for frequency weighting (A, C, Z) and time weighting (Fast, Slow). The default calibration offset for iPhone was revised after measuring side by side with a calibrated sound meter app
+- Renamed the audio analysis tool to "Sound Level Meter"
+
+## October 23, 2026
+
+- Launched the [Sound Level Meter](/sound-meter/). It measures the sound around you with your microphone and shows an estimated dB level, the dominant frequency and a breakdown by frequency range. Nothing is recorded or sent
+- Fixed bugs where the calibration offset couldn't be entered and the microphone didn't start and stop reliably
+
+## October 22, 2026
+
+- Image converter: tightened the size and file-count limits when extracting ZIP files and when reloading, so that extremely large inputs can't freeze the browser
+- Limited how much embedded metadata (such as EXIF) is read from images
+- Updated the libraries used for WebP and GIF processing to versions that fix known vulnerabilities
+- Updated the Markdown to PDF conversion library to a version that fixes vulnerabilities that could make processing extremely slow
+
+## October 21, 2026
+
+- Reorganised the header and added tabs to switch between the pages within a tool (convert, compress, icon generator and so on)
+- Added a short list of what each tool can do to the home page
+- Collapsed advanced settings, URL input and FAQs on the tool screens so the first step is easier to find
+
+## October 20, 2026
+
+- Launched the site on its own domain (t0n03k1.com) with three tools
+  - [Image Converter & Compressor](/image-adjust/): convert between PNG, JPEG and WebP, compress while keeping quality, and generate favicon and app icon sets
+  - [Markdown to PDF](/markdown-pdf/): preview as you write, choose paper size, margins and font size, and save as PDF
+  - [QR Code Generator](/qr-code/): create a QR code from a URL, add a logo or icon in the center, and save as PNG or SVG
+- Available in Japanese and English, with light and dark themes

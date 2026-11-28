@@ -33,6 +33,11 @@ export function SiteFooter({ config }: { config: ShellConfig }) {
               </Link>
             </li>
             <li>
+              <Link to={localizedPath(lang, "changelog")} className={linkClass} onClick={navigate}>
+                {t("legal.changelog")}
+              </Link>
+            </li>
+            <li>
               <Link to={localizedPath(lang, "privacy")} className={linkClass} onClick={navigate}>
                 {t("legal.privacy")}
               </Link>

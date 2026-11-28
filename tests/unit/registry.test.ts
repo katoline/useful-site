@@ -32,6 +32,7 @@ describe("アプリ登録簿", () => {
       "privacy",
       "terms",
       "about",
+      "changelog",
       "404",
       "sitemap.xml",
       "robots.txt",

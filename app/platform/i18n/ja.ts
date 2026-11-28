@@ -50,6 +50,7 @@ export const ja = {
   },
   legal: {
     about: "運営者情報・お問い合わせ",
+    changelog: "更新履歴",
     privacy: "プライバシーポリシー",
     terms: "利用規約・免責事項",
     externalTransmission: "外部送信について",

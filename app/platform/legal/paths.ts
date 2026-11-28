@@ -3,8 +3,8 @@ import { createAppPaths } from "../paths/app-paths.ts";
 
 export const SITE_LEGAL_PAGES = ["privacy", "terms"] as const;
 export type LegalPage = (typeof SITE_LEGAL_PAGES)[number];
-/** サイト共通のページ（運営者情報と規約類）。ドメイン直下に置く（/about/・/privacy/・/terms/） */
-export const SITE_PAGES = ["about", ...SITE_LEGAL_PAGES] as const;
+/** サイト共通のページ（運営者情報・更新履歴と規約類）。ドメイン直下に置く（/about/・/changelog/・/privacy/・/terms/） */
+export const SITE_PAGES = ["about", "changelog", ...SITE_LEGAL_PAGES] as const;
 export type SitePage = (typeof SITE_PAGES)[number];
 export const EXTERNAL_TRANSMISSION_ANCHOR = "external-transmission";
 
