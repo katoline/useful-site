@@ -36,7 +36,12 @@ export const COMPRESS_FORMATS = ["jpeg", "png", "webp", "gif", "svg"] as const;
 export type CompressFormat = (typeof COMPRESS_FORMATS)[number];
 
 /** 解説ページ（/guide/:slug）。記事を足したらここにも足す */
-export const GUIDE_SLUGS = ["image-formats", "favicon-setup", "optimize-lp-images"] as const;
+export const GUIDE_SLUGS = [
+  "image-formats",
+  "favicon-setup",
+  "optimize-lp-images",
+  "how-it-works",
+] as const;
 export type GuideSlug = (typeof GUIDE_SLUGS)[number];
 
 export function isConvertPair(v: string | undefined): v is ConvertPair {

@@ -1,0 +1,168 @@
+export const frontmatter = {
+  title: "How Image Adjust Works: The Encoders We Use and What Each Setting Does",
+  description:
+    "A look inside Image Adjust: the encoders it runs in your browser (MozJPEG, libwebp, OxiPNG, libimagequant, gifsicle, SVGO), how target file sizes are found, how PNG quality maps to colors, and how EXIF, color profiles, transparency, animation and size limits are handled.",
+  datePublished: "2026-11-28",
+  dateModified: "2026-11-28",
+};
+
+Image converters and compressors can look alike, but under the hood they use different encoders and interpret settings differently. “Quality 80” in one tool doesn't give the same file size or image as “quality 80” in another, and tools differ in what they do with EXIF data and color profiles.
+
+This article walks through exactly what the [converter and compressor](/) does between receiving an image and handing you the result. Use it when a result isn't what you expected, or when you want to know what a setting really means. For the differences between formats themselves, see [Choosing an Image Format](/guide/image-formats/); for web-specific advice, see [Making Landing Page Images Lighter](/guide/optimize-lp-images/).
+
+## The processing pipeline
+
+Each image goes through these steps:
+
+1. **Format detection**: PNG, JPEG, WebP and GIF are identified by the first bytes of the file (the “magic number”), not by the file extension. A file that was simply renamed is handled as whatever it really is. SVG is text, so only when the content can't be identified do we fall back to the extension or MIME type, and only to treat the file as SVG.
+2. **Size check**: the width and height are read from the file header, and images that exceed your device's limit (see below) are stopped before they're decoded.
+3. **Decoding**: PNG, JPEG and WebP are unpacked into raw RGBA pixels.
+4. **Resizing**: if requested, the image is scaled with the Lanczos3 filter.
+5. **Encoding**: the pixels are written out in the chosen format. With a target file size, this step is repeated at different quality levels.
+6. **Finishing**: the color profile (ICC) is embedded again, and the result is compared with the original size.
+
+GIF and SVG are not unpacked into pixels; each has its own dedicated optimizer (see below).
+
+## The encoders we use
+
+Images are written with encoders compiled to WebAssembly (WASM) rather than the browser's built-in features such as Canvas `toBlob`. The built-in encoders differ from browser to browser and offer few options; WASM encoders produce the same output in every browser.
+
+| Format | Encoder | Main settings |
+| --- | --- | --- |
+| JPEG | MozJPEG (via jSquash) | Progressive (on by default), optimized Huffman coding |
+| WebP | libwebp (via jSquash) | Quality 0–100, or lossless |
+| PNG | OxiPNG (via jSquash) + libimagequant | Reduce colors, then pack with OxiPNG |
+| GIF | gifsicle (WASM build) | Optimization level 2, lossiness 30 (defaults) |
+| SVG | SVGO | Safe, standard or aggressive |
+| Resizing | jSquash resize | Lanczos3, with premultiplied alpha for transparency |
+
+MozJPEG is an encoder designed to make smaller files at the same visual quality while staying fully compatible with ordinary JPEG decoders. OxiPNG is a lossless optimizer: it shrinks PNG files by finding a better way to compress them, without changing a single pixel.
+
+Together these encoders are fairly large, so none of them is loaded when you open the page. Each one is downloaded the first time an image actually needs it.
+
+## “Quality” means different things per format
+
+The quality slider (80 by default; the “High”, “Standard” and “Light” presets are 90, 80 and 60) is interpreted differently for each format.
+
+### JPEG and WebP
+
+The value is passed straight to MozJPEG or libwebp as their quality setting (0–100). Lower values discard more color and detail to make the file smaller. When “Lossless WebP” is turned on, quality is ignored and the image is saved with lossless compression that keeps every pixel.
+
+### PNG: quality becomes a number of colors
+
+PNG is a lossless format, so it has no notion of quality. Image Adjust therefore turns the quality value into a **number of colors**, reduces the image to that palette (which is lossy), and then packs it with OxiPNG. Every 10 points of quality multiplies the number of colors by about 1.6:
+
+| Quality | Colors |
+| --- | --- |
+| 100 | No color reduction (lossless) |
+| 95 | 201 colors |
+| 90 | 158 colors |
+| 80 (default) | 97 colors |
+| 70 | 60 colors |
+| 60 | 37 colors |
+| 40 | 14 colors |
+| 20 | 5 colors |
+
+Color reduction uses libimagequant (the library at the heart of pngquant) with dithering, which blends neighboring colors with fine dots so that steps between colors are less visible. If libimagequant can't be loaded, the pure-JavaScript image-q library is used instead.
+
+Because the default is “quality 80 = 97 colors”, PNGs with many colors, such as photos, will change. Logos and screenshots with few colors usually look the same at 97 colors, but smooth gradients may show banding. If a PNG must not change at all, turn on “Do not reduce PNG colors (lossless)”: no colors are removed and only OxiPNG's lossless optimization is applied.
+
+<Ad />
+
+## How a target file size is found
+
+When you ask for a target size such as “under 200 KB”, Image Adjust runs a binary search over quality levels 5 to 100.
+
+1. It encodes at the middle quality. If the result fits, it tries a higher quality; if not, a lower one.
+2. It repeats this and keeps **the highest quality that fits within the target**. Each image is encoded at most 8 times.
+3. If even quality 5 doesn't fit, you get the quality-5 result together with a note that the target couldn't be reached.
+
+Thanks to the binary search, finding the answer among 96 quality levels takes about 7 encodes rather than dozens. For PNG, the search moves through the color counts in the table above. For WebP, the search always uses lossy compression.
+
+When a target can't be reached, the image is almost always too large in pixels. Reducing the width gives a far cleaner result at the same file size than pushing quality to the bottom. The “Landing page hero” preset, for example, resizes to 1920px wide and then searches for a WebP under 300 KB.
+
+## If the result is bigger, you get the original
+
+Re-compressing an already well-compressed image in the same format can make it larger. So when an image is saved in **the same format at the same dimensions** and the result is not smaller than the original, the new file is discarded, the original is returned (with only its metadata removed), and the tool tells you it kept the original. GIF and SVG work the same way: if optimization doesn't make them smaller, the original is kept.
+
+If you changed the format or resized the image, the result is returned even when it's bigger, because you presumably need that exact format or size.
+
+## Metadata, orientation and color
+
+### EXIF orientation is applied to the pixels
+
+Many phone photos are stored sideways, with an EXIF “Orientation” tag telling viewers to rotate them. Re-encoding drops EXIF, so without care the output would appear rotated. Image Adjust rotates the pixels according to the orientation tag while decoding a JPEG, so the output displays correctly even without EXIF.
+
+### EXIF and location data are not carried over
+
+When PNG, JPEG or WebP images are re-encoded, EXIF data such as capture time, camera model and GPS location, as well as XMP and IPTC data, is not kept. “Remove EXIF and other metadata” is on by default. Even if you turn it off, re-encoded images can't inherit their metadata, and the tool tells you so.
+
+On paths that don't re-encode (when the original is kept, and for animated WebP), the metadata sections are stripped from the original bytes. GIF and SVG optimization removes comments and similar extra data as part of the process.
+
+### Color profiles (ICC) are re-embedded
+
+A color profile tells viewers how to display a photo's colors correctly. Removing it from an Adobe RGB or Display P3 photo makes the colors look dull or oversaturated. So the ICC profile alone is extracted from the original and embedded again in a form that suits the output format. It's kept even when metadata removal is on.
+
+## Transparency and animation
+
+- **Transparent image to JPEG**: JPEG has no transparency, so transparent and semi-transparent areas are blended onto a background color (white by default, adjustable) before encoding. Semi-transparent edges are blended smoothly into that color.
+- **Transparent image to PNG or WebP**: transparency is kept. Lossless WebP is set not to preserve hidden colors underneath fully transparent pixels, which doesn't change how the image looks.
+- **Animated GIF**: optimized with gifsicle, keeping every frame. The default lossiness of 30 alters colors slightly to make them compress better. GIFs are always saved as GIF, whatever output format you pick.
+- **Animated WebP**: not converted or compressed for now; it's returned as is, with metadata removed.
+- **SVG**: optimized and kept as SVG. To turn an SVG into PNG icons, use the [icon generator](/icons/).
+
+## The three SVG levels
+
+SVG files are made smaller by removing unnecessary markup without changing how they look. There are three SVGO settings:
+
+- **Safe**: disables changes that could affect appearance, such as converting shapes to paths, merging paths and rounding numbers, and mainly removes editor data, comments and metadata.
+- **Standard (default)**: runs SVGO's standard optimizations several times. The `viewBox` is kept.
+- **Aggressive**: also rounds coordinates and other numbers to two decimal places. Fine details may shift slightly, so check the result before using it.
+
+All levels keep `width` and `height`, which are needed for display. Optimized SVGs are previewed as images, so any script inside an SVG never runs.
+
+## Resizing details
+
+- If you set only the width or only the height, the other is calculated from the aspect ratio. If you set both with “Keep aspect ratio” on, the image is fitted inside that box.
+- With “Never enlarge” (on by default), values larger than the original leave the image at its original size.
+- Downscaling uses Lanczos3, which keeps edges sharper than simply skipping pixels.
+- With “Responsive export widths” set to 640, 1280 and 1920px, only widths smaller than the original are written. If the original is narrower than one of the selected widths, a copy at the original width is added, and the `srcset` and `picture` HTML is generated from the files and sizes actually written.
+
+## Where your images are processed
+
+All image processing happens inside your browser. To keep the page responsive, images are processed in parallel in Web Workers, background threads separate from the page. The number of workers is based on your CPU's core count, leaving one core free for the interface: up to 4 on a computer and up to 2 on a phone. GIFs are the exception: gifsicle starts its own worker.
+
+### Size limits
+
+What limits image size is memory after decoding rather than file size, so the main limit is the number of pixels (width × height).
+
+| Item | Computer | Phone or tablet |
+| --- | --- | --- |
+| Pixels per image | 100 million (100 MP) | 40 million (40 MP) |
+| File size | 200 MB | 50 MB |
+| ZIP file you load | 2 GB | 500 MB |
+| Files inside a ZIP | 5,000 | 1,000 |
+| Image loaded from a URL | 25 MB | 25 MB |
+
+An image over a limit doesn't stop the batch; that image is skipped and you're told why. If the ZIP for saving everything at once would become too large, it's split into several ZIP files automatically.
+
+### A relay server is used only for loading from a URL
+
+When you load an image from a URL, the browser usually can't fetch it directly from another site because of CORS restrictions, so this site's relay server fetches it for you. The relay stores neither the image nor the URL; it streams the image straight back to your browser. To prevent abuse, it has these restrictions:
+
+- It only accepts requests from this site's own pages, and limits how many requests can be made per minute.
+- It only fetches over http and https on the standard ports, and refuses raw IP addresses, local names such as localhost, and this site's own domain. Redirects are followed up to 3 times, with the same checks each time.
+- It only returns responses that declare an image type and whose first bytes are a real PNG, JPEG, GIF, WebP or SVG. Anything over 25 MB, or not received within 10 seconds, is cut off.
+- It identifies itself to the other server with a fixed name and doesn't forward your browser's details.
+
+Images you load as files are never sent anywhere, including this relay. See the [Privacy Policy](/privacy/) for details.
+
+## Summary
+
+- MozJPEG, libwebp, OxiPNG, libimagequant, gifsicle and SVGO run as WASM, so results are the same in every browser.
+- PNG “quality” is translated into a number of colors. The default of 80 means 97 colors, so turn on “Do not reduce PNG colors (lossless)” if a PNG must not change.
+- Target sizes are found by binary search over quality, picking the highest quality that fits. When a target can't be reached, resizing helps most.
+- EXIF orientation is applied to the pixels, EXIF and location data are dropped, and color profiles are kept.
+- If an image would get bigger in the same format and size, you get the original back.
+
+Actual savings vary a lot from image to image. Use “Compare” in the [converter and compressor](/) to view the before and after side by side while you choose your settings.

@@ -165,6 +165,7 @@ export const en = {
         "image-formats": "Choosing an Image Format",
         "favicon-setup": "How to Set Up Favicons",
         "optimize-lp-images": "Making Landing Page Images Lighter",
+        "how-it-works": "How Image Adjust Works",
       },
     },
     about: {
