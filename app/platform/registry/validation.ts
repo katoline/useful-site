@@ -5,6 +5,7 @@ export const RESERVED_APP_PATHS = [
   "privacy",
   "terms",
   "about",
+  "changelog",
   "404",
   "sitemap.xml",
   "robots.txt",

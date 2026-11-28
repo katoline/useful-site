@@ -1,0 +1,144 @@
+export const frontmatter = {
+  title: "How Markdown to PDF Works: Conversion, Preview and Printing",
+  description:
+    "What this tool actually does with your Markdown, step by step: why raw HTML is not interpreted, how the preview is kept offline, how images are handled, the pros and limits of making PDFs with the browser's print feature, and the input limits.",
+  datePublished: "2026-11-28",
+  dateModified: "2026-11-28",
+};
+
+The [Markdown to PDF](/) tool does everything — converting Markdown, showing the preview and saving the PDF — inside your browser, without a server. This article walks through what happens behind each button, in the order it happens, so you can judge what to rely on and when the result may not be exactly what you expect.
+
+For the syntax itself, see the [Markdown syntax cheat sheet](/guide/markdown-syntax/). For choosing paper size and margins, see [Tips for clean PDFs from Markdown](/guide/pdf-tips/).
+
+## The overall flow
+
+1. The Markdown text you type and any images you add are kept in your browser's memory.
+2. The Markdown is converted to HTML. Unsafe constructs are left as plain text, and external images are not loaded.
+3. The HTML is combined with CSS generated from your paper, margin and font settings into a single HTML document, which is shown in a preview frame (an iframe).
+4. When you press "Save as PDF", only the contents of that preview frame are sent to the browser's print feature. Choosing "Save as PDF" in the print dialog produces the PDF.
+
+The preview you see is the very document that gets printed. The tool does not build a separate version for printing, so what you checked in the preview is what ends up in the PDF (only the exact page breaks are decided by the browser at print time, as explained below).
+
+## Turning Markdown into HTML
+
+The conversion uses **markdown-it**, a widely used open-source library. In addition to the familiar GitHub-style syntax such as tables and strikethrough, two extensions are enabled:
+
+- **Footnotes** (write `[^1]` and the notes are listed at the end)
+- **Task lists** (`- [ ]` and `- [x]` checkboxes; since the output is a PDF, they are display-only and cannot be toggled)
+
+A bare URL starting with `https://` in your text is also turned into a link automatically.
+
+The library is not loaded when the page first opens; it is loaded the moment a conversion is needed, so the page is ready to use right away.
+
+### Raw HTML is not interpreted
+
+Markdown allows HTML tags to be written directly in the text. This tool turns that feature **off** (markdown-it's `html: false` option). Any tag you write is shown as text, exactly as typed.
+
+This is a safety measure. If a Markdown file you received, or text you pasted from somewhere, contains a tag that runs a script or loads an external page, it will not run and will not connect anywhere. The trade-off is that styling that depends on HTML, such as text colour or centring, is not available.
+
+### Which URLs become links
+
+URLs in links and images are checked before they are turned into HTML. Only these are accepted as links:
+
+- `http:`, `https:`, `mailto:` (email) and `tel:` (phone)
+- Relative paths and in-page jumps such as `#heading`
+- Images embedded directly as `data:image/...` (PNG, JPEG, GIF, WebP, AVIF and SVG)
+
+Anything else, such as `javascript:`, is left as plain text rather than becoming a link. Browsers ignore tabs and line breaks inside a URL and spaces around it when reading the scheme, so the check normalises the URL the same way first. A trick like putting a line break between `java` and `script:` does not slip through.
+
+## The preview: a frame cut off from the outside
+
+The converted HTML is shown in an iframe — a small, separate page inside the page — isolated from the tool itself. Two layers of restriction are applied to it.
+
+### Scripts cannot run
+
+An iframe can be given a `sandbox` attribute that limits what it may do. This tool does **not** grant `allow-scripts`, so even if something slipped into the converted output, no program can run inside the frame. Printing, keeping the scroll position and handling link clicks are all done by the tool page outside the frame.
+
+That is also why links in the preview behave a little differently. Links starting with `#` scroll the frame to that heading, and external links are opened in a new tab by the tool page (only `http:`, `https:`, `mailto:` and `tel:` links are opened).
+
+### No network access at all
+
+The preview document starts with a Content Security Policy (CSP) that defines what it may load. It is stricter than the CSP of the tool page itself:
+
+- Load nothing by default (`default-src 'none'`)
+- Images only from `data:` and `blob:` URLs — that is, images you added locally
+- Styles only from the CSS written inside the document
+
+In other words, the browser itself prevents the document from fetching images from external servers or downloading web fonts. The document is also set not to send referrer information.
+
+<Ad />
+
+## How images are handled
+
+Images referenced by an external URL (`https://...`) are not loaded. Loading one would tell that image's server that someone has opened the document. A placeholder reading "Image not shown" appears instead.
+
+To show an image, add the image file with "Add images". A relative path in the text, such as `![caption](images/photo.png)`, is matched against the files you added in this order:
+
+1. A file whose relative path, including folders, matches (`./`, `../` and anything after `?` are normalised first)
+2. A file whose name matches
+3. A file whose name matches ignoring upper and lower case
+
+Added images are turned into display URLs without leaving your device, with a few safety measures:
+
+- **SVG** files are turned into `data:image/svg+xml;base64,...` URLs. SVG can contain scripts, so rather than giving it a URL with the same privileges as the site, it is shown only as an image, from a data URL with a fixed type.
+- **Other images** (PNG, JPEG, GIF, WebP and AVIF) are given a MIME type decided by their file extension and served from a `blob:` URL. The type the file claims for itself is not trusted.
+- Files with an extension that is not accepted get no display URL at all.
+
+Images are scaled down to fit the page width and are kept from being split across a page break.
+
+## The PDF is made by the browser's print feature
+
+This tool uses no PDF library. The PDF is created by the browser's own print feature. "Save as PDF" sends only the preview frame to the printer, and while printing, the document title (the first `#` heading in your text) is used as the suggested file name.
+
+### Advantages of this approach
+
+- **Text stays text**: you can select, copy and search the text in the PDF, unlike a PDF made of pasted images.
+- **Your device's fonts are used**: the typeface is chosen from fonts installed on the device, such as Hiragino, Yu Gothic, Meiryo or Noto (likewise when you choose Serif). Fonts are not downloaded, so no network traffic is involved.
+- **Links keep working**: in most browsers, links in the PDF remain clickable.
+- **Layout is controlled with CSS**: the document is styled so that a page does not break right after a heading, table rows, code blocks and images are kept from splitting across pages, and table header rows repeat on the next page.
+
+### Limits of this approach
+
+- **Results vary slightly by browser and OS**: fonts differ from device to device, so the same Markdown can produce slightly different letter shapes, line lengths and page breaks on Windows and on a Mac. Open the PDF and check it before sending it to anyone.
+- **Headers and footers belong to the browser**: the date, title, URL and page numbers at the top and bottom of each page come from the browser's "Headers and footers" print setting. The tool cannot remove them, so turn them off in the print dialog — or leave them on if you want page numbers.
+- **The browser decides the page breaks**: the tool asks the browser to avoid splitting certain elements, but a table or code block longer than a page will still break.
+
+## What the page settings do
+
+Your settings are converted into print CSS. The available values are:
+
+| Setting | Values | Default |
+| --- | --- | --- |
+| Paper | A4 (210 × 297 mm), Letter (215.9 × 279.4 mm) | A4 |
+| Orientation | Portrait, landscape | Portrait |
+| Margins (all sides) | Narrow 10 mm, normal 20 mm, wide 30 mm | Normal |
+| Font size | 9, 10, 11, 12, 14 pt | 11 pt |
+| Typeface | Sans-serif, serif | Sans-serif |
+| Start a new page at `---` | On, off | On |
+
+With "Start a new page at `---`" on, the document moves to a new page at each horizontal rule. In the preview, a dashed line marks the break. The separator line above the footnotes does not start a new page.
+
+The PDF is always black text on white, even when the site is in dark mode. The document also asks the browser to print background colours, so the shading of code blocks and table headers is not lost.
+
+## Input limits
+
+To keep the browser from slowing down or freezing, the tool sets these limits:
+
+- Markdown text: up to 2 MB (measured in UTF-8 bytes)
+- Document files: `.md`, `.markdown` and `.txt`, one at a time
+- Added images: up to 50 images and 20 MB in total. Adding an image with the same name replaces the earlier one
+
+## Where your content goes
+
+Your document and images are not sent to our server. Conversion and printing all happen inside your browser.
+
+So that a reload does not wipe your work, only the text you are editing and the page settings are kept in the browser's sessionStorage — temporary storage that belongs to that one tab. It is cleared when you close the tab, and other tabs and the site operator cannot see it. Images are not stored, so after a reload you need to add them again.
+
+## Summary
+
+- Markdown is converted with markdown-it. Raw HTML is shown as text, and unsafe URLs do not become links
+- The preview runs in a frame where scripts cannot run and nothing can be fetched from the network, and that preview is exactly what becomes the PDF
+- External images are not loaded; only images you added are shown, from URLs with a fixed type
+- The PDF is made by the browser's print feature, so the text is selectable, while fonts and page breaks vary slightly by device
+
+To try it, open the [Markdown to PDF tool](/). Other articles are in the [guide list](/guide/).

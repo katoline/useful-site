@@ -16,6 +16,7 @@ import { Link, useLocation } from "react-router";
 import { AdSlot } from "~/platform/ads/AdSlot";
 import { SITE_NAME } from "~/platform/config";
 import { type Lang, useLang } from "~/platform/i18n";
+import { SITE_PAGES } from "~/platform/legal/paths";
 import { createAppPaths, parsePath } from "~/platform/paths";
 import { listedApps } from "~/platform/registry";
 import { handleAppNavigation } from "~/platform/shell/app-navigation";
@@ -55,7 +56,7 @@ export function MdxLink({ href = "", children, ...props }: ComponentProps<"a">) 
   if (href.startsWith("/") && !href.startsWith("//")) {
     const [path = "", hash] = href.split("#");
     const target = parsePath(path);
-    const sitePage = /^(about|privacy|terms)(\/|$)/.test(target.page);
+    const sitePage = SITE_PAGES.some((page) => target.page.split("/")[0] === page);
     const targetApp = target.appPath || (sitePage ? "" : (appPath ?? parsePath(pathname).appPath));
     const to = `${createAppPaths(targetApp).localizedPath(lang, target.page)}${hash ? `#${hash}` : ""}`;
     return (

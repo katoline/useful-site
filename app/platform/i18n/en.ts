@@ -52,6 +52,7 @@ export const en = {
   },
   legal: {
     about: "About us & contact",
+    changelog: "Changelog",
     privacy: "Privacy policy",
     terms: "Terms & disclaimer",
     externalTransmission: "External transmission",

@@ -1,0 +1,110 @@
+export const frontmatter = {
+  title: "How Our Speed Test Works: What It Measures and How Far to Trust It",
+  description:
+    "A step-by-step look at how this site's Internet Speed Test measures ping, jitter, download and upload, based on how it is actually built. Also covers why results differ from other speed tests and what a result cannot tell you.",
+  datePublished: "2026-11-28",
+  dateModified: "2026-11-28",
+};
+
+A speed test boils everything down to a single number of Mbps, but that number depends heavily on where the data travels to, for how long, and how it is calculated. That is why the same connection gives different results on different services.
+
+This article explains what our [Internet Speed Test](/) does between the moment you press the button and the moment it shows a result, following the way the test is actually built. Knowing how the numbers are produced makes it much easier to judge how far to trust them, and what they do not tell you. For units and rough speed requirements by activity, see [How Much Internet Speed Do You Need?](/guide/speed-guide/).
+
+## What it measures against: your nearest Cloudflare data center
+
+The test does not use a third-party measurement service. It measures against the server that delivers this site itself. The site runs on Cloudflare Workers, and requests are normally handled by the Cloudflare data center closest to you. In other words, the test measures the speed **from your device to a nearby Cloudflare data center**.
+
+The first thing the test does is ask the server where it is. The three-letter code shown as the "server" in the result (NRT for Tokyo, LHR for London, and so on — Cloudflare names data centers after the nearest airport) is the data center that actually handled the test. The "provider" is the name of the network operator that Cloudflare associates with your IP address. If you are on a VPN, you will see the VPN company here, which is a handy way to check whether you are measuring through the VPN.
+
+## The sequence of a test
+
+After you press the button, the test goes through four stages, about 20 seconds in total:
+
+1. Fetch information about the server
+2. Measure ping
+3. Measure download for about 8 seconds
+4. Measure upload for about 8 seconds
+
+Download and upload run one after the other rather than at the same time, so that one direction does not slow down the other and make both look worse than they are.
+
+## How ping and jitter are measured
+
+### Twenty empty requests
+
+Ping is the time it takes to send a tiny, empty request to the server and get a reply. The test sends **20** of them and reports the **median** as your ping.
+
+Before those 20, it sends one extra request and throws its result away. The first request has to set up a new connection to the server (including the encryption handshake), so it is often much slower than the rest and would not represent your normal response time.
+
+The median is used instead of the average so that a single unlucky request does not drag the result up. If one request out of 20 takes 200 ms while the rest take around 15 ms, the median stays at about 15 ms.
+
+### Reading the browser's own timing records
+
+Timing a request with a stopwatch inside the page would also count the browser's work of preparing the request and handing the reply back to the script. Instead, the test reads the detailed timestamps the browser records for every request (the Resource Timing API) and uses the time **from when the request starts being sent until the first part of the reply arrives**. Name lookups and connection setup are not included. In browsers where these records are not available, it falls back to the difference between the times before and after the request.
+
+Even so, the result will not match the `ping` command on a computer, which uses a different protocol (ICMP). A browser request is an encrypted HTTP request that the server has to process, so it typically comes out a few milliseconds higher.
+
+### Jitter: the average change between consecutive pings
+
+Jitter is the **average difference between each pair of consecutive pings** (ignoring the sign). For example, pings of 15, 17 and 14 ms differ by 2 and 3 ms, giving a jitter of 2.5 ms. Rather than describing the overall spread, it describes how much the response time wobbles from one moment to the next, which is closer to the choppiness you notice in calls and games.
+
+## How download is measured
+
+### Six parallel requests, kept flowing for 8 seconds
+
+For download, the server sends back random data, and the test divides the number of bytes received by the time taken. The data is random so that nothing along the way can compress it and make the connection look faster than it is. Responses are marked as not cacheable, so they never come from the browser's cache or an intermediate cache either.
+
+A single request cannot fill a fast connection. Modern browsers combine requests to the same server into one connection (HTTP/2 or HTTP/3) and limit how much data each individual request can have in flight. So the test runs **six requests at the same time** and calculates the speed from their combined total.
+
+### Doubling the size of each request
+
+Each of the six streams starts by asking for 256 KiB of data. **If a request finishes in under a second, the next one is twice as large**, up to a limit of 64 MiB per download request.
+
+Many small requests would each add a round trip of waiting time, making fast connections look slower than they are. Starting with huge requests would have the opposite problem: on a slow connection a single request would not finish before time runs out, and it would waste data. Doubling lets the test adapt on its own — small requests on slow connections, large ones on fast connections.
+
+### The first 1.5 seconds are left out
+
+A new transfer starts cautiously and ramps up how much it sends at once (this is how TCP and QUIC congestion control work), so the first second or two is slower than what the connection can really do. The test therefore **ignores the first 1.5 seconds and averages from there to the end**.
+
+In practice, every time data arrives the test records the elapsed time and the total bytes so far. It works out how many bytes had arrived at the 1.5-second mark by interpolating between records, then divides everything received after that point by the remaining time. The end time is when the measurement was stopped, not when the last piece of data arrived — otherwise a connection that stalled partway through would look faster than it was.
+
+The speed shown on the gauge while the test runs is the speed over **the most recent second**, updated every 0.1 seconds. The final result is the average described above, so it can differ a little from where the needle was moving during the test.
+
+## How upload is measured
+
+For upload, your device generates random data and sends it to the server, which counts the bytes and discards them. As with download, six requests run in parallel for about 8 seconds and the first 1.5 seconds are left out.
+
+The differences are how sent data is counted and how large each request can get. The browser's `fetch` does not report progress while it is still sending, so upload uses `XMLHttpRequest` and counts the "bytes sent so far" that the browser reports as it goes. Request sizes again start at 256 KiB and double, but they are capped at **8 MiB**. The server actually reads every byte it receives, so keeping each request small keeps the server's processing time within its limits.
+
+## When the connection hiccups
+
+If a request fails briefly during the test, that stream retries **up to two times in a row**. This keeps a momentary dropout, common on mobile networks, from failing the whole test. If it fails three times in a row, or the server returns an error, the test stops and tells you.
+
+To protect the server from overuse, a single IP address can start **up to 10 tests per minute**. If you run it repeatedly and go over that, you will be asked to wait a moment before trying again.
+
+## Why other speed tests show different numbers
+
+Results that do not match other services are expected. Neither result is wrong; they measure different things:
+
+- **Different destinations**: this test measures to a Cloudflare data center, Fast.com measures to Netflix servers located near your provider, and other tests measure to their own servers. The routes from your provider to each of them are congested in different ways.
+- **Different stream counts and durations**: how many streams run at once, how long the test lasts, and how much of the start is ignored vary between services. More streams and longer tests tend to give higher numbers on fast connections.
+- **Measured inside the browser**: unlike a dedicated app, the test counts the data in a script running in your browser. On connections faster than several hundred Mbps, the device or browser may not keep up, and the result can come out below what the line can do.
+- **Your provider's own test**: these often measure to a server inside the provider's network, so they are less affected by congestion beyond it and tend to read higher.
+
+To check whether a change actually helped, the most reliable approach is to **compare results from the same test under the same conditions**. For how to prepare a fair measurement and what to try when things are slow, see [Why Your Internet Is Slow and How to Fix It](/guide/improve-speed/).
+
+## What the result cannot tell you
+
+There are limits to what a result from this test means:
+
+- **Speed to other sites and services**: the result covers the path to a nearby Cloudflare data center. The speed to a particular streaming service or game server can differ if the route is different.
+- **Responsiveness under load**: ping is measured before the download and upload start, while the connection is idle. How much your response time worsens while someone else in the house is downloading a large file does not show up in this number.
+- **Packet loss**: the test does not measure how much data gets lost along the way. Lost data is resent, so loss only shows up indirectly as lower speed.
+- **Changes over the day**: one test captures about 20 seconds. To see patterns such as slow evenings, test at different times of day. The last 10 results are kept in this browser so you can compare them.
+
+## Data usage and privacy
+
+The amount of data a test uses depends on your speed. On a 100 Mbps connection, for example, 8 seconds of download is up to 800 megabits, or about 100 MB. The faster the connection, the more data a single test uses, so keep an eye on data caps when testing on mobile.
+
+The only thing sent and received is random test data; nothing on your device is uploaded. The server does not store or log the test data or your results. Your result history is saved only in this browser (localStorage) and can be cleared with "Clear history". See the [Privacy Policy](/privacy/) for details.
+
+For more articles, see the [guide index](/guide/).

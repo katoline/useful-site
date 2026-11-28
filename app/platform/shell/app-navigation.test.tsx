@@ -148,7 +148,7 @@ describe("Shell のアプリ間リンク", () => {
     expect(assign).toHaveBeenCalledTimes(destinations.length + 1);
   });
 
-  it("フッターの運営者情報・規約類・外部送信についてでドキュメントの遷移を使う", () => {
+  it("フッターの運営者情報・更新履歴・規約類・外部送信についてでドキュメントの遷移を使う", () => {
     const assign = controlPage({});
     const view = render(
       <MemoryRouter initialEntries={["/image-adjust/"]}>
@@ -156,11 +156,11 @@ describe("Shell のアプリ間リンク", () => {
       </MemoryRouter>,
     );
     const links = [...view.container.querySelectorAll<HTMLAnchorElement>("a")];
-    expect(links).toHaveLength(4);
+    expect(links).toHaveLength(5);
     for (const anchor of links) {
       fireEvent.click(anchor);
       expect(assign).toHaveBeenLastCalledWith(anchor.href);
     }
-    expect(assign).toHaveBeenCalledTimes(4);
+    expect(assign).toHaveBeenCalledTimes(5);
   });
 });

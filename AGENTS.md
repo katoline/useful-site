@@ -91,7 +91,7 @@ platform ──▶ apps/*/manifest.ts 等（規約による自動収集だけ。
 | `tests/` | 任意 | 単体テスト（`app/**/*.test.ts(x)` なので `tests/` の中でも `*.test.ts` なら拾われる） |
 | `tests/e2e/*.spec.ts` | 任意 | アプリ固有の E2E（アプリを消せば一緒に消える） |
 
-- `manifest.path` は小文字の英数字とハイフン（`^[a-z0-9]+(?:-[a-z0-9]+)*$`）で、他のアプリと重複しないこと。予約語は使えない：`en`・`assets`・`about`・`privacy`・`terms`・`404`・`sitemap.xml`・`robots.txt`・`ads.txt`・`favicon.ico`・`og`（`app/platform/registry/validation.ts` の `RESERVED_APP_PATHS`）。`id` も重複不可。ポータルだけ `path` が空
+- `manifest.path` は小文字の英数字とハイフン（`^[a-z0-9]+(?:-[a-z0-9]+)*$`）で、他のアプリと重複しないこと。予約語は使えない：`en`・`assets`・`about`・`changelog`・`privacy`・`terms`・`404`・`sitemap.xml`・`robots.txt`・`ads.txt`・`favicon.ico`・`og`（`app/platform/registry/validation.ts` の `RESERVED_APP_PATHS`）。`id` も重複不可。ポータルだけ `path` が空
 - `icon` と `category` は `app/platform/types.ts` の許可リスト（`APP_ICON_KEYS`・`APP_CATEGORIES`）から選ぶ。足りなければ `platform` の側に足す（`registry/icons.tsx` も）。**これは中央の一覧への追加が要る唯一の例外**
 - 動的セグメント（`:pair` 等）は使わず、値ごとに静的ルートを登録する（「ルートの追加」参照）
 - アプリ固有の外部サービスを使うなら、`scripts/lib/csp.ts` の許可リストに足す（CSP は全ページ共通の 1 本）
@@ -178,7 +178,7 @@ app/
     config/                サイト名・オリジン・ストレージ接頭辞
     api/                   アプリの API（Worker）が共有する部品：呼び出し元の検査（origin-guard.ts）・回数制限のキー（rate-limit-key.ts）
     content/               MDX の表示（mdx.tsx・prose.css）と、規約類の本文（ja/・en/）
-    legal/ pages/          サイト共通のページ（about・privacy・terms。`legal/paths.ts` の `SITE_PAGES`）と、規約類へのアプリの節の差し込み
+    legal/ pages/          サイト共通のページ（about・changelog・privacy・terms。`legal/paths.ts` の `SITE_PAGES`）と、規約類へのアプリの節の差し込み
     types.ts utils.ts      AppManifest 等の型・cn()
   apps/
     portal/                ルート（/）のアプリ一覧。external-links.ts に外部システム
@@ -260,8 +260,10 @@ tests/unit, tests/e2e      サイト共通の Vitest・Playwright
 
 ### 記事（MDX）
 
-- 各アプリの `content/<lang>/<name>.mdx`（image-adjust のガイド・about 等）。日英で同じファイル名にする（片方しか無いとビルドで警告、Vitest で失敗）。サイト共通のページは `app/platform/content/<lang>/{about,privacy,terms}.mdx`（`/about/` は運営者情報・お問い合わせ。公開中のアプリの一覧は本文の `<SiteApps />` が registry から出す）、アプリ固有の節は `app/apps/<id>/legal/{privacy,terms}.{ja,en}.mdx`
+- 各アプリの `content/<lang>/<name>.mdx`（image-adjust のガイド・about 等）。日英で同じファイル名にする（片方しか無いとビルドで警告、Vitest で失敗）。サイト共通のページは `app/platform/content/<lang>/{about,changelog,privacy,terms}.mdx`（`/about/` は運営者情報・お問い合わせ。公開中のアプリの一覧は本文の `<SiteApps />` が registry から出す。`/changelog/` は更新履歴）、アプリ固有の節は `app/apps/<id>/legal/{privacy,terms}.{ja,en}.mdx`
 - **ガイド（解説記事）**：ツールだけのページは中身の薄いページと見なされやすいので（AdSense の「有用性の低いコンテンツ」で不承認になった）、各アプリに使う場面で役立つ解説記事を置く。image-adjust 以外は `app/platform/content/articles.tsx` の部品（`GuideIndexPage`・`GuideArticle`・`guideIndexMeta`・`guideArticleMeta`・`RelatedGuides`）を使う：`domain/guides.ts` に `GUIDE_SLUGS`、`content/{ja,en}/<slug>.mdx`、`routes.ts` に `guide` と `guide/<slug>` の静的ルート（`allPagePaths()` にも）、`pages/guide-index`・`pages/guide-article`、`manifest.ts` の `menu` に `guide`、ツールのページの下に `<RelatedGuides>`（markdown-pdf 等を参照）。ポータルは `menu` に `guide` を持つアプリのガイドへリンクする。`tests/unit/content.test.ts` が `GUIDE_SLUGS` の日英の記事の有無を確かめる
+- **更新履歴（`/changelog/`）**：アプリ・記事の追加、利用者に見える改善、不具合・セキュリティの修正をしたら、`app/platform/content/{ja,en}/changelog.mdx` の先頭に日付の h2 で足し、frontmatter の `dateModified` も更新する（依存の定期更新・CI など画面や動作が変わらないものは書かない）。サイトが手入れされ続けていることを示す記録で、AdSense の審査でも見られる
+- 記事の本文を直したら、その記事の `dateModified` を更新する（ページに「更新日」として出る）
 - 先頭で `export const frontmatter = { title, description, datePublished, dateModified }` を出す（YAML は使えない）。title がページの h1 と `<title>` になる。本文の見出しは h2 から
 - サイト内リンクは、そのアプリの `/<アプリ>` と言語接頭辞なしのページパスで書く（image-adjust なら `[変換](/convert/png-to-webp/)`）。表示中の言語の URL に直る。サイト共通のページへは `/about/`・`/privacy/`・`/terms/`
 - 本文中（コードブロックの外）に `{` `}` `<` を素で書かない（JSX として解釈される）。見た目は `app/platform/content/prose.css`

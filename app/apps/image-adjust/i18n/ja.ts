@@ -164,6 +164,7 @@ export const ja = {
         "image-formats": "画像形式の選び方",
         "favicon-setup": "ファビコンの設置方法",
         "optimize-lp-images": "LP の画像を軽くするコツ",
+        "how-it-works": "Image Adjust の仕組み",
       },
     },
     about: {
